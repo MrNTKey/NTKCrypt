@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
             NekoCryptTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Greeting(
-                        name = "Android",
+                        name = "哇哈哈哈",
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
