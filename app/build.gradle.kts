@@ -22,8 +22,7 @@ android {
         release {
             isMinifyEnabled = false
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
         }
     }
@@ -51,7 +50,11 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation("com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava")
-    implementation("androidx.compose.material:material-icons-extended:1.6.8")
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
+    // 用于 viewModel() 委托
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.1")
+    // 用于 AndroidViewModel
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.1")
     implementation(libs.androidx.compiler)//安装preferences datastore 插件
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

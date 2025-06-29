@@ -6,9 +6,11 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import me.wjz.nekocrypt.R
+import me.wjz.nekocrypt.data.SettingKeys
 import me.wjz.nekocrypt.ui.ClickableSettingItem
 import me.wjz.nekocrypt.ui.SettingsHeader
 import me.wjz.nekocrypt.ui.SwitchSettingItem
@@ -25,18 +27,20 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         }
         item {
             SwitchSettingItem(
+                key  = SettingKeys.GLOBAL_ENCRYPTION_KEY,
+                defaultValue = false,
                 icon = { Icon(Icons.Default.Lock, contentDescription = "Enable Encryption") },
                 title = "启用全局加密",
                 subtitle = "开启后，将自动处理复制的文本",
-                initialChecked = true
             )
         }
         item {
             SwitchSettingItem(
+                key  = SettingKeys.GLOBAL_ENCRYPTION_KEY,
+                defaultValue = false,
                 icon = { Icon(Icons.Default.Lock, contentDescription = "Enable Encryption") },
                 title = "123123",
                 subtitle = "开启后，测试测试",
-                initialChecked = true
             )
         }
         // 第二个分组：关于

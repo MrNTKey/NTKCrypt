@@ -15,11 +15,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-
+import androidx.datastore.preferences.core.Preferences
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.launch
+import me.wjz.nekocrypt.data.DataStoreManager
+import me.wjz.nekocrypt.data.LocalDataStoreManager
 
 /**
  * 这是一个自定义的、用于显示设置分组标题的组件。
@@ -42,21 +46,33 @@ fun SettingsHeader(title: String) {
  * @param icon 左侧显示的图标。
  * @param title 主标题文字。
  * @param subtitle 副标题（描述性文字）。
- * @param initialChecked 开关的初始状态（是开还是关）。
  */
 @Composable
 fun SwitchSettingItem(
+    key: Preferences.Key<Boolean>,
+    defaultValue: Boolean,
     icon: @Composable () -> Unit,
     title: String,
     subtitle: String,
-    initialChecked: Boolean
+    onClick: () -> Unit = {}
 ) {
-    var isChecked by remember { mutableStateOf(initialChecked) }
+    //这里可以直接拿到，不需要新建实例
+    val dataStoreManager = LocalDataStoreManager.current
+    val scope = rememberCoroutineScope()
+
+    val isChecked by dataStoreManager.getSettingFlow(key, defaultValue)
+        .collectAsStateWithLifecycle(initialValue = defaultValue)
+
     //用Row来水平排列元素
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { isChecked = !isChecked }
+            .clickable {
+                scope.launch {
+                    dataStoreManager.saveSetting(key, !isChecked)
+                    onClick()
+                }
+            }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -72,7 +88,11 @@ fun SwitchSettingItem(
                 color = LocalContentColor.current.copy(alpha = 0.6f)
             ) // 让副标题颜色浅一点
         }
-        Switch(checked = isChecked, onCheckedChange = { isChecked = it })
+        Switch(checked = isChecked, onCheckedChange = { newCheckedValue ->
+            scope.launch {
+                dataStoreManager.saveSetting(key, newCheckedValue)
+            }
+        })
     }
 }
 

@@ -1,6 +1,7 @@
 package me.wjz.nekocrypt.data
 
 import android.content.Context
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -11,9 +12,13 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+//建立一个LocalDataStoreManager的CompositionLocal
+val LocalDataStoreManager = staticCompositionLocalOf<DataStoreManager> {
+    error("No DataStoreManager provided")
+}
 
 //所有的key都在这个对象里
-object PreferencesKeys {
+object SettingKeys {
     val GLOBAL_ENCRYPTION_KEY = booleanPreferencesKey("global_encryption_enabled")
 }
 
