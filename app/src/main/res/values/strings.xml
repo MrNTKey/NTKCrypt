@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">NekoCrypt</string>
+    <string name="settings">设置</string>
+    <string name="main_settings">主要设置</string>
+    <string name="general">通用</string>
+    <string name="about">关于</string>
+    <string name="home">主页</string>
 </resources>

@@ -1,5 +1,5 @@
 package me.wjz.nekocrypt
 
 object Constant {
-   val APP_NAME="NekoCrypt"
+   const val APP_NAME="NekoCrypt"
 }

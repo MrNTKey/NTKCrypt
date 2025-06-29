@@ -42,7 +42,8 @@ fun NekoCryptTheme(
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             // LocalContext.current 用来获取当前App的上下文环境，是安卓开发里的老朋友啦
             val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            if (darkTheme) dynamicDarkColorScheme(context)
+            else dynamicLightColorScheme(context)
         }
         // 条件2: 如果不满足条件1，但用户开启了深色模式
         darkTheme -> DarkColorScheme

@@ -50,6 +50,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation("androidx.datastore:datastore-preferences:1.1.7")
+    implementation("com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava")
     implementation(libs.androidx.compiler)//安装preferences datastore 插件
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
