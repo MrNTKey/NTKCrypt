@@ -1,0 +1,54 @@
+package me.wjz.nekocrypt.ui.screen
+
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import me.wjz.nekocrypt.R
+import me.wjz.nekocrypt.ui.ClickableSettingItem
+import me.wjz.nekocrypt.ui.SettingsHeader
+import me.wjz.nekocrypt.ui.SwitchSettingItem
+
+@Composable
+fun SettingsScreen(modifier: Modifier = Modifier) {
+    LazyColumn(
+        modifier = modifier,
+//            verticalArrangement = Arrangement.spacedBy(16.dp), 选项之间不需要间隔
+    ) {
+        // 第一个分组：主要设置
+        item {
+            SettingsHeader(stringResource(R.string.main_settings))
+        }
+        item {
+            SwitchSettingItem(
+                icon = { Icon(Icons.Default.Lock, contentDescription = "Enable Encryption") },
+                title = "启用全局加密",
+                subtitle = "开启后，将自动处理复制的文本",
+                initialChecked = true
+            )
+        }
+        item {
+            SwitchSettingItem(
+                icon = { Icon(Icons.Default.Lock, contentDescription = "Enable Encryption") },
+                title = "123123",
+                subtitle = "开启后，测试测试",
+                initialChecked = true
+            )
+        }
+        // 第二个分组：关于
+        item {
+            SettingsHeader("关于")
+        }
+        item {
+            ClickableSettingItem(
+                icon = { Icon(Icons.Default.Info, contentDescription = "About App") },
+                title = "关于 NekoCrypt",
+                onClick = { /* 在这里处理点击事件，比如弹出一个对话框 */ }
+            )
+        }
+    }
+}
