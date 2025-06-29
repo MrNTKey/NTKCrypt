@@ -14,6 +14,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Text("这里是待实现的主页！", style = MaterialTheme.typography.headlineMedium)
+        Text("这里是待实现的主页！" +
+                "", style = MaterialTheme.typography.headlineMedium)
     }
 }

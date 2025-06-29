@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.data.DataStoreManager
 import me.wjz.nekocrypt.data.LocalDataStoreManager
+import me.wjz.nekocrypt.hook.rememberDataStoreState
 
 /**
  * 这是一个自定义的、用于显示设置分组标题的组件。
@@ -56,23 +57,13 @@ fun SwitchSettingItem(
     subtitle: String,
     onClick: () -> Unit = {}
 ) {
-    //这里可以直接拿到，不需要新建实例
-    val dataStoreManager = LocalDataStoreManager.current
-    val scope = rememberCoroutineScope()
-
-    val isChecked by dataStoreManager.getSettingFlow(key, defaultValue)
-        .collectAsStateWithLifecycle(initialValue = defaultValue)
+    var isChecked by rememberDataStoreState(key, defaultValue)
 
     //用Row来水平排列元素
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable {
-                scope.launch {
-                    dataStoreManager.saveSetting(key, !isChecked)
-                    onClick()
-                }
-            }
+            .clickable { isChecked = !isChecked }//点击整行也能更新状态
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -88,10 +79,9 @@ fun SwitchSettingItem(
                 color = LocalContentColor.current.copy(alpha = 0.6f)
             ) // 让副标题颜色浅一点
         }
-        Switch(checked = isChecked, onCheckedChange = { newCheckedValue ->
-            scope.launch {
-                dataStoreManager.saveSetting(key, newCheckedValue)
-            }
+        Switch(checked = isChecked, onCheckedChange = {
+            isChecked = it
+            onClick()
         })
     }
 }
