@@ -1,34 +1,46 @@
 package me.wjz.nekocrypt.ui
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.ui.screen.CryptoScreen
+import me.wjz.nekocrypt.ui.screen.HomeScreen
 import me.wjz.nekocrypt.ui.screen.SettingsScreen
 
 //用一个枚举类定义所有的屏幕
 enum class Screen {
+    Home,
     Crypto,
     Key,
     Setting
@@ -38,7 +50,7 @@ enum class Screen {
 @Composable
 fun MainMenu() {
     //现在默认打开设置页
-    val navItems = remember { listOf(Screen.Crypto, Screen.Key, Screen.Setting) }
+    val navItems = remember { listOf(Screen.Home, Screen.Crypto, Screen.Key, Screen.Setting) }
     val pagerState = rememberPagerState(
         initialPage = 0,
         pageCount = { navItems.size }
@@ -48,30 +60,47 @@ fun MainMenu() {
     val scope = rememberCoroutineScope()
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text(text = stringResource(id = R.string.app_name)) })
+            TopAppBar(
+                title = { Text(text = stringResource(id = R.string.app_name)) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            )
         }, bottomBar = {
-            NavigationBar {
+            NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
                 // 遍历导航项列表来动态创建 BottomBar 的 Item
                 navItems.forEachIndexed { index, screen ->
                     // 根据 screen 类型获取对应的图标和标签文本
                     val label = when (screen) {
-                        Screen.Key -> "设置"
-                        Screen.Crypto -> "加解密"
-                        Screen.Setting -> "关于"
+                        Screen.Home -> stringResource(R.string.home)
+                        Screen.Crypto -> stringResource(R.string.crypto)
+                        Screen.Key -> stringResource(R.string.key)
+                        Screen.Setting -> stringResource(R.string.settings)
                     }
                     val icon = @Composable {
                         when (screen) {
+                            Screen.Home -> Icon(
+                                Icons.Outlined.Home,
+                                contentDescription = label,
+                                //home感觉比其他的小一号，调大一点
+                                modifier = Modifier.size(28.dp)
+                            )
+
                             Screen.Key -> Icon(
-                                Icons.Default.Settings,
+                                Icons.Outlined.Settings,
                                 contentDescription = label
                             )
 
                             Screen.Crypto -> Icon(
-                                Icons.Default.Lock,
+                                Icons.Outlined.Lock,
                                 contentDescription = label
                             )
 
-                            Screen.Setting -> Icon(Icons.Default.Info, contentDescription = label)
+                            Screen.Setting -> Icon(
+                                Icons.Outlined.Info,
+                                contentDescription = label
+                            )
                         }
                     }
 
@@ -86,14 +115,19 @@ fun MainMenu() {
                             scope.launch {
                                 pagerState.animateScrollToPage(index)
                             }
-                        }
+                        },
+                        colors = NavigationBarItemDefaults.colors(
+                            indicatorColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
                     )
                 }
-
             }
-
         }, floatingActionButton = {
-            FloatingActionButton(onClick = { }) {
+            FloatingActionButton(
+                onClick = { },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
                 Icon(Icons.Default.Add, contentDescription = "Add")
             }
         })
@@ -106,6 +140,7 @@ fun MainMenu() {
         ) { pageIndex ->
             //根据pageIndex来显示不同的页面
             when (navItems[pageIndex]) {
+                Screen.Home -> HomeScreen()
                 Screen.Crypto -> CryptoScreen()
                 Screen.Key -> SettingsScreen()
                 Screen.Setting -> SettingsScreen()
@@ -113,6 +148,8 @@ fun MainMenu() {
         }
     }
 }
+
+
 
 
 
