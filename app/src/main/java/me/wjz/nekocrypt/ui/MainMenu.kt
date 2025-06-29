@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,6 +37,7 @@ import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.ui.screen.CryptoScreen
 import me.wjz.nekocrypt.ui.screen.HomeScreen
+import me.wjz.nekocrypt.ui.screen.KeyScreen
 import me.wjz.nekocrypt.ui.screen.SettingsScreen
 
 //用一个枚举类定义所有的屏幕
@@ -86,19 +88,16 @@ fun MainMenu() {
                                 //home感觉比其他的小一号，调大一点
                                 modifier = Modifier.size(28.dp)
                             )
-
-                            Screen.Key -> Icon(
-                                Icons.Outlined.Settings,
-                                contentDescription = label
-                            )
-
                             Screen.Crypto -> Icon(
                                 Icons.Outlined.Lock,
                                 contentDescription = label
                             )
-
+                            Screen.Key -> Icon(
+                                Icons.Outlined.Key,
+                                contentDescription = label
+                            )
                             Screen.Setting -> Icon(
-                                Icons.Outlined.Info,
+                                Icons.Outlined.Settings,
                                 contentDescription = label
                             )
                         }
@@ -142,7 +141,7 @@ fun MainMenu() {
             when (navItems[pageIndex]) {
                 Screen.Home -> HomeScreen()
                 Screen.Crypto -> CryptoScreen()
-                Screen.Key -> SettingsScreen()
+                Screen.Key -> KeyScreen()
                 Screen.Setting -> SettingsScreen()
             }
         }

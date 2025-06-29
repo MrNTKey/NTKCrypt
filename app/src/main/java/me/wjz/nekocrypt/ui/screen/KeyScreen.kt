@@ -14,6 +14,6 @@ fun KeyScreen(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Text("这里是关于页面", style = MaterialTheme.typography.headlineMedium)
+        Text("这里是密钥页面", style = MaterialTheme.typography.headlineMedium)
     }
 }
