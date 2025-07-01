@@ -10,7 +10,7 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import me.wjz.nekocrypt.R
-import me.wjz.nekocrypt.data.SettingKeys
+import me.wjz.nekocrypt.SettingKeys
 import me.wjz.nekocrypt.ui.ClickableSettingItem
 import me.wjz.nekocrypt.ui.SettingsHeader
 import me.wjz.nekocrypt.ui.SwitchSettingItem

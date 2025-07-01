@@ -17,11 +17,6 @@ val LocalDataStoreManager = staticCompositionLocalOf<DataStoreManager> {
     error("No DataStoreManager provided")
 }
 
-//所有的key都在这个对象里
-object SettingKeys {
-    val GLOBAL_ENCRYPTION_KEY = booleanPreferencesKey("global_encryption_enabled")
-}
-
 class DataStoreManager(private val context: Context) {
     //通用的读取方法 (使用泛型)
     fun <T> getSettingFlow(key: Preferences.Key<T>, defaultValue: T): Flow<T> {
