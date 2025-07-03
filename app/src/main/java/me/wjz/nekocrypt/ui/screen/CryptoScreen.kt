@@ -38,6 +38,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,17 +55,22 @@ import me.wjz.nekocrypt.hook.rememberDataStoreState
 fun CryptoScreen(modifier: Modifier = Modifier) {
     var inputText by remember { mutableStateOf("") }
     var outputText by remember { mutableStateOf("") }
+    var isEncryptMode by remember { mutableStateOf(true) }  //实时判断是加密or解密
     //获取当前密钥，没有就是默认密钥
     val secretKey: String by rememberDataStoreState(CURRENT_KEY,DEFAULT_SECRET_KEY)
 
+    LaunchedEffect(inputText,isEncryptMode) {
+        if(inputText.isEmpty()) return@LaunchedEffect
+        outputText="嘻嘻哈哈"
+    }
+
     // 模拟加密和解密操作的逻辑
-    val onEncrypt = {
-        // 在真实应用中，这里会调用 CryptoManager.encrypt()
+    val encryptMsg = {
         if (inputText.isNotBlank()) {
             outputText = "加密后的密文: ${inputText.reversed()}" // 使用反转字符串来模拟加密
         }
     }
-    val onDecrypt = {
+    val decryptMsg = {
         // 在真实应用中，这里会调用 CryptoManager.decrypt()
         if (inputText.isNotBlank()) {
             outputText = "解密后的明文: ${inputText.reversed()}" // 使用反转字符串来模拟解密
@@ -130,7 +136,7 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
         ) {
             // 加密按钮
             Button(
-                onClick = onEncrypt,
+                onClick = encryptMsg,
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -154,7 +160,7 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
 
             // 解密按钮
             Button(
-                onClick = onDecrypt,
+                onClick = decryptMsg,
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.secondary,
