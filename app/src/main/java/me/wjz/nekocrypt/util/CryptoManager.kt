@@ -11,23 +11,23 @@ import javax.crypto.spec.SecretKeySpec
 /**
  * 加密工具类，有相关的加密算法。
  */
-class CryptoManager {
-    companion object {
-        private const val ALGORITHM = "AES"
-        private const val TRANSFORMATION = "AES/GCM/NoPadding"
-        private const val KEY_SIZE_BITS = 256 // AES-256
-        private const val IV_LENGTH_BYTES = 12  // GCM 推荐的IV长度
-        private const val TAG_LENGTH_BITS = 128 // GCM 推荐的认证标签长度
+object CryptoManager {
 
-        // --- 隐写编解码所需的常量和映射表 ---
-        private const val HEX_ALPHABET = "0123456789abcdef"
-        private val STEALTH_ALPHABET = (0xFE00..0xFE0F).map { it.toChar() }.joinToString("")
+    private const val ALGORITHM = "AES"
+    private const val TRANSFORMATION = "AES/GCM/NoPadding"
+    private const val KEY_SIZE_BITS = 256 // AES-256
+    private const val IV_LENGTH_BYTES = 12  // GCM 推荐的IV长度
+    private const val TAG_LENGTH_BITS = 128 // GCM 推荐的认证标签长度
 
-        // 预先生成映射表，这是最高效的方式。
-        // 查询Map的复杂度是O(1)，而每次都用indexOf查询字符串是O(N)。
-        private val HEX_TO_STEALTH_MAP = HEX_ALPHABET.zip(STEALTH_ALPHABET).toMap()
-        private val STEALTH_TO_HEX_MAP = STEALTH_ALPHABET.zip(HEX_ALPHABET).toMap()
-    }
+    // --- 隐写编解码所需的常量和映射表 ---
+    private const val HEX_ALPHABET = "0123456789abcdef"
+    private val STEALTH_ALPHABET = (0xFE00..0xFE0F).map { it.toChar() }.joinToString("")
+
+    // 预先生成映射表，这是最高效的方式。
+    // 查询Map的复杂度是O(1)，而每次都用indexOf查询字符串是O(N)。
+    private val HEX_TO_STEALTH_MAP = HEX_ALPHABET.zip(STEALTH_ALPHABET).toMap()
+    private val STEALTH_TO_HEX_MAP = STEALTH_ALPHABET.zip(HEX_ALPHABET).toMap()
+
 
     /**
      * 生成一个符合 AES-256 要求的随机密钥。
@@ -99,13 +99,20 @@ class CryptoManager {
             // 明确捕获认证标签错误的异常。
             // 这意味着数据100%被篡改过，或者使用的密钥是错误的。
             // 在这种情况下，我们不应该让程序崩溃，而是应该返回一个null来表示解密失败。
-            println("解密失败：数据认证失败，可能已被篡改或密钥错误。\n"+e.message)
+            println("解密失败：数据认证失败，可能已被篡改或密钥错误。\n" + e.message)
             return null
         } catch (e: Exception) {
             // 捕获其他可能的异常，例如格式错误等。
             println("解密时发生未知错误: ${e.message}")
             return null
         }
+    }
+
+    /**
+     * 判断给定字符串是否包含密文
+     */
+    fun containsCiphertext(input: String): Boolean {
+        return input.any { STEALTH_TO_HEX_MAP.containsKey(it) }
     }
 
     // -----------------一些辅助方法---------------------

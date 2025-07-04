@@ -50,18 +50,23 @@ import androidx.compose.ui.unit.dp
 import me.wjz.nekocrypt.Constant.DEFAULT_SECRET_KEY
 import me.wjz.nekocrypt.SettingKeys.CURRENT_KEY
 import me.wjz.nekocrypt.hook.rememberDataStoreState
+import me.wjz.nekocrypt.util.CryptoManager
 
 @Composable
 fun CryptoScreen(modifier: Modifier = Modifier) {
     var inputText by remember { mutableStateOf("") }
     var outputText by remember { mutableStateOf("") }
-    var isEncryptMode by remember { mutableStateOf(true) }  //实时判断是加密or解密
     //获取当前密钥，没有就是默认密钥
-    val secretKey: String by rememberDataStoreState(CURRENT_KEY,DEFAULT_SECRET_KEY)
+    val secretKey: String by rememberDataStoreState(CURRENT_KEY, DEFAULT_SECRET_KEY)
 
-    LaunchedEffect(inputText,isEncryptMode) {
-        if(inputText.isEmpty()) return@LaunchedEffect
-        outputText="嘻嘻哈哈"
+    LaunchedEffect(inputText) {
+        if (inputText.isEmpty()) return@LaunchedEffect
+        val resultMsg = if (CryptoManager.containsCiphertext(inputText)) {
+//            CryptoManager.encrypt(inputText, secretKey)
+        } else {
+
+        }
+        outputText = "嘻嘻哈哈"
     }
 
     // 模拟加密和解密操作的逻辑
@@ -103,7 +108,12 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
             maxLines = 6,//控制最大行数
             label = { Text("输入原文或密文") },
             placeholder = { Text("在此处输入或粘贴文本...") },
-            leadingIcon = { Icon(Icons.AutoMirrored.Rounded.Notes, contentDescription = "输入图标") },
+            leadingIcon = {
+                Icon(
+                    Icons.AutoMirrored.Rounded.Notes,
+                    contentDescription = "输入图标"
+                )
+            },
             // 右方的辅助按钮
             trailingIcon = {
                 Row {
