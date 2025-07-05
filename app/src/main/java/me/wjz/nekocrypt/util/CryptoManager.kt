@@ -8,6 +8,7 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import kotlin.random.Random
 
 /**
  * 加密工具类，有相关的加密算法。
@@ -28,6 +29,62 @@ object CryptoManager {
     // 查询Map的复杂度是O(1)，而每次都用indexOf查询字符串是O(N)。
     private val HEX_TO_STEALTH_MAP = HEX_ALPHABET.zip(STEALTH_ALPHABET).toMap()
     private val STEALTH_TO_HEX_MAP = STEALTH_ALPHABET.zip(HEX_ALPHABET).toMap()
+
+// --- 猫语短语库 (分类版) ---
+
+    /**
+     * 猫娘的内心活动，用括号包裹，显得很可爱。
+     */
+    private val NEKO_INNER_THOUGHTS = listOf(
+        "(今天也要开心喵！)",
+        "(想吃小鱼干了...)",
+        "(那是什么，好想玩！)",
+        "(最喜欢你啦~)",
+        "(要抱抱才能好起来...)",
+        "(偷偷看你一眼。)",
+        "(今天也要努力加密哦！)",
+        "(这个bug好难喵...)",
+        "(打个哈欠~)"
+    )
+
+    /**
+     * 可爱的颜文字 (Kaomoji) 列表。
+     */
+    private val NEKO_KAOMOJI = listOf(
+        "ฅ●ω●ฅ",
+        "(>^ω^<)",
+        "(=´ω`=)",
+        "(/ω＼)",
+        "(´・ω・`)",
+        "(Ф∀Ф)",
+        "(๑•̀ㅂ•́)و✧"
+    )
+
+    /**
+     * 纯粹的猫咪叫声和拟声词。
+     */
+    private val NEKO_SOUNDS = listOf(
+        "喵~",
+        "喵呜！",
+        "嗷呜！",
+        "嗷呜~",
+        "咪~",
+        "喵！",
+        "喵？",
+        "呼噜噜...",
+        "咕噜咕噜~",
+        "蹭蹭~",
+        "喵喵~"
+    )
+
+    /**
+     * 将所有类型的猫语列表聚合到一个主列表中，方便随机选择类型。
+     */
+    private val ALL_NEKO_PHRASE_TYPES = listOf(
+        NEKO_INNER_THOUGHTS,
+        NEKO_KAOMOJI,
+        NEKO_SOUNDS
+    )
 
 
     /**
@@ -56,6 +113,60 @@ object CryptoManager {
         return SecretKeySpec(decodedKey, 0, decodedKey.size, ALGORITHM)
     }
 
+
+
+    /**
+     * 为字符串追加一段结构化、有规则的可爱“猫咪话语”后缀。
+     *
+     * 生成规则：
+     * 1. 必须包含固定数量的【猫咪叫声】。
+     * 2. 随机包含 0-2 个不重复的【内心活动】，并保证它们不会出现在开头，且被【猫咪叫声】隔开。
+     * 3. 随机决定是否在末尾追加一个【颜文字】。
+     *
+     * @receiver 调用此函数的原始字符串。
+     * @return 附加了猫咪话语的新字符串。
+     */
+    fun String.appendNekoTalk(): String {
+        // --- 1. 决定本次生成的组件数量 ---
+        val soundCount = 2 // 写死包含2个叫声
+        val thoughtCount = Random.nextInt(0, 3) // 随机包含 0, 1, 或 2 个内心活动
+
+        // --- 2. 从库中随机挑选出本次要使用的具体短语 ---
+        val soundsToUse = (1..soundCount).map { NEKO_SOUNDS.random() }.toMutableList()
+        val thoughtsToUse = NEKO_INNER_THOUGHTS.shuffled().take(thoughtCount)
+
+
+        // --- 3. 核心逻辑：将【内心活动】插入到【叫声】的间隙中 ---
+        // 【关键修改】为了避免内心活动出现在开头，插入点从 1 开始 (即第一个叫声之后)。
+        // 这样就保证了第一个元素永远是“叫声”。
+        val availableSlots = (1..soundsToUse.size).toMutableList()
+        availableSlots.shuffle()
+
+        thoughtsToUse.forEach { thought ->
+            if (availableSlots.isNotEmpty()) {
+                val insertionIndex = availableSlots.removeAt(0)
+                soundsToUse.add(insertionIndex, thought)
+            }
+        }
+        val middleParts = soundsToUse
+
+
+        // --- 4. 构建最终的后缀字符串 ---
+        val nekoTalkSuffix = buildString {
+            middleParts.forEach { part ->
+                append(part)
+            }
+
+            // 【关键修改】随机决定是否在末尾追加颜文字 (这里设置为 60% 概率)。
+            if (Random.nextInt(1, 11) <= 6) {
+                val kaomojiToEnd = NEKO_KAOMOJI.random()
+                append(kaomojiToEnd)
+            }
+        }
+
+        return this + nekoTalkSuffix
+    }
+
     /**
      * 加密一个消息，使用给定的密钥，返回的直接是隐写字符串
      */
@@ -68,7 +179,7 @@ object CryptoManager {
         //创建加密器
         val cipher = Cipher.getInstance(TRANSFORMATION)
         val parameterSpec = GCMParameterSpec(TAG_LENGTH_BITS, iv)//生成GCM所需数据
-        cipher.init(Cipher.ENCRYPT_MODE,deriveKeyFromString(key) , parameterSpec)
+        cipher.init(Cipher.ENCRYPT_MODE, deriveKeyFromString(key), parameterSpec)
         val ciphertextBytes = cipher.doFinal(plaintextBytes)
         //拼接iv和密文
         val combinedBytes = iv + ciphertextBytes
@@ -117,7 +228,7 @@ object CryptoManager {
     }
 
     private fun deriveKeyFromString(keyString: String): SecretKey {
-        val digest= MessageDigest.getInstance("SHA-256")
+        val digest = MessageDigest.getInstance("SHA-256")
         val keyBytes = digest.digest(keyString.toByteArray(Charsets.UTF_8))
         return SecretKeySpec(keyBytes, ALGORITHM)
     }

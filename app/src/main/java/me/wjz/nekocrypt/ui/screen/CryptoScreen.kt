@@ -24,12 +24,7 @@ import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.LockOpen
-import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.rounded.Clear
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -58,6 +53,7 @@ import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.SettingKeys.CURRENT_KEY
 import me.wjz.nekocrypt.hook.rememberDataStoreState
 import me.wjz.nekocrypt.util.CryptoManager
+import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
 
 @Composable
 fun CryptoScreen(modifier: Modifier = Modifier) {
@@ -68,22 +64,26 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
     var isEncryptMode by remember { mutableStateOf(true) }//当前是加密or解密
     //获取当前密钥，没有就是默认密钥
     val secretKey: String by rememberDataStoreState(CURRENT_KEY, DEFAULT_SECRET_KEY)
-    val decryptError = stringResource(id = R.string.crypto_decrypt_fail)//解密错误的text。
+    val decryptFailed = stringResource(id = R.string.crypto_decrypt_fail)//解密错误的text。
+    var isDecryptFailed by remember { mutableStateOf(false) }
 
+    //自动加解密
     LaunchedEffect(inputText) {
         if (inputText.isEmpty()) {
             outputText = ""
             return@LaunchedEffect
         }
         val resultMsg = if (CryptoManager.containsCiphertext(inputText)) {
+            //走解密
             isEncryptMode = false
             CryptoManager.decrypt(inputText, secretKey)
         } else {
+            //走加密
             isEncryptMode = true
-            CryptoManager.encrypt(inputText, secretKey)
+            CryptoManager.encrypt(inputText, secretKey).appendNekoTalk()
         }
-        println("加密结果：$resultMsg")
-        outputText = resultMsg ?: decryptError
+        isDecryptFailed = resultMsg == null
+        outputText = resultMsg ?: decryptFailed
     }
 
     Column(
@@ -153,62 +153,6 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
             )
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 3. 主要操作按钮区域
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // 加密按钮
-            Button(
-                onClick = { },
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(
-                    Icons.Default.Lock,
-                    contentDescription = stringResource(id = R.string.crypto_encrypt_icon_desc)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(id = R.string.crypto), fontWeight = FontWeight.Bold)
-            }
-
-            // 交换按钮
-            IconButton(onClick = {}) {
-                Icon(
-                    Icons.Default.SwapHoriz,
-                    contentDescription = stringResource(id = R.string.crypto_swap_icon_desc)
-                )
-            }
-
-            // 解密按钮
-            Button(
-                onClick = {},
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary,
-                    contentColor = MaterialTheme.colorScheme.onSecondary
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(
-                    Icons.Default.LockOpen,
-                    contentDescription = stringResource(id = R.string.crypto_decrypt_icon_desc)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    stringResource(id = R.string.crypto_decrypt_button),
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
         Spacer(modifier = Modifier.height(24.dp))
 
         // 4. 输出结果区域
@@ -227,6 +171,7 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
 //                    .height(180.dp),
                 minLines = 1,
                 maxLines = 6,
+                isError = isDecryptFailed,
                 label = { Text(stringResource(if (isEncryptMode) R.string.crypto_result_label_encrypted else R.string.crypto_result_label_decrypted)) },
                 // 右下角的复制按钮
                 trailingIcon = {
