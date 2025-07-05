@@ -1,5 +1,6 @@
 package me.wjz.nekocrypt.ui.screen
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -45,9 +46,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import me.wjz.nekocrypt.Constant.DEFAULT_SECRET_KEY
+import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.SettingKeys.CURRENT_KEY
 import me.wjz.nekocrypt.hook.rememberDataStoreState
 import me.wjz.nekocrypt.util.CryptoManager
@@ -56,30 +63,27 @@ import me.wjz.nekocrypt.util.CryptoManager
 fun CryptoScreen(modifier: Modifier = Modifier) {
     var inputText by remember { mutableStateOf("") }
     var outputText by remember { mutableStateOf("") }
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+    var isEncryptMode by remember { mutableStateOf(true) }//当前是加密or解密
     //获取当前密钥，没有就是默认密钥
     val secretKey: String by rememberDataStoreState(CURRENT_KEY, DEFAULT_SECRET_KEY)
+    val decryptError = stringResource(id = R.string.crypto_decrypt_fail)//解密错误的text。
 
     LaunchedEffect(inputText) {
-        if (inputText.isEmpty()) return@LaunchedEffect
+        if (inputText.isEmpty()) {
+            outputText = ""
+            return@LaunchedEffect
+        }
         val resultMsg = if (CryptoManager.containsCiphertext(inputText)) {
-//            CryptoManager.encrypt(inputText, secretKey)
+            isEncryptMode = false
+            CryptoManager.decrypt(inputText, secretKey)
         } else {
-
+            isEncryptMode = true
+            CryptoManager.encrypt(inputText, secretKey)
         }
-        outputText = "嘻嘻哈哈"
-    }
-
-    // 模拟加密和解密操作的逻辑
-    val encryptMsg = {
-        if (inputText.isNotBlank()) {
-            outputText = "加密后的密文: ${inputText.reversed()}" // 使用反转字符串来模拟加密
-        }
-    }
-    val decryptMsg = {
-        // 在真实应用中，这里会调用 CryptoManager.decrypt()
-        if (inputText.isNotBlank()) {
-            outputText = "解密后的明文: ${inputText.reversed()}" // 使用反转字符串来模拟解密
-        }
+        println("加密结果：$resultMsg")
+        outputText = resultMsg ?: decryptError
     }
 
     Column(
@@ -106,25 +110,38 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
                 .verticalScroll(rememberScrollState()),
             minLines = 1,//控制默认的最小行数
             maxLines = 6,//控制最大行数
-            label = { Text("输入原文或密文") },
-            placeholder = { Text("在此处输入或粘贴文本...") },
+            label = { Text(stringResource(id = R.string.crypto_input_label)) },
+            placeholder = { Text(stringResource(id = R.string.crypto_input_placeholder)) },
             leadingIcon = {
                 Icon(
                     Icons.AutoMirrored.Rounded.Notes,
-                    contentDescription = "输入图标"
+                    contentDescription = stringResource(id = R.string.crypto_input_icon_desc)
                 )
             },
             // 右方的辅助按钮
             trailingIcon = {
                 Row {
                     // 粘贴按钮
-                    IconButton(onClick = { /* TODO: 实现粘贴剪贴板内容 */ }) {
-                        Icon(Icons.Default.ContentPaste, contentDescription = "粘贴")
+                    IconButton(onClick = {
+                        clipboardManager.getText()?.text?.let { inputText += it }//这里+=
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.crypto_pasted_from_clipboard),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }) {
+                        Icon(
+                            Icons.Default.ContentPaste,
+                            contentDescription = stringResource(id = R.string.crypto_paste_icon_desc)
+                        )
                     }
                     // 清空按钮，仅在有输入时显示
                     AnimatedVisibility(visible = inputText.isNotEmpty()) {
                         IconButton(onClick = { inputText = "" }) {
-                            Icon(Icons.Rounded.Clear, contentDescription = "清空输入")
+                            Icon(
+                                Icons.Rounded.Clear,
+                                contentDescription = stringResource(id = R.string.crypto_clear_input_icon_desc)
+                            )
                         }
                     }
                 }
@@ -146,7 +163,7 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
         ) {
             // 加密按钮
             Button(
-                onClick = encryptMsg,
+                onClick = { },
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -154,23 +171,25 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Icon(Icons.Default.Lock, contentDescription = "加密图标")
+                Icon(
+                    Icons.Default.Lock,
+                    contentDescription = stringResource(id = R.string.crypto_encrypt_icon_desc)
+                )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("加密", fontWeight = FontWeight.Bold)
+                Text(stringResource(id = R.string.crypto), fontWeight = FontWeight.Bold)
             }
 
             // 交换按钮
-            IconButton(onClick = {
-                val temp = inputText
-                inputText = outputText
-                outputText = temp
-            }) {
-                Icon(Icons.Default.SwapHoriz, contentDescription = "交换输入与输出")
+            IconButton(onClick = {}) {
+                Icon(
+                    Icons.Default.SwapHoriz,
+                    contentDescription = stringResource(id = R.string.crypto_swap_icon_desc)
+                )
             }
 
             // 解密按钮
             Button(
-                onClick = decryptMsg,
+                onClick = {},
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.secondary,
@@ -178,9 +197,15 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Icon(Icons.Default.LockOpen, contentDescription = "解密图标")
+                Icon(
+                    Icons.Default.LockOpen,
+                    contentDescription = stringResource(id = R.string.crypto_decrypt_icon_desc)
+                )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("解密", fontWeight = FontWeight.Bold)
+                Text(
+                    stringResource(id = R.string.crypto_decrypt_button),
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
 
@@ -202,11 +227,21 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
 //                    .height(180.dp),
                 minLines = 1,
                 maxLines = 6,
-                label = { Text("结果") },
+                label = { Text(stringResource(if (isEncryptMode) R.string.crypto_result_label_encrypted else R.string.crypto_result_label_decrypted)) },
                 // 右下角的复制按钮
                 trailingIcon = {
-                    IconButton(onClick = { /* TODO: 实现复制输出内容到剪贴板 */ }) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = "复制结果")
+                    IconButton(onClick = {
+                        clipboardManager.setText(AnnotatedString(outputText))
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.crypto_copied_to_clipboard),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }) {
+                        Icon(
+                            Icons.Default.ContentCopy,
+                            contentDescription = stringResource(id = R.string.crypto_copy_result_icon_desc)
+                        )
                     }
                 },
                 shape = RoundedCornerShape(16.dp),
@@ -228,9 +263,13 @@ private fun KeySelector(
     selectedKeyName: String,
     onClick: () -> Unit
 ) {
+    // 将形状定义为一个变量，方便复用
+    val cardShape = RoundedCornerShape(16.dp)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(cardShape)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 16.dp),
@@ -246,13 +285,13 @@ private fun KeySelector(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.Key,
-                    contentDescription = "密钥图标",
+                    contentDescription = stringResource(id = R.string.crypto_key_icon_desc),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = "当前密钥",
+                        text = stringResource(id = R.string.crypto_current_key_label),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f)
                     )
@@ -266,7 +305,7 @@ private fun KeySelector(
             }
             Icon(
                 Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = "选择密钥",
+                contentDescription = stringResource(id = R.string.crypto_select_key_icon_desc),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

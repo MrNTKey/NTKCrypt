@@ -1,5 +1,6 @@
 package me.wjz.nekocrypt.util
 
+import java.security.MessageDigest
 import java.security.SecureRandom
 import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
@@ -58,7 +59,7 @@ object CryptoManager {
     /**
      * 加密一个消息，使用给定的密钥，返回的直接是隐写字符串
      */
-    fun encrypt(message: String, key: SecretKey): String {
+    fun encrypt(message: String, key: String): String {
         //先把明文字符串转成字节数组
         val plaintextBytes = message.toByteArray()
         //生成随机的iv
@@ -67,7 +68,7 @@ object CryptoManager {
         //创建加密器
         val cipher = Cipher.getInstance(TRANSFORMATION)
         val parameterSpec = GCMParameterSpec(TAG_LENGTH_BITS, iv)//生成GCM所需数据
-        cipher.init(Cipher.ENCRYPT_MODE, key, parameterSpec)
+        cipher.init(Cipher.ENCRYPT_MODE,deriveKeyFromString(key) , parameterSpec)
         val ciphertextBytes = cipher.doFinal(plaintextBytes)
         //拼接iv和密文
         val combinedBytes = iv + ciphertextBytes
@@ -77,7 +78,7 @@ object CryptoManager {
     }
 
     //消息解密，智能地从含密文的混合字符串中解密
-    fun decrypt(stealthCiphertext: String, key: SecretKey): String? { // 返回值改为可空的 String?
+    fun decrypt(stealthCiphertext: String, key: String): String? { // 返回值改为可空的 String?
         try {
             val hexCiphertext = stealthToHex(stealthCiphertext)
             // 如果十六进制字符串为空（例如输入了不含任何隐写字符的普通文本），则直接返回null
@@ -88,7 +89,7 @@ object CryptoManager {
             val ciphertextBytes = combinedBytes.copyOfRange(IV_LENGTH_BYTES, combinedBytes.size)
             val cipher = Cipher.getInstance(TRANSFORMATION)
             val parameterSpec = GCMParameterSpec(TAG_LENGTH_BITS, iv)
-            cipher.init(Cipher.DECRYPT_MODE, key, parameterSpec)
+            cipher.init(Cipher.DECRYPT_MODE, deriveKeyFromString(key), parameterSpec)
 
             // 认证校验在这里隐式发生！
             // 如果密文或IV被篡改，或者密钥错误，doFinal会抛出 AEADBadTagException。
@@ -113,6 +114,12 @@ object CryptoManager {
      */
     fun containsCiphertext(input: String): Boolean {
         return input.any { STEALTH_TO_HEX_MAP.containsKey(it) }
+    }
+
+    private fun deriveKeyFromString(keyString: String): SecretKey {
+        val digest= MessageDigest.getInstance("SHA-256")
+        val keyBytes = digest.digest(keyString.toByteArray(Charsets.UTF_8))
+        return SecretKeySpec(keyBytes, ALGORITHM)
     }
 
     // -----------------一些辅助方法---------------------

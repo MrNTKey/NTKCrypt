@@ -4,9 +4,29 @@
     <string name="general">通用</string>
     <string name="about">关于</string>
 
-<!--    bottomBar的label-->
+    <!--    bottomBar的label-->
     <string name="home">主页</string>
     <string name="crypto">加密</string>
     <string name="key">密钥</string>
     <string name="settings">设置</string>
+
+    <!--    CryptoScreen -->
+    <string name="crypto_input_label">输入原文或密文</string>
+    <string name="crypto_input_placeholder">在此处输入或粘贴文本...</string>
+    <string name="crypto_decrypt_fail">解密失败！密文被篡改或密钥错误. ｡ﾟ(ﾟ´Д｀ﾟ)ﾟ｡</string>
+    <string name="crypto_input_icon_desc">输入图标</string>
+    <string name="crypto_pasted_from_clipboard">已从剪贴板粘贴</string>
+    <string name="crypto_paste_icon_desc">粘贴</string>
+    <string name="crypto_clear_input_icon_desc">清空输入</string>
+    <string name="crypto_encrypt_icon_desc">加密图标</string>
+    <string name="crypto_swap_icon_desc">交换输入与输出</string>
+    <string name="crypto_decrypt_button">解密</string>
+    <string name="crypto_decrypt_icon_desc">解密图标</string>
+    <string name="crypto_result_label_encrypted">加密结果</string>
+    <string name="crypto_result_label_decrypted">解密结果</string>
+    <string name="crypto_copied_to_clipboard">已复制到剪贴板</string>
+    <string name="crypto_copy_result_icon_desc">复制结果</string>
+    <string name="crypto_key_icon_desc">密钥图标</string>
+    <string name="crypto_current_key_label">当前密钥</string>
+    <string name="crypto_select_key_icon_desc">选择密钥</string>
 </resources>
