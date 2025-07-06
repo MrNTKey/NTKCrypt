@@ -33,4 +33,5 @@
     <string name="crypto_stats_char_count">密文字符数</string>
     <string name="crypto_stats_time_elapsed">总处理耗时</string>
     <string name="crypto_stats_time_ms">%1$d ms</string>
+    <string name="accessibility_service_description">为开启全局自动解密，需要申请无障碍权限哦 (๑•̀ㅂ•́)و✧</string>
 </resources>

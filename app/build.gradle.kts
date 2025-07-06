@@ -55,6 +55,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.1")
     // 用于 AndroidViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.1")
+    implementation("com.google.code.gson:gson:2.13.1")
     implementation(libs.androidx.compiler)//安装preferences datastore 插件
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

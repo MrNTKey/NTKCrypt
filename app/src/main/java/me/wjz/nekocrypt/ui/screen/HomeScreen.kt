@@ -1,5 +1,6 @@
 package me.wjz.nekocrypt.ui.screen
 
+import android.content.Context
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
@@ -12,7 +13,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -29,7 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
@@ -43,16 +43,25 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import me.wjz.nekocrypt.service.NCAccessibilityService
+import me.wjz.nekocrypt.util.openAccessibilitySettings
+import me.wjz.nekocrypt.util.rememberAccessibilityServiceState
 
 // --- 主屏幕代码 ---
 
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier) {
-    var isEnabled by remember { mutableStateOf(false) }
+    // 1. 获取当前上下文
+    val context: Context = LocalContext.current
+
+    // 2. 使用我们新的 Composable 函数来获取并监听无障碍服务的状态
+    //    你需要将 MyAccessibilityService::class.java 替换成你自己的服务类名
+    val isEnabled by rememberAccessibilityServiceState(context, NCAccessibilityService::class.java)
 
     val buttonFillColor by animateColorAsState(
         targetValue = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
@@ -68,17 +77,18 @@ fun HomeScreen(modifier: Modifier = Modifier) {
     val shadowElevation by animateDpAsState(if (isEnabled) 16.dp else 8.dp, tween(500), label = "")
 
     val rotationSpeed by animateFloatAsState(
-        targetValue = if (isEnabled) 40f else 8f,
+        targetValue = if (isEnabled) 15f else 5f,//这里控制动画速度。
         animationSpec = tween(1500),
         label = "RotationSpeedAnimation"
     )
 
-    var rotationAngle by remember { mutableStateOf(0f) }
+    var rotationAngle by remember { mutableFloatStateOf(0f) }
     LaunchedEffect(Unit) {
         var lastFrameTimeNanos = 0L
         while (true) {
-            withFrameNanos { frameTimeNanos ->
+            withFrameNanos { frameTimeNanos ->//用于在 Compose 中调度下一帧的绘制
                 if (lastFrameTimeNanos != 0L) {
+                    //这里实现帧率无关的平滑动画，否则高帧率速度就会变快了
                     val deltaTimeMillis = (frameTimeNanos - lastFrameTimeNanos) / 1_000_000f
                     val deltaAngle = (rotationSpeed * deltaTimeMillis) / 1000f
                     rotationAngle = (rotationAngle + deltaAngle) % 360f
@@ -87,10 +97,10 @@ fun HomeScreen(modifier: Modifier = Modifier) {
             }
         }
     }
-
+    //这里控制的是外围圈的参数
     val ringSize by animateDpAsState(
-        targetValue = if (isEnabled) 280.dp else 270.dp,
-        animationSpec = tween(1000),
+        targetValue = if (isEnabled) 290.dp else 270.dp,//控制圈的半径
+        animationSpec = tween(600),
         label = "RingSizeAnimation"
     )
 
@@ -107,7 +117,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
     )
     val arcBrush = Brush.sweepGradient(colors = listOf(arcColor1, arcColor2, arcColor1))
 
-
+    //猫爪位置参数
     val palmOffsetY by animateFloatAsState(if (isEnabled) -10f else 0f, tween(400), label = "")
     val outerLeftToeX by animateFloatAsState(if (isEnabled) -18f else 0f, tween(400), label = "")
     val outerLeftToeY by animateFloatAsState(if (isEnabled) -15f else 0f, tween(400), label = "")
@@ -118,30 +128,32 @@ fun HomeScreen(modifier: Modifier = Modifier) {
     val outerRightToeX by animateFloatAsState(if (isEnabled) 18f else 0f, tween(400), label = "")
     val outerRightToeY by animateFloatAsState(if (isEnabled) -15f else 0f, tween(400), label = "")
 
+    // [NEW] 给缺口大小加上动画
+    val gapAngle by animateFloatAsState(
+        targetValue = if (isEnabled) 8f else 12f, // 启用时缺口更小
+        animationSpec = tween(700),
+        label = "GapAngleAnimation"
+    )
+
 
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-        )
 
         Canvas(modifier = Modifier.size(ringSize)) {
             val strokeWidth = 10f
             val dashCount = 12
-            val dashAngle = 20f
-            val gapAngle = 10f
-            val totalAngle = dashAngle + gapAngle
+            // [MODIFIED] 短线和总角度现在基于动画化的缺口大小来计算
+            val totalAnglePerDash = 360f / dashCount
+            val dashAngle = totalAnglePerDash - gapAngle // 使用动态计算的短线角度
 
             rotate(degrees = rotationAngle) {
                 for (i in 0 until dashCount) {
                     drawArc(
                         brush = arcBrush,
-                        startAngle = i * totalAngle,
-                        sweepAngle = dashAngle,
+                        startAngle = i * totalAnglePerDash,
+                        sweepAngle = dashAngle, // 使用动态计算的短线角度
                         useCenter = false,
                         style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                     )
@@ -160,7 +172,11 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
-                ) { isEnabled = !isEnabled },
+                ) {
+                    // 当按钮被点击时，不再是切换本地变量，
+                    // 而是调用我们的工具函数来打开系统设置页面！
+                    openAccessibilitySettings(context)
+                },
             color = buttonFillColor
         ) {
             Column(
@@ -168,7 +184,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // [FIXED] 猫爪绘制逻辑已完全恢复到正确的版本！
+                // 猫爪绘制逻辑
                 Canvas(modifier = Modifier.size(110.dp)) {
                     val strokeWidth = 11f
                     val palmSize = Size(size.width * 0.6f, size.height * 0.45f)
@@ -194,14 +210,14 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                 AnimatedContent<Boolean>(
                     targetState = isEnabled,
                     transitionSpec = {
-                        (slideInVertically { h -> h } + fadeIn(animationSpec = tween(220, 90)))
-                            .togetherWith(slideOutVertically { h -> -h } + fadeOut(animationSpec = tween(90)))
+                        (slideInVertically { h -> h } + fadeIn(animationSpec = tween(250)))
+                            .togetherWith(slideOutVertically { h -> -h } + fadeOut(animationSpec = tween(250)))
                             .using(SizeTransform(clip = false))
                     },
                     label = "Status Text Animation"
                 ) { targetState ->
                     Text(
-                        text = if (targetState) "无障碍服务运行中" else "点击开启无障碍权限",
+                        text = if (targetState) "已获取无障碍权限" else "点击开启无障碍权限",
                         color = contentColor,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
