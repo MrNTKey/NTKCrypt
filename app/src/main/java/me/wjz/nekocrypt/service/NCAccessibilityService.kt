@@ -132,7 +132,7 @@ class NCAccessibilityService : AccessibilityService() {
     }
 
     /**
-     * [已修正] 使用 ACTION_SET_TEXT 来直接设置文本，这是更安全、更专业的做法。
+     * 使用 ACTION_SET_TEXT 来直接设置文本，这是更安全、更专业的做法。
      * 它不会污染用户的剪贴板！
      * @param nodeInfo 目标节点。
      * @param text 要设置的文本。
