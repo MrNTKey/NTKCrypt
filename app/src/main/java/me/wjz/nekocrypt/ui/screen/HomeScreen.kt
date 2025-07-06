@@ -1,175 +1,211 @@
 package me.wjz.nekocrypt.ui.screen
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import android.content.Intent
-import android.provider.Settings
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.LockOpen
-import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+// --- 主屏幕代码 ---
+
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier) {
-    // --- 状态管理 ---
-    // 在真实应用中，这个状态应该从 ViewModel 获取，ViewModel 负责检查无障碍服务是否真的在运行。
-    // 这里我们用一个 mutableStateOf 来模拟这个状态，方便您在预览中查看两种效果。
-    var isAccessibilityEnabled by remember { mutableStateOf(false) }
-    // 获取当前 Android 上下文，用于启动系统设置页面。
-    val context = LocalContext.current
+    var isEnabled by remember { mutableStateOf(false) }
 
-    // --- 动画定义 ---
-    // 1. 颜色动画：当 `isAccessibilityEnabled` 状态改变时，颜色会平滑地过渡。
-    val circleColor by animateColorAsState(
-        targetValue = if (isAccessibilityEnabled) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-        animationSpec = tween(durationMillis = 1000), // 1秒的颜色过渡动画
-        label = "circle color animation"
+    val buttonFillColor by animateColorAsState(
+        targetValue = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+        animationSpec = tween(500),
+        label = "ButtonFillAnimation"
     )
-
     val contentColor by animateColorAsState(
-        targetValue = if (isAccessibilityEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-        animationSpec = tween(durationMillis = 1000),
-        label = "content color animation"
+        targetValue = if (isEnabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = tween(500),
+        label = "ContentColorAnimation"
     )
 
-    // 2. 无限循环动画：用于创建“呼吸”或“脉冲”效果。
-    val infiniteTransition = rememberInfiniteTransition(label = "infinite transition")
-    // 脉冲效果：让圆圈的缩放大小在 1f 和 1.05f 之间来回变化。
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = if (isAccessibilityEnabled) 1.02f else 1f, // 开启时才有脉冲
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse scale animation"
-    )
-    // 旋转光环效果：让一个角度值从 0 度变化到 360 度，无限循环。
-    val rotatingAngle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(5000),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "rotating angle animation"
+    val shadowElevation by animateDpAsState(if (isEnabled) 16.dp else 8.dp, tween(500), label = "")
+
+    val rotationSpeed by animateFloatAsState(
+        targetValue = if (isEnabled) 40f else 8f,
+        animationSpec = tween(1500),
+        label = "RotationSpeedAnimation"
     )
 
-    // --- UI 布局 ---
+    var rotationAngle by remember { mutableStateOf(0f) }
+    LaunchedEffect(Unit) {
+        var lastFrameTimeNanos = 0L
+        while (true) {
+            withFrameNanos { frameTimeNanos ->
+                if (lastFrameTimeNanos != 0L) {
+                    val deltaTimeMillis = (frameTimeNanos - lastFrameTimeNanos) / 1_000_000f
+                    val deltaAngle = (rotationSpeed * deltaTimeMillis) / 1000f
+                    rotationAngle = (rotationAngle + deltaAngle) % 360f
+                }
+                lastFrameTimeNanos = frameTimeNanos
+            }
+        }
+    }
+
+    val ringSize by animateDpAsState(
+        targetValue = if (isEnabled) 280.dp else 270.dp,
+        animationSpec = tween(1000),
+        label = "RingSizeAnimation"
+    )
+
+    val outlineColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+    val arcColor1 by animateColorAsState(
+        targetValue = if (isEnabled) MaterialTheme.colorScheme.primary else outlineColor,
+        animationSpec = tween(700),
+        label = "ArcColor1"
+    )
+    val arcColor2 by animateColorAsState(
+        targetValue = if (isEnabled) MaterialTheme.colorScheme.tertiary else outlineColor,
+        animationSpec = tween(700),
+        label = "ArcColor2"
+    )
+    val arcBrush = Brush.sweepGradient(colors = listOf(arcColor1, arcColor2, arcColor1))
+
+
+    val palmOffsetY by animateFloatAsState(if (isEnabled) -10f else 0f, tween(400), label = "")
+    val outerLeftToeX by animateFloatAsState(if (isEnabled) -18f else 0f, tween(400), label = "")
+    val outerLeftToeY by animateFloatAsState(if (isEnabled) -15f else 0f, tween(400), label = "")
+    val innerLeftToeX by animateFloatAsState(if (isEnabled) -10f else 0f, tween(400), label = "")
+    val innerLeftToeY by animateFloatAsState(if (isEnabled) -25f else 0f, tween(400), label = "")
+    val innerRightToeX by animateFloatAsState(if (isEnabled) 10f else 0f, tween(400), label = "")
+    val innerRightToeY by animateFloatAsState(if (isEnabled) -25f else 0f, tween(400), label = "")
+    val outerRightToeX by animateFloatAsState(if (isEnabled) 18f else 0f, tween(400), label = "")
+    val outerRightToeY by animateFloatAsState(if (isEnabled) -15f else 0f, tween(400), label = "")
+
+
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        // 富有特效的大圆圈
         Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        )
+
+        Canvas(modifier = Modifier.size(ringSize)) {
+            val strokeWidth = 10f
+            val dashCount = 12
+            val dashAngle = 20f
+            val gapAngle = 10f
+            val totalAngle = dashAngle + gapAngle
+
+            rotate(degrees = rotationAngle) {
+                for (i in 0 until dashCount) {
+                    drawArc(
+                        brush = arcBrush,
+                        startAngle = i * totalAngle,
+                        sweepAngle = dashAngle,
+                        useCenter = false,
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                    )
+                }
+            }
+        }
+
+        Surface(
             modifier = Modifier
                 .size(260.dp)
-                // graphicsLayer 用于应用缩放、旋转等变换，性能较高。
-                .graphicsLayer {
-                    scaleX = pulseScale
-                    scaleY = pulseScale
-                }
-                // drawBehind 用于在组件内容之后绘制自定义图形（比如我们的光环）。
-                .drawBehind {
-                    if (isAccessibilityEnabled) {
-                        // 如果服务开启，我们绘制一个旋转的渐变光环。
-                        drawArc(
-                            brush = Brush.sweepGradient(
-                                0f to Color.Transparent,
-                                0.5f to contentColor.copy(alpha = 0.5f),
-                                1f to Color.Transparent
-                            ),
-                            startAngle = rotatingAngle,
-                            sweepAngle = 180f,
-                            useCenter = false,
-                            style = Stroke(width = 8.dp.toPx())
-                        )
-                    }
-                }
-                .clip(CircleShape) // 将 Box 裁剪成圆形
-                .background(circleColor)
+                .shadow(
+                    elevation = shadowElevation,
+                    shape = CircleShape
+                )
+                .clip(CircleShape)
                 .clickable(
-                    // 移除点击时的涟漪效果，让视觉更纯粹
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
-                ) {
-                    // 点击事件：
-                    // 在真实应用中，您总是应该跳转到设置页面。
-                    // 这里我们为了演示，也切换一下状态。
-                    val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                    context.startActivity(intent)
-
-                    // 仅为演示用，点击后切换状态，模拟用户开启权限后返回App的场景。
-                    isAccessibilityEnabled = !isAccessibilityEnabled
-                },
-            contentAlignment = Alignment.Center
+                ) { isEnabled = !isEnabled },
+            color = buttonFillColor
         ) {
-            // 圆圈内部的内容：图标和文字
             Column(
+                modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                if (isAccessibilityEnabled) {
-                    Icon(
-                        imageVector = Icons.Rounded.Check,
-                        contentDescription = "服务已开启",
-                        modifier = Modifier.size(80.dp),
-                        tint = contentColor
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+                // [FIXED] 猫爪绘制逻辑已完全恢复到正确的版本！
+                Canvas(modifier = Modifier.size(110.dp)) {
+                    val strokeWidth = 11f
+                    val palmSize = Size(size.width * 0.6f, size.height * 0.45f)
+                    val palmBaseCenter = Offset(center.x, center.y + size.height * 0.2f)
+                    val palmAnimatedCenter = palmBaseCenter.copy(y = palmBaseCenter.y + palmOffsetY)
+                    val palmTopLeft = Offset(x = palmAnimatedCenter.x - palmSize.width / 2f, y = palmAnimatedCenter.y - palmSize.height / 2f)
+                    drawOval(color = contentColor, topLeft = palmTopLeft, size = palmSize, style = Stroke(width = strokeWidth))
+
+                    val toeRadius = size.width * 0.1f
+                    val outerLeftBaseCenter = Offset(center.x - size.width * 0.35f, center.y - size.height * 0.08f)
+                    val innerLeftBaseCenter = Offset(center.x - size.width * 0.15f, center.y - size.height * 0.25f)
+                    val innerRightBaseCenter = Offset(center.x + size.width * 0.15f, center.y - size.height * 0.25f)
+                    val outerRightBaseCenter = Offset(center.x + size.width * 0.35f, center.y - size.height * 0.08f)
+
+                    drawCircle(color = contentColor, center = outerLeftBaseCenter.copy(x = outerLeftBaseCenter.x + outerLeftToeX, y = outerLeftBaseCenter.y + outerLeftToeY), radius = toeRadius, style = Stroke(width = strokeWidth))
+                    drawCircle(color = contentColor, center = innerLeftBaseCenter.copy(x = innerLeftBaseCenter.x + innerLeftToeX, y = innerLeftBaseCenter.y + innerLeftToeY), radius = toeRadius, style = Stroke(width = strokeWidth))
+                    drawCircle(color = contentColor, center = innerRightBaseCenter.copy(x = innerRightBaseCenter.x + innerRightToeX, y = innerRightBaseCenter.y + innerRightToeY), radius = toeRadius, style = Stroke(width = strokeWidth))
+                    drawCircle(color = contentColor, center = outerRightBaseCenter.copy(x = outerRightBaseCenter.x + outerRightToeX, y = outerRightBaseCenter.y + outerRightToeY), radius = toeRadius, style = Stroke(width = strokeWidth))
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                AnimatedContent<Boolean>(
+                    targetState = isEnabled,
+                    transitionSpec = {
+                        (slideInVertically { h -> h } + fadeIn(animationSpec = tween(220, 90)))
+                            .togetherWith(slideOutVertically { h -> -h } + fadeOut(animationSpec = tween(90)))
+                            .using(SizeTransform(clip = false))
+                    },
+                    label = "Status Text Animation"
+                ) { targetState ->
                     Text(
-                        text = "服务运行中",
-                        fontSize = 22.sp,
+                        text = if (targetState) "无障碍服务运行中" else "点击开启无障碍权限",
                         color = contentColor,
-                        fontWeight = FontWeight.Bold
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Rounded.LockOpen,
-                        contentDescription = "服务未开启",
-                        modifier = Modifier.size(80.dp),
-                        tint = contentColor
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "点击开启服务",
-                        fontSize = 22.sp,
-                        color = contentColor,
-                        fontWeight = FontWeight.Medium
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
