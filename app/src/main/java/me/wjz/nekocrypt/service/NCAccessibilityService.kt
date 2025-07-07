@@ -60,7 +60,13 @@ class NCAccessibilityService : AccessibilityService() {
         if (event == null) return
 
         //加入一点debug逻辑
-        if(event.eventType== AccessibilityEvent.TYPE_VIEW_CLICKED){//点击了屏幕
+        if (event.packageName == "com.tencent.mobileqq")
+            Log.i(
+                tag,
+                "接收到QQ的事件 -> 类型: ${AccessibilityEvent.eventTypeToString(event.eventType)}, 包名: ${event.packageName}"
+            )
+
+        if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {//点击了屏幕
             Log.d(tag, "检测到点击事件，开始调试节点...")
             debugNodeTree(event.source)
         }
@@ -89,7 +95,7 @@ class NCAccessibilityService : AccessibilityService() {
      * 调试节点树的函数
      */
     private fun debugNodeTree(sourceNode: AccessibilityNodeInfo?) {
-        if(sourceNode==null) {
+        if (sourceNode == null) {
             Log.d(tag, "===== DEBUG NODE: 节点为空 =====")
             return
         }
@@ -192,7 +198,10 @@ class NCAccessibilityService : AccessibilityService() {
         if (nodeInfo.actionList.contains(AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_TEXT)) {
             // 1. 创建一个 Bundle (包裹)，用来存放我们要设置的文本。
             val arguments = Bundle()
-            arguments.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
+            arguments.putCharSequence(
+                AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,
+                text
+            )
 
             // 2. 对节点下达“执行设置文本”的命令，并把装有文本的“包裹”递给它。
             nodeInfo.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
