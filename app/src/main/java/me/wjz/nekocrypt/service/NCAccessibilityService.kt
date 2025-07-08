@@ -59,7 +59,7 @@ class NCAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
 
-        //加入一点debug逻辑
+        //加入一点debug逻辑，单点QQ聊天界面居然不会触发日志打印。。。
         if (event.packageName == "com.tencent.mobileqq")
             Log.i(
                 tag,
