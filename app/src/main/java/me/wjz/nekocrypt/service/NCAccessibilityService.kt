@@ -60,6 +60,8 @@ class NCAccessibilityService : AccessibilityService() {
         if (event == null) return
 
         //加入一点debug逻辑，单点QQ聊天界面居然不会触发日志打印。。。
+
+        //方法失效了，QQ的聊天界面单点气泡根本不会触发event，这条路是走不通的.
         if (event.packageName == "com.tencent.mobileqq")
             Log.i(
                 tag,
