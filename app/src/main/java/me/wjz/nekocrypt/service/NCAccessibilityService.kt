@@ -1,10 +1,16 @@
 package me.wjz.nekocrypt.service
 
 import android.accessibilityservice.AccessibilityService
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.graphics.Rect
 import android.os.Bundle
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +27,23 @@ import me.wjz.nekocrypt.util.CryptoManager.decrypt
 
 class NCAccessibilityService : AccessibilityService() {
     private val tag = "NekoAccessibility"
+
+    //加一个广播接收器，用来接收“坐标情报”
+    private val touchReceiver = object : BroadcastReceiver(){
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if(intent?.action == FloatingWindowService.ACTION_TOUCH){
+                val x =intent.getIntExtra(FloatingWindowService.EXTRA_X,0)
+                val y =intent.getIntExtra(FloatingWindowService.EXTRA_Y,0)
+                Log.d(tag, "接收到坐标: ($x, $y)")
+                // 收到坐标后，立刻开始“坐标反查”
+                findNodeAt(x, y)?.let { node ->
+                    Log.w(tag, "通过坐标锁定目标节点！")
+                    debugNodeTree(node) // 打印出来看看我们找对了没
+                    //processSingleNode(node) // 执行我们的解密逻辑
+                }
+            }
+        }
+    }
 
     // 1. 创建一个 Service 自己的协程作用域，它的生命周期和 Service 绑定
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -47,7 +70,15 @@ class NCAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        Log.d(tag, "服务已连接，开始监听所有设置...")
+        Log.d(tag, "无障碍服务已连接！")
+
+        // [新增] 启动我们的“保鲜膜”服务
+        startService(Intent(this, FloatingWindowService::class.java))
+
+        // [新增] 注册广播接收器，准备接收情报
+        val filter = IntentFilter(FloatingWindowService.ACTION_TOUCH)
+        LocalBroadcastManager.getInstance(this).registerReceiver(touchReceiver, filter)
+
 
         // 任务一：监听模式变化
         listenForModeChanges()
@@ -135,6 +166,30 @@ class NCAccessibilityService : AccessibilityService() {
     private fun getNodeDescription(node: AccessibilityNodeInfo): String {
         // 我们把最关键的几个属性都打印出来
         return "类名: ${node.className}, 文本: '${node.text}', 描述: '${node.contentDescription}', ID: ${node.viewIdResourceName}"
+    }
+
+    /**
+     * [新增] “坐标反查”的核心算法
+     */
+    private fun findNodeAt(x: Int, y: Int): AccessibilityNodeInfo? {
+        val root = rootInActiveWindow ?: return null
+        return findNodeAtRecursive(root, x, y)
+    }
+
+    private fun findNodeAtRecursive(node: AccessibilityNodeInfo, x: Int, y: Int): AccessibilityNodeInfo? {
+        val bounds = Rect()
+        node.getBoundsInScreen(bounds)
+        if (bounds.contains(x, y)) {
+            // 如果坐标在这个节点内部，我们还要继续往下找，找到最小的那个子节点
+            for (i in 0 until node.childCount) {
+                val child = findNodeAtRecursive(node.getChild(i), x, y)
+                if (child != null) {
+                    return child // 找到了更深的子节点，返回它
+                }
+            }
+            return node // 没有更深的子节点了，那目标就是我
+        }
+        return null
     }
 
     override fun onInterrupt() {
