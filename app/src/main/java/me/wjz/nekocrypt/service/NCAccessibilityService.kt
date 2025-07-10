@@ -1,16 +1,11 @@
 package me.wjz.nekocrypt.service
 
 import android.accessibilityservice.AccessibilityService
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.graphics.Rect
 import android.os.Bundle
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,23 +22,6 @@ import me.wjz.nekocrypt.util.CryptoManager.decrypt
 
 class NCAccessibilityService : AccessibilityService() {
     private val tag = "NekoAccessibility"
-
-    //加一个广播接收器，用来接收“坐标情报”
-    private val touchReceiver = object : BroadcastReceiver(){
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if(intent?.action == FloatingWindowService.ACTION_TOUCH){
-                val x =intent.getIntExtra(FloatingWindowService.EXTRA_X,0)
-                val y =intent.getIntExtra(FloatingWindowService.EXTRA_Y,0)
-                Log.d(tag, "接收到坐标: ($x, $y)")
-                // 收到坐标后，立刻开始“坐标反查”
-                findNodeAt(x, y)?.let { node ->
-                    Log.w(tag, "通过坐标锁定目标节点！")
-                    debugNodeTree(node) // 打印出来看看我们找对了没
-                    //processSingleNode(node) // 执行我们的解密逻辑
-                }
-            }
-        }
-    }
 
     // 1. 创建一个 Service 自己的协程作用域，它的生命周期和 Service 绑定
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -72,14 +50,6 @@ class NCAccessibilityService : AccessibilityService() {
         super.onServiceConnected()
         Log.d(tag, "无障碍服务已连接！")
 
-        // [新增] 启动我们的“保鲜膜”服务
-        startService(Intent(this, FloatingWindowService::class.java))
-
-        // [新增] 注册广播接收器，准备接收情报
-        val filter = IntentFilter(FloatingWindowService.ACTION_TOUCH)
-        LocalBroadcastManager.getInstance(this).registerReceiver(touchReceiver, filter)
-
-
         // 任务一：监听模式变化
         listenForModeChanges()
         // 任务二：监听密钥数组变化
@@ -90,7 +60,7 @@ class NCAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
 
-        //加入一点debug逻辑，单点QQ聊天界面居然不会触发日志打印。。。
+        //加入一点debug逻辑
 
         //方法失效了，QQ的聊天界面单点气泡根本不会触发event，这条路是走不通的.
         if (event.packageName == "com.tencent.mobileqq")
