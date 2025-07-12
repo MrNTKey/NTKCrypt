@@ -5,7 +5,7 @@ import me.wjz.nekocrypt.Constant
 /**
  * 针对 QQ 的具体处理器实现。
  */
-object QQHandler : ChatAppHandler {
+class QQHandler : BaseChatAppHandler() {
     override val packageName: String
         get() = Constant.PACKAGE_NAME_QQ
 
