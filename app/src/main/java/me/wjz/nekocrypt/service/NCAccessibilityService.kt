@@ -15,6 +15,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import androidx.core.graphics.toColorInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -51,6 +52,8 @@ class NCAccessibilityService : AccessibilityService() {
         dataStoreManager.getSettingFlow(SettingKeys.CURRENT_KEY, Constant.DEFAULT_SECRET_KEY)
     }, initialValue = Constant.DEFAULT_SECRET_KEY)
 
+    private var overlayManagementJob: Job? = null
+
     // 悬浮窗组件
     private lateinit var windowManager: WindowManager
     private var overlayView: View? = null
@@ -77,10 +80,10 @@ class NCAccessibilityService : AccessibilityService() {
                 tag,
                 "接收到QQ的事件 -> 类型: ${AccessibilityEvent.eventTypeToString(event.eventType)}, 包名: ${event.packageName}"
             )
-        if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {//点击了屏幕
-            Log.d(tag, "检测到点击事件，开始调试节点...")
-            debugNodeTree(event.source)
-        }
+//        if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {//点击了屏幕
+//            Log.d(tag, "检测到点击事件，开始调试节点...")
+//            debugNodeTree(event.source)
+//        }
 
         // 我们监听QQ窗口内容的变化，以此来判断目标UI是否可见
         if (event.packageName == PACKAGE_NAME_QQ && (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
@@ -88,8 +91,11 @@ class NCAccessibilityService : AccessibilityService() {
         ) {
 
             if (useAutoEncryption) {
+                Log.d(tag, "即将执行UI更新相关代码")
+                overlayManagementJob?.cancel()//总是先取消旧的任务。
                 // 在默认调度器中执行UI查找和操作，避免阻塞主线程
-                serviceScope.launch(Dispatchers.Default) {
+                overlayManagementJob = serviceScope.launch(Dispatchers.Default) {
+                    Log.d(tag,"马上准备更新UI！")
                     handleOverlayManagement()
                 }
             } else {
@@ -344,11 +350,13 @@ class NCAccessibilityService : AccessibilityService() {
     /**
      * 管理悬浮窗的生命周期：创建更新or移除
      */
-    private fun handleOverlayManagement() {
+    private suspend fun handleOverlayManagement() {
+        delay(50) // 等50ms再操作，避免抖动。
+
         val rootNode = rootInActiveWindow ?: return
         val sendBtnNode = findNodeById(rootNode, ID_QQ_SEND_BTN)
         // 如果找到了，且对用户可见，那么就加透明层。
-        if (sendBtnNode != null && sendBtnNode.isVisibleToUser) {
+        if (sendBtnNode != null) {
             val rect = Rect()
             sendBtnNode.getBoundsInScreen(rect)
             // 确保按钮在屏幕上有有效尺寸
@@ -356,6 +364,9 @@ class NCAccessibilityService : AccessibilityService() {
                 if (overlayView == null) addOverlayView(rect)
                 else updateOverlayPosition(rect)
             }
+        } else{
+            Log.d(tag, "按钮节点未找到，执行移除悬浮窗操作。")
+            removeOverlayView()
         }
     }
 
@@ -387,7 +398,7 @@ class NCAccessibilityService : AccessibilityService() {
                 rect.width(),
                 rect.height(),
                 rect.left,
-                rect.top,
+                rect.top - rect.height(),
                 layoutFlag,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE //不会获取焦点
                         or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,//点击会穿透
@@ -405,9 +416,9 @@ class NCAccessibilityService : AccessibilityService() {
      * 当透明悬浮窗被点击时的核心逻辑。
      */
     private fun performEncryptionAndClick() {
-        val root = rootInActiveWindow?: return
-        val inputNode = findNodeById(root,ID_QQ_INPUT)
-        val sendBtnNode = findNodeById(root,ID_QQ_SEND_BTN)
+        val root = rootInActiveWindow ?: return
+        val inputNode = findNodeById(root, ID_QQ_INPUT)
+        val sendBtnNode = findNodeById(root, ID_QQ_SEND_BTN)
 
         if (inputNode == null || sendBtnNode == null) {
             Log.w(tag, "未能找到输入框或发送按钮节点。")
@@ -441,12 +452,13 @@ class NCAccessibilityService : AccessibilityService() {
             overlayView?.let { view ->
                 val params = view.layoutParams as WindowManager.LayoutParams
                 params.x = rect.left
-                params.y = rect.top
+                params.y = rect.top - rect.height()
                 params.width = rect.width()
                 params.height = rect.height()
                 windowManager.updateViewLayout(view, params)
             }
         }
+        Log.d(tag, "更新悬浮窗位置：$params")
     }
 
     /**
