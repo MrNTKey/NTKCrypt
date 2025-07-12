@@ -1,18 +1,30 @@
 package me.wjz.nekocrypt.service
 
 import android.accessibilityservice.AccessibilityService
+import android.content.Context
+import android.graphics.PixelFormat
 import android.graphics.Rect
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.Gravity
+import android.view.View
+import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.core.graphics.toColorInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.Constant
+import me.wjz.nekocrypt.Constant.ID_QQ_INPUT
+import me.wjz.nekocrypt.Constant.ID_QQ_SEND_BTN
 import me.wjz.nekocrypt.NekoCryptApp
 import me.wjz.nekocrypt.SettingKeys
+import me.wjz.nekocrypt.SettingKeys.PACKAGE_NAME_QQ
 import me.wjz.nekocrypt.hook.observeAsState
 import me.wjz.nekocrypt.util.CryptoManager
 import me.wjz.nekocrypt.util.CryptoManager.decrypt
@@ -24,7 +36,7 @@ class NCAccessibilityService : AccessibilityService() {
     // 1. 创建一个 Service 自己的协程作用域，它的生命周期和 Service 绑定
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
-    // [已修正] 通过 applicationContext 来安全地获取全局唯一的实例！
+    // 获取App里注册的dataManager实例
     private val dataStoreManager by lazy {
         (application as NekoCryptApp).dataStoreManager
     }
@@ -39,6 +51,10 @@ class NCAccessibilityService : AccessibilityService() {
         dataStoreManager.getSettingFlow(SettingKeys.CURRENT_KEY, Constant.DEFAULT_SECRET_KEY)
     }, initialValue = Constant.DEFAULT_SECRET_KEY)
 
+    // 悬浮窗组件
+    private lateinit var windowManager: WindowManager
+    private var overlayView: View? = null
+
     //设置项，是否开启自动加密
     private val useAutoEncryption: Boolean by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.USE_AUTO_ENCRYPTION, false)
@@ -46,6 +62,8 @@ class NCAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        // 获取窗口管理器
+        windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         Log.d(tag, "无障碍服务已连接！")
     }
 
@@ -54,15 +72,30 @@ class NCAccessibilityService : AccessibilityService() {
         if (event == null) return
 
         //加入一点debug逻辑
-        if (event.packageName == "com.tencent.mobileqq")
+        if (event.packageName == PACKAGE_NAME_QQ)
             Log.i(
                 tag,
                 "接收到QQ的事件 -> 类型: ${AccessibilityEvent.eventTypeToString(event.eventType)}, 包名: ${event.packageName}"
             )
-
         if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {//点击了屏幕
             Log.d(tag, "检测到点击事件，开始调试节点...")
             debugNodeTree(event.source)
+        }
+
+        // 我们监听QQ窗口内容的变化，以此来判断目标UI是否可见
+        if (event.packageName == PACKAGE_NAME_QQ && (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+                    || event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED)
+        ) {
+
+            if (useAutoEncryption) {
+                // 在默认调度器中执行UI查找和操作，避免阻塞主线程
+                serviceScope.launch(Dispatchers.Default) {
+                    handleOverlayManagement()
+                }
+            } else {
+                // 如果功能被禁用，确保悬浮窗被移除
+                removeOverlayView()
+            }
         }
 
         //尝试做自动加密消息
@@ -307,5 +340,128 @@ class NCAccessibilityService : AccessibilityService() {
             null // 如果列表是空的，说明没找到。
         }
     }
+
+    /**
+     * 管理悬浮窗的生命周期：创建更新or移除
+     */
+    private fun handleOverlayManagement() {
+        val rootNode = rootInActiveWindow ?: return
+        val sendBtnNode = findNodeById(rootNode, ID_QQ_SEND_BTN)
+        // 如果找到了，且对用户可见，那么就加透明层。
+        if (sendBtnNode != null && sendBtnNode.isVisibleToUser) {
+            val rect = Rect()
+            sendBtnNode.getBoundsInScreen(rect)
+            // 确保按钮在屏幕上有有效尺寸
+            if (!rect.isEmpty) {
+                if (overlayView == null) addOverlayView(rect)
+                else updateOverlayPosition(rect)
+            }
+        }
+    }
+
+    /**
+     * 在屏幕上的指定位置添加悬浮窗视图
+     * @param rect 目标按钮位置和大小
+     */
+    private fun addOverlayView(rect: Rect) {
+        //UI操作必须在主线程
+        serviceScope.launch(Dispatchers.Main) {
+            if (overlayView != null) return@launch
+            //创建视图
+            overlayView = View(this@NCAccessibilityService)
+            // 用于调试：设置一个半透明的背景色来观察悬浮窗的位置
+            overlayView?.setBackgroundColor("#80ff0000".toColorInt())
+
+            overlayView?.setOnClickListener {
+                Log.d(tag, "悬浮窗被点击。开始执行加密操作。")
+                performEncryptionAndClick()
+            }
+
+            val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            } else {
+                WindowManager.LayoutParams.TYPE_PHONE
+            }
+
+            val params = WindowManager.LayoutParams(
+                rect.width(),
+                rect.height(),
+                rect.left,
+                rect.top,
+                layoutFlag,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE //不会获取焦点
+                        or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,//点击会穿透
+                PixelFormat.TRANSLUCENT//窗口的像素格式，支持透明效果
+            )
+            // 当悬浮窗的尺寸小于其容器时，悬浮窗在其容器内的对齐方式
+            params.gravity = Gravity.TOP or Gravity.START
+
+            windowManager.addView(overlayView, params)
+            Log.d(tag, "悬浮窗已添加，坐标: $rect")
+        }
+    }
+
+    /**
+     * 当透明悬浮窗被点击时的核心逻辑。
+     */
+    private fun performEncryptionAndClick() {
+        val root = rootInActiveWindow?: return
+        val inputNode = findNodeById(root,ID_QQ_INPUT)
+        val sendBtnNode = findNodeById(root,ID_QQ_SEND_BTN)
+
+        if (inputNode == null || sendBtnNode == null) {
+            Log.w(tag, "未能找到输入框或发送按钮节点。")
+            return
+        }
+        val originalText = inputNode.text?.toString()
+        // 如果文本为空或已经是密文，则执行普通的点击操作
+        if (originalText.isNullOrEmpty() || CryptoManager.containsCiphertext(originalText)) {
+            Log.d(tag, "无需加密。直接执行点击操作。")
+            sendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        } else {
+            // 加密文本并将其设置回输入框
+            val encryptedText = encrypt(originalText, currentKey)
+            performSetText(inputNode, encryptedText)
+
+            // 延迟一小段时间，以确保UI在点击前有时间更新为新文本
+            serviceScope.launch {
+                delay(50) // 一个短暂的延迟有助于确保操作能够可靠地执行
+                sendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                Log.d(tag, "加密并发送成功。")
+            }
+        }
+    }
+
+    /**
+     * 更新一个已存在的悬浮窗的位置。
+     * @param rect 新的位置和大小。
+     */
+    private fun updateOverlayPosition(rect: Rect) {
+        serviceScope.launch(Dispatchers.Main) {
+            overlayView?.let { view ->
+                val params = view.layoutParams as WindowManager.LayoutParams
+                params.x = rect.left
+                params.y = rect.top
+                params.width = rect.width()
+                params.height = rect.height()
+                windowManager.updateViewLayout(view, params)
+            }
+        }
+    }
+
+    /**
+     * 从屏幕上移除悬浮窗视图。
+     */
+    private fun removeOverlayView() {
+        serviceScope.launch(Dispatchers.Main) {
+            if (overlayView != null) {
+                windowManager.removeView(overlayView)
+                overlayView = null
+                Log.d(tag, "悬浮窗已移除。")
+            }
+        }
+    }
+
+
 }
 
