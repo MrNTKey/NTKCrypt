@@ -56,19 +56,33 @@ class NCAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null || event.packageName == null) return
 
-        val eventPackage = event.packageName.toString()
+        val eventPackage = event.packageName.toString() // 事件来自的包名
 
-        // 检查是否需要切换处理器
-        if (currentHandler?.packageName != eventPackage) {
-            // 如果旧的处理器存在，则停用它
-            currentHandler?.onHandlerDeactivated()
-
-            // 查找并激活新的处理器
-            currentHandler = handlerFactory[event.packageName.toString()]?.invoke()
-            currentHandler?.onHandlerActivated(this)
+        // 情况一：事件来自我们支持的应用
+        if (handlerFactory.containsKey(eventPackage)) {
+            // 如果当前没有处理器，或者处理器不是对应这个App的，就进行切换
+            if (currentHandler?.packageName != eventPackage) {
+                currentHandler?.onHandlerDeactivated()
+                currentHandler = handlerFactory[eventPackage]?.invoke()
+                currentHandler?.onHandlerActivated(this)
+            }
+            // 将事件分发给当前处理器
+            currentHandler?.onAccessibilityEvent(event, this)
         }
-        // 将事件分发给当前激活的处理器
-        currentHandler?.onAccessibilityEvent(event, this)
+        // 情况二：事件来自我们不支持的应用
+        else {
+            // 关键逻辑：只有当我们的处理器正在运行，并且当前活跃窗口已经不是它负责的应用时，才停用它
+            val activeWindowPackage = rootInActiveWindow?.packageName?.toString()
+            if (currentHandler != null && currentHandler?.packageName != activeWindowPackage) {
+                Log.d(
+                    tag,
+                    "检测到用户已离开 [${currentHandler?.packageName}]，当前窗口为 [${activeWindowPackage}]。停用处理器。"
+                )
+                currentHandler?.onHandlerDeactivated()
+                currentHandler = null
+            }
+            // 否则，即使收到了其他包的事件，但只要活跃窗口没变，就保持处理器不变，忽略这些“噪音”事件。
+        }
 
         // debug逻辑
         if (event.packageName == PACKAGE_NAME_QQ)
