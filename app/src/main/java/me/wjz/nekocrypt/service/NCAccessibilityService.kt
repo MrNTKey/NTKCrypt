@@ -6,17 +6,14 @@ import android.os.Bundle
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.Constant
+import me.wjz.nekocrypt.NekoCryptApp
 import me.wjz.nekocrypt.SettingKeys
-import me.wjz.nekocrypt.data.DataStoreManager
+import me.wjz.nekocrypt.hook.observeAsState
 import me.wjz.nekocrypt.util.CryptoManager
 import me.wjz.nekocrypt.util.CryptoManager.decrypt
 
@@ -26,34 +23,21 @@ class NCAccessibilityService : AccessibilityService() {
     // 1. 创建一个 Service 自己的协程作用域，它的生命周期和 Service 绑定
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
-    // 2. 声明一个 DataStoreManager 变量，我们稍后会初始化它
-    private lateinit var dataStoreManager: DataStoreManager
-
-    // [新增] 创建一个 Gson 实例，作为我们的序列化工具
-    private val gson = Gson()
-
-    // 3. 这是一个普通的类成员变量，不再是 Composable State，用来存储最新的设置值
-    private var isImmersiveMode: Boolean = false
-
-    // 所有密钥
-    private var currentKeys: Array<String> = arrayOf(Constant.DEFAULT_SECRET_KEY)//给个默认值。
-
-    override fun onCreate() {
-        super.onCreate()
-        // 4. 在 Service 创建时，手动创建 DataStoreManager 的实例
-        //    我们把 Service 自己的 context (上下文) 传给它
-        dataStoreManager = DataStoreManager(this)
-        Log.d(tag, "DataStoreManager in Service has been initialized.")
+    // [已修正] 通过 applicationContext 来安全地获取全局唯一的实例！
+    private val dataStoreManager by lazy {
+        (application as NekoCryptApp).dataStoreManager
     }
+
+    private val isImmersiveMode: Boolean by serviceScope.observeAsState(flowProvider = {
+        dataStoreManager.getSettingFlow(SettingKeys.IS_IMMERSIVE_MODE, false)
+    }, initialValue = false)
+    private val currentKeys: Array<String> by serviceScope.observeAsState(flowProvider = {
+        dataStoreManager.getKeyArrayFlow()
+    }, initialValue = arrayOf(Constant.DEFAULT_SECRET_KEY))
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         Log.d(tag, "无障碍服务已连接！")
-
-        // 任务一：监听模式变化
-        listenForModeChanges()
-        // 任务二：监听密钥数组变化
-        listenForKeyArrayChanges()
     }
 
 
@@ -61,8 +45,6 @@ class NCAccessibilityService : AccessibilityService() {
         if (event == null) return
 
         //加入一点debug逻辑
-
-        //方法失效了，QQ的聊天界面单点气泡根本不会触发event，这条路是走不通的.
         if (event.packageName == "com.tencent.mobileqq")
             Log.i(
                 tag,
@@ -138,15 +120,11 @@ class NCAccessibilityService : AccessibilityService() {
         return "类名: ${node.className}, 文本: '${node.text}', 描述: '${node.contentDescription}', ID: ${node.viewIdResourceName}"
     }
 
-    /**
-     * [新增] “坐标反查”的核心算法
-     */
-    private fun findNodeAt(x: Int, y: Int): AccessibilityNodeInfo? {
-        val root = rootInActiveWindow ?: return null
-        return findNodeAtRecursive(root, x, y)
-    }
-
-    private fun findNodeAtRecursive(node: AccessibilityNodeInfo, x: Int, y: Int): AccessibilityNodeInfo? {
+    private fun findNodeAtRecursive(
+        node: AccessibilityNodeInfo,
+        x: Int,
+        y: Int,
+    ): AccessibilityNodeInfo? {
         val bounds = Rect()
         node.getBoundsInScreen(bounds)
         if (bounds.contains(x, y)) {
@@ -240,54 +218,5 @@ class NCAccessibilityService : AccessibilityService() {
         }
     }
 
-    /**
-     * 启动一个协程，专门监听“模式”设置的变化。
-     */
-    private fun listenForModeChanges() {
-        serviceScope.launch {
-            dataStoreManager.getSettingFlow(SettingKeys.IS_IMMERSIVE_MODE_KEY, false)
-                .collectLatest { mode ->
-                    isImmersiveMode = mode
-                    Log.d(tag, "模式已更新为: ${if (isImmersiveMode) "沉浸模式" else "简约模式"}")
-                }
-        }
-    }
-
-    /**
-     * 启动一个协程，专门监听“密钥数组”设置的变化。
-     * 序列化/反序列化的逻辑现在被封装在这里。
-     */
-    private fun listenForKeyArrayChanges() {
-        serviceScope.launch {
-            dataStoreManager.getSettingFlow(
-                SettingKeys.ALL_THE_KEYS,
-                gson.toJson(arrayOf(Constant.DEFAULT_SECRET_KEY))
-            )
-                .map { jsonString ->
-                    if (jsonString.isEmpty()) {
-                        // 返回包含默认字符串密钥的数组
-                        arrayOf(Constant.DEFAULT_SECRET_KEY)
-                    } else {
-                        try {
-                            // [修正] 把 JSON 字符串变回 Array<String>
-                            gson.fromJson(jsonString, Array<String>::class.java)
-                        } catch (e: Exception) {
-                            Log.e(tag, "解析密钥数组失败!", e)
-                            arrayOf(Constant.DEFAULT_SECRET_KEY)
-                        }
-                    }
-                }
-                .collectLatest { keyArray ->
-                    currentKeys = keyArray
-                    Log.d(tag, "密钥数组已更新: ${currentKeys.joinToString()}")
-                }
-        }
-    }
-
-    private suspend fun saveKeysToDataStore(keys: Array<String>) {
-        // 使用 Gson 将 Array<String> 序列化成 JSON 字符串
-        val jsonString = gson.toJson(keys)
-        dataStoreManager.saveSetting(SettingKeys.ALL_THE_KEYS, jsonString)
-    }
 }
 
