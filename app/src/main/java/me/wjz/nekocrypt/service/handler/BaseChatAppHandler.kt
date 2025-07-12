@@ -18,6 +18,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.service.NCAccessibilityService
 import me.wjz.nekocrypt.util.CryptoManager
+import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
 
 abstract class BaseChatAppHandler: ChatAppHandler {
     protected val tag ="NCBaseHandler"
@@ -52,9 +53,10 @@ abstract class BaseChatAppHandler: ChatAppHandler {
         // 悬浮窗管理逻辑
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED || event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             if (service.useAutoEncryption) {
+                //只有开启自动加密，才会加上悬浮窗，每次事件改变，都要更新悬浮窗位置
                 overlayManagementJob?.cancel()
                 overlayManagementJob = service.serviceScope.launch(Dispatchers.Default) {
-                    handleOverlayManagement()
+                    handleOverlayManagement()   // 可能是添加、更新、删除悬浮窗
                 }
             } else {
                 removeOverlayView()
@@ -94,17 +96,19 @@ abstract class BaseChatAppHandler: ChatAppHandler {
 
     protected fun performEncryptionAndClick(isAutoEncryption: Boolean) {
         val currentService = service ?: return
-        val root = currentService.rootInActiveWindow ?: return
-        val inputNode = findNodeById(root, inputId)
-        val sendBtnNode = findNodeById(root, sendBtnId)
+        val root = currentService.rootInActiveWindow ?: return  //拿到根视图
+        val inputNode = findNodeById(root, inputId) //输入框节点
+        val sendBtnNode = findNodeById(root, sendBtnId) //发送按钮节点
 
         if (inputNode == null || sendBtnNode == null) return
 
         val originalText = inputNode.text?.toString()
+        // 如果本来输入栏是空的，或者已经有密文了，就不加密，直接发送。
         if (originalText.isNullOrEmpty() || CryptoManager.containsCiphertext(originalText)) {
             sendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
         } else {
-            val encryptedText = CryptoManager.encrypt(originalText, currentService.currentKey)
+            // 做加密处理，并添加咪咪talk。
+            val encryptedText = CryptoManager.encrypt(originalText, currentService.currentKey).appendNekoTalk()
             performSetText(inputNode, encryptedText)
             currentService.serviceScope.launch {
                 delay(50)
