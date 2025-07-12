@@ -32,9 +32,12 @@ class NCAccessibilityService : AccessibilityService() {
     private val isImmersiveMode: Boolean by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.IS_IMMERSIVE_MODE, false)
     }, initialValue = false)
-    private val currentKeys: Array<String> by serviceScope.observeAsState(flowProvider = {
+    private val cryptoKeys: Array<String> by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getKeyArrayFlow()
     }, initialValue = arrayOf(Constant.DEFAULT_SECRET_KEY))
+    private val currentKey: String by serviceScope.observeAsState(flowProvider = {
+        dataStoreManager.getSettingFlow(SettingKeys.CURRENT_KEY, Constant.DEFAULT_SECRET_KEY)
+    }, initialValue = Constant.DEFAULT_SECRET_KEY)
 
     //设置项，是否开启自动加密
     private val useAutoEncryption: Boolean by serviceScope.observeAsState(flowProvider = {
@@ -194,8 +197,8 @@ class NCAccessibilityService : AccessibilityService() {
             Log.d(tag, "发现密文: $text")
             // 如果是密文，就调用我们自己的解密函数。
             var decryptedText: String? = null
-            for (i in 0 until currentKeys.size) {//尝试用所有的密钥解密
-                decryptedText = decrypt(text, currentKeys[i])
+            for (i in 0 until cryptoKeys.size) {//尝试用所有的密钥解密
+                decryptedText = decrypt(text, cryptoKeys[i])
                 if (decryptedText != null) break
             }
             // 尝试将解密后的明文“粘贴”到这个节点上。
@@ -235,23 +238,24 @@ class NCAccessibilityService : AccessibilityService() {
      * @param event 接收到的无障碍事件。
      */
     private fun handleAutoEncryption(event: AccessibilityEvent) {
-        // 步骤 1: 我们只关心 QQ 中发生的“点击”事件
-        if (event.eventType != AccessibilityEvent.TYPE_VIEW_CLICKED || event.packageName != "com.tencent.mobileqq") {
+        // 步骤 1: 我们只关心 QQ 中发生的“长按点击”事件
+        // 为什么不直接修改点击？因为实际上收到消息的时候，就已经处理完了，捕获到输入栏的内容是空的。
+        // 硬要做也不是不行不过我感觉有点麻烦，长按挺好的，这样方便区分密文发送和正常发送。
+        if (event.eventType != AccessibilityEvent.TYPE_VIEW_LONG_CLICKED || event.packageName != "com.tencent.mobileqq") {
             return
         }
 
         val sourceNode = event.source ?: return
 
         // 步骤 2: 判断被点击的节点是不是我们关心的“发送”按钮
-        if (sourceNode.viewIdResourceName == Constants.) {
+        if (sourceNode.viewIdResourceName == Constant.ID_QQ_SEND_BTN) {
             Log.d(tag, "检测到QQ发送按钮被点击，启动自动加密流程...")
 
             // 步骤 3: 找到聊天界面的输入框。
             // 输入框和发送按钮不是直接的父子关系，所以需要从整个窗口的“根节点”开始查找。
             val rootNode = rootInActiveWindow ?: return
-            // 我们假设QQ输入框的ID是 "com.tencent.mobileqq:id/input"，这在大部分情况下是准确的
             // 使用我们新增的辅助函数来查找
-            val inputNode = findNodeById(rootNode, "com.tencent.mobileqq:id/input")
+            val inputNode = findNodeById(rootNode, Constant.ID_QQ_INPUT)
 
             if (inputNode == null) {
                 Log.w(tag, "自动加密失败：未能在当前窗口找到QQ输入框节点。")
@@ -261,14 +265,14 @@ class NCAccessibilityService : AccessibilityService() {
             // 步骤 4: 获取输入框里的原始文本
             val originalText = inputNode.text?.toString()
 
+            Log.d(tag, "原文: '$originalText'，准备加密...")
+
             // 步骤 5: 进行关键判断，防止死循环或无效操作
             // - 文本不能为空
             // - 文本不能已经是加密过的（防止将密文再次加密）
             if (!originalText.isNullOrEmpty() && !CryptoManager.containsCiphertext(originalText)) {
-                Log.d(tag, "原文: '$originalText'，准备加密...")
-
                 // 步骤 6: 使用你的加密管理器和当前的第一把密钥进行加密
-                val encryptedText = encrypt(originalText, currentKeys[0])
+                val encryptedText = encrypt(originalText, currentKey)
 
                 // 步骤 7: 将加密后的密文，填写回输入框
                 performSetText(inputNode, encryptedText)
