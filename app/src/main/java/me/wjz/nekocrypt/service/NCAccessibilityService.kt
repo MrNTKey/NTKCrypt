@@ -3,6 +3,7 @@ package me.wjz.nekocrypt.service
 import android.accessibilityservice.AccessibilityService
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -55,13 +56,6 @@ class NCAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null || event.packageName == null) return
 
-        //加入一点debug逻辑
-        if (event.packageName == PACKAGE_NAME_QQ)
-            Log.i(
-                tag,
-                "接收到QQ的事件 -> 类型: ${AccessibilityEvent.eventTypeToString(event.eventType)}, 包名: ${event.packageName}"
-            )
-
         val eventPackage = event.packageName.toString()
 
         // 检查是否需要切换处理器
@@ -75,11 +69,65 @@ class NCAccessibilityService : AccessibilityService() {
         }
         // 将事件分发给当前激活的处理器
         currentHandler?.onAccessibilityEvent(event, this)
+
+        // debug逻辑
+        if (event.packageName == PACKAGE_NAME_QQ)
+            Log.i(
+                tag,
+                "接收到QQ的事件 -> 类型: ${AccessibilityEvent.eventTypeToString(event.eventType)}, 包名: ${event.packageName}"
+            )
+        if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {//点击了屏幕
+            Log.d(tag, "检测到点击事件，开始调试节点...")
+            debugNodeTree(event.source)
+        }
     }
 
     override fun onInterrupt() {
         Log.w(tag, "无障碍服务被打断！")
     }
 
+    /**
+     * 调试节点树的函数
+     */
+    private fun debugNodeTree(sourceNode: AccessibilityNodeInfo?) {
+        if (sourceNode == null) {
+            Log.d(tag, "===== DEBUG NODE: 节点为空 =====")
+            return
+        }
+        // 使用一个醒目的分隔符，方便在 Logcat 中查找
+        Log.d(tag, "===== Neko 节点调试器 =====")
+
+        // 1. 打印被点击的节点本身的信息
+        Log.d(tag, "[点击的节点] -> ${getNodeDescription(sourceNode)}")
+        // 2. 打印它的父节点信息
+        val parentNode = sourceNode.parent
+        if (parentNode != null) {
+            Log.d(tag, "[父节点]   -> ${getNodeDescription(parentNode)}")
+        } else {
+            Log.d(tag, "[父节点]   -> (无父节点)")
+        }
+        // 3. 遍历并打印它的所有直接子节点信息
+        if (sourceNode.childCount > 0) {
+            Log.d(tag, "--- 子节点列表 (共 ${sourceNode.childCount} 个) ---")
+            for (i in 0 until sourceNode.childCount) {
+                val childNode = sourceNode.getChild(i)
+                if (childNode != null) {
+                    Log.d(tag, "[子节点 $i] -> ${getNodeDescription(childNode)}")
+                }
+            }
+        } else {
+            Log.d(tag, "--- (无子节点) ---")
+        }
+
+        Log.d(tag, "==========================")
+    }
+
+    /**
+     * 辅助函数，用来格式化节点的描述信息，方便阅读。
+     */
+    private fun getNodeDescription(node: AccessibilityNodeInfo): String {
+        // 我们把最关键的几个属性都打印出来
+        return "类名: ${node.className}, 文本: '${node.text}', 描述: '${node.contentDescription}', ID: ${node.viewIdResourceName}"
+    }
 }
 

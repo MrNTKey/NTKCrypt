@@ -78,7 +78,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 if (overlayView == null) addOverlayView(rect) else updateOverlayPosition(rect)
             }
         } else {
-            removeOverlayView()
+            removeOverlayView() //已经找不到按钮了，就取消。
         }
     }
 
