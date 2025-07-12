@@ -33,7 +33,12 @@
     <string name="crypto_stats_char_count">密文字符数</string>
     <string name="crypto_stats_time_elapsed">总处理耗时</string>
     <string name="crypto_stats_time_ms">%1$d ms</string>
-<!--    无障碍页面信息-->
+    <!--    无障碍页面信息-->
     <string name="accessibility_service_about">喵密服务，用于智能加解密消息</string>
     <string name="accessibility_service_description">为保证功能正常使用，需要申请无障碍权限哦 (๑•̀ㅂ•́)و✧</string>
+    <!--    Home界面的一些文本-->
+    <string name="accessibility_service_enabled">已获取无障碍权限</string>
+    <string name="accessibility_service_disabled">点击开启无障碍权限</string>
+    <string name="setting_encrypt_on_send_title">开启加密发言</string>
+    <string name="setting_encrypt_on_send_subtitle">开启后，发送消息时将会自动进行加密。</string>
 </resources>

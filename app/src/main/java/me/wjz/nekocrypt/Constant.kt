@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 object Constant {
     const val APP_NAME = "NekoCrypt"
     const val DEFAULT_SECRET_KEY = "20040821"//You know what it means.
+    const val ID_QQ_BTN="com.tencent.mobileqq:id/send_btn"
 }
 
 object SettingKeys {
@@ -14,6 +15,7 @@ object SettingKeys {
     val IS_IMMERSIVE_MODE= booleanPreferencesKey("is_immersive_mode")
     // 用 String 类型的 Key 来存储序列化后的密钥数组
     val ALL_THE_KEYS = stringPreferencesKey("all_the_keys")
+    val USE_AUTO_ENCRYPTION = booleanPreferencesKey("use_auto_encryption")
 }
 
 object CommonKeys {

@@ -1,29 +1,28 @@
 package me.wjz.nekocrypt.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.Preferences
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.launch
-import me.wjz.nekocrypt.data.DataStoreManager
-import me.wjz.nekocrypt.data.LocalDataStoreManager
 import me.wjz.nekocrypt.hook.rememberDataStoreState
 
 /**
@@ -41,6 +40,8 @@ fun SettingsHeader(title: String) {
 }
 
 
+
+
 /**
  * 这是一个自定义的、带开关的设置项组件。
  * 它内部管理着开关自己的状态。
@@ -55,7 +56,7 @@ fun SwitchSettingItem(
     icon: @Composable () -> Unit,
     title: String,
     subtitle: String,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
 ) {
     var isChecked by rememberDataStoreState(key, defaultValue)
 
@@ -86,12 +87,11 @@ fun SwitchSettingItem(
     }
 }
 
-
 @Composable
 fun ClickableSettingItem(
     icon: @Composable () -> Unit,
     title: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -103,5 +103,60 @@ fun ClickableSettingItem(
         icon()
         Spacer(modifier = Modifier.width(16.dp))
         Text(text = title, style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+
+
+@Composable
+fun SwitchSettingCard(
+    key: Preferences.Key<Boolean>,
+    defaultValue: Boolean,
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+    onCheckedChanged: (Boolean) -> Unit = {},
+) {
+    var isChecked by rememberDataStoreState(key, defaultValue)
+    // 将形状定义为一个变量，方便复用
+    val cardShape = RoundedCornerShape(16.dp)
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(cardShape)
+            .clickable {
+                isChecked = !isChecked
+                onCheckedChanged(isChecked)
+            },
+        shape = cardShape,
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            // 开关的状态直接绑定到我们内部的 isChecked 变量
+            Switch(
+                checked = isChecked,
+                onCheckedChange = {
+                    isChecked = it
+                    onCheckedChanged(it)
+                }
+            )
+        }
     }
 }

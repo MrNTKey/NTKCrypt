@@ -89,6 +89,7 @@ fun isAccessibilityServiceEnabled(context: Context, serviceClass: Class<*>): Boo
     return false
 }
 
+
 /**
  * 创建一个意图(Intent)并跳转到系统的无障碍功能设置页面。
  *
