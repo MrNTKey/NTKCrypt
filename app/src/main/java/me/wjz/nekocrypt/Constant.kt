@@ -8,6 +8,7 @@ object Constant {
     const val DEFAULT_SECRET_KEY = "20040821"//You know what it means.
     const val ID_QQ_SEND_BTN="com.tencent.mobileqq:id/send_btn"
     const val ID_QQ_INPUT="com.tencent.mobileqq:id/input"
+    const val PACKAGE_NAME_QQ ="com.tencent.mobileqq"
 }
 
 object SettingKeys {
@@ -17,7 +18,6 @@ object SettingKeys {
     // 用 String 类型的 Key 来存储序列化后的密钥数组
     val ALL_THE_KEYS = stringPreferencesKey("all_the_keys")
     val USE_AUTO_ENCRYPTION = booleanPreferencesKey("use_auto_encryption")
-    val PACKAGE_NAME_QQ ="com.tencent.mobileqq"
 }
 
 object CommonKeys {
