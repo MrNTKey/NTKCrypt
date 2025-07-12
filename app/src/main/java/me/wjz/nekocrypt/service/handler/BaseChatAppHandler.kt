@@ -20,8 +20,8 @@ import me.wjz.nekocrypt.service.NCAccessibilityService
 import me.wjz.nekocrypt.util.CryptoManager
 import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
 
-abstract class BaseChatAppHandler: ChatAppHandler {
-    protected val tag ="NCBaseHandler"
+abstract class BaseChatAppHandler : ChatAppHandler {
+    protected val tag = "NCBaseHandler"
 
     // 由子类提供具体应用的ID
     abstract override val inputId: String
@@ -33,7 +33,7 @@ abstract class BaseChatAppHandler: ChatAppHandler {
     private var overlayView: View? = null
     private var overlayManagementJob: Job? = null
 
-    private val colorInt="#80ff0000".toColorInt() //debug的时候调成可见色，正式环境应该是纯透明
+    private val colorInt = "#80ff0000".toColorInt() //debug的时候调成可见色，正式环境应该是纯透明
 
     override fun onHandlerActivated(service: NCAccessibilityService) {
         this.service = service
@@ -63,10 +63,6 @@ abstract class BaseChatAppHandler: ChatAppHandler {
             }
         }
 
-        // 自动加密逻辑
-        if (service.useAutoEncryption) {
-            handleAutoEncryption(event)
-        }
     }
 
     // --- 所有悬浮窗和加密逻辑都内聚在这里 ---
@@ -86,37 +82,6 @@ abstract class BaseChatAppHandler: ChatAppHandler {
         }
     }
 
-    protected fun handleAutoEncryption(event: AccessibilityEvent) {
-        if (event.eventType != AccessibilityEvent.TYPE_VIEW_LONG_CLICKED) return
-        val sourceNode = event.source ?: return
-        if (sourceNode.viewIdResourceName == sendBtnId) {
-            performEncryptionAndClick(isAutoEncryption = true)
-        }
-    }
-
-    protected fun performEncryptionAndClick(isAutoEncryption: Boolean) {
-        val currentService = service ?: return
-        val root = currentService.rootInActiveWindow ?: return  //拿到根视图
-        val inputNode = findNodeById(root, inputId) //输入框节点
-        val sendBtnNode = findNodeById(root, sendBtnId) //发送按钮节点
-
-        if (inputNode == null || sendBtnNode == null) return
-
-        val originalText = inputNode.text?.toString()
-        // 如果本来输入栏是空的，或者已经有密文了，就不加密，直接发送。
-        if (originalText.isNullOrEmpty() || CryptoManager.containsCiphertext(originalText)) {
-            sendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-        } else {
-            // 做加密处理，并添加咪咪talk。
-            val encryptedText = CryptoManager.encrypt(originalText, currentService.currentKey).appendNekoTalk()
-            performSetText(inputNode, encryptedText)
-            currentService.serviceScope.launch {
-                delay(50)
-                sendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-            }
-        }
-    }
-
     protected fun addOverlayView(rect: Rect) {
         val currentService = service ?: return
         currentService.serviceScope.launch(Dispatchers.Main) {
@@ -124,7 +89,7 @@ abstract class BaseChatAppHandler: ChatAppHandler {
 
             overlayView = View(currentService).apply {
                 setBackgroundColor(colorInt)
-                setOnClickListener { performEncryptionAndClick(isAutoEncryption = false) }
+                setOnClickListener { performClick(currentService.useAutoEncryption) }
             }
 
             val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -137,6 +102,8 @@ abstract class BaseChatAppHandler: ChatAppHandler {
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
                 PixelFormat.TRANSLUCENT
             ).apply { gravity = Gravity.TOP or Gravity.START }
+
+            // 准备好悬浮窗后就添加到视图中
             windowManager?.addView(overlayView, params)
         }
     }
@@ -149,11 +116,13 @@ abstract class BaseChatAppHandler: ChatAppHandler {
                 params.y = rect.top - rect.height()
                 params.width = rect.width()
                 params.height = rect.height()
+                // 更新视图约束
                 windowManager?.updateViewLayout(view, params)
             }
         }
     }
 
+    // 移除悬浮窗
     protected fun removeOverlayView() {
         service?.serviceScope?.launch(Dispatchers.Main) {
             if (overlayView != null && windowManager != null) {
@@ -163,7 +132,45 @@ abstract class BaseChatAppHandler: ChatAppHandler {
         }
     }
 
-    protected fun findNodeById(rootNode: AccessibilityNodeInfo, viewId: String): AccessibilityNodeInfo? {
+    // 发送消息，自动判断是否加密
+    protected fun performClick(isAutoEncryption: Boolean) {
+        val currentService = service ?: return
+        val root = currentService.rootInActiveWindow ?: return  //拿到根视图
+        val sendBtnNode = findNodeById(root, sendBtnId) //发送按钮节点
+        if (sendBtnNode == null) return
+
+        //  根据是否开启自动加密修改发送内容。
+        if (!isAutoEncryption) {
+            sendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            return
+        }
+
+        //  下面走加密消息逻辑
+        val inputNode = findNodeById(root, inputId) //输入框节点
+        if (inputNode == null) return
+
+
+        val originalText = inputNode.text?.toString()
+        // 如果本来输入栏是空的，或者已经有密文了，就不加密，直接发送。
+        if (originalText.isNullOrEmpty() || CryptoManager.containsCiphertext(originalText)) {
+            sendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        } else {
+            // 做加密处理，并添加咪咪talk。
+            val encryptedText =
+                CryptoManager.encrypt(originalText, currentService.currentKey).appendNekoTalk()
+            //
+            performSetText(inputNode, encryptedText)
+            currentService.serviceScope.launch {
+                delay(50)
+                sendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            }
+        }
+    }
+
+    protected fun findNodeById(
+        rootNode: AccessibilityNodeInfo,
+        viewId: String,
+    ): AccessibilityNodeInfo? {
         return rootNode.findAccessibilityNodeInfosByViewId(viewId).firstOrNull()
     }
 
