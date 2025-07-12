@@ -41,4 +41,6 @@
     <string name="accessibility_service_disabled">点击开启无障碍权限</string>
     <string name="setting_encrypt_on_send_title">开启加密发言</string>
     <string name="setting_encrypt_on_send_subtitle">开启后，发送消息时将会自动进行加密。</string>
+    <!--    通知栏显示文本-->
+    <string name="notification_title">NekoCrypt 喵密服务运行中</string>
 </resources>
