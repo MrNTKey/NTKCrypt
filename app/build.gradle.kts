@@ -52,13 +52,17 @@ dependencies {
     implementation("com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
     // 用于 viewModel() 委托
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.1")
-    // 用于 AndroidViewModel
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.1")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
+
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1") // 包含 ViewTreeLifecycleOwner
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1") // 包含 ViewTreeViewModelStoreOwner
+    implementation("androidx.savedstate:savedstate-ktx:1.2.0") // 包含 ViewTreeSavedStateRegistryOwner
+
     implementation("com.alibaba.fastjson2:fastjson2:2.0.57") //json解析
     implementation(libs.androidx.compiler)//安装preferences datastore 插件
-    // ✨ 关键步骤2: 确保你添加的是这个官方的、正确的安卓版 Navigation Compose 依赖！
-    implementation("androidx.navigation:navigation-compose:2.9.1")
+
+    implementation("androidx.navigation:navigation-compose:2.9.1") // 导航
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

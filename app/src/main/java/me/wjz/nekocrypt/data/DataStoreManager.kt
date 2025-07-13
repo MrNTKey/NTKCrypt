@@ -21,7 +21,7 @@ val LocalDataStoreManager = staticCompositionLocalOf<DataStoreManager> {
     error("No DataStoreManager provided")
 }
 
-class DataStoreManager (private val context: Context) {
+class DataStoreManager(private val context: Context) {
 
     //通用的读取方法 (使用泛型)
     fun <T> getSettingFlow(key: Preferences.Key<T>, defaultValue: T): Flow<T> {
@@ -66,13 +66,13 @@ class DataStoreManager (private val context: Context) {
             if (jsonString.isEmpty()) arrayOf(Constant.DEFAULT_SECRET_KEY)
             else {
                 try {
-                    JSON.parseObject(jsonString, Array<String>::class.java)
+                    val keys = JSON.parseArray(jsonString, String()::class.java).toTypedArray()
+                    if (keys.isEmpty()) arrayOf(Constant.DEFAULT_SECRET_KEY) else keys
                 } catch (e: Exception) {
                     Log.e("Neko", "解析密钥数组失败!", e)
                     arrayOf(Constant.DEFAULT_SECRET_KEY) //解析失败返回默认值
                 }
             }
         }
-
     }
 }

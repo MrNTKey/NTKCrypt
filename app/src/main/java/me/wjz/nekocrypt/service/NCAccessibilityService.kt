@@ -26,12 +26,13 @@ class NCAccessibilityService : AccessibilityService() {
         (application as NekoCryptApp).dataStoreManager
     }
 
-    private val isImmersiveMode: Boolean by serviceScope.observeAsState(flowProvider = {
+    val isImmersiveMode: Boolean by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.IS_IMMERSIVE_MODE, false)
     }, initialValue = false)
-    private val cryptoKeys: Array<String> by serviceScope.observeAsState(flowProvider = {
+    val cryptoKeys: Array<String> by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getKeyArrayFlow()
     }, initialValue = arrayOf(Constant.DEFAULT_SECRET_KEY))
+
     val currentKey: String by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.CURRENT_KEY, Constant.DEFAULT_SECRET_KEY)
     }, initialValue = Constant.DEFAULT_SECRET_KEY)
@@ -87,11 +88,10 @@ class NCAccessibilityService : AccessibilityService() {
         }
 
         // debug逻辑
-        if (event.packageName == PACKAGE_NAME_QQ)
-            Log.i(
-                tag,
-                "接收到QQ的事件 -> 类型: ${AccessibilityEvent.eventTypeToString(event.eventType)}, 包名: ${event.packageName}"
-            )
+//        if (event.packageName == PACKAGE_NAME_QQ)
+//            Log.i(tag,
+//                "接收到QQ的事件 -> 类型: ${AccessibilityEvent.eventTypeToString(event.eventType)}, 包名: ${event.packageName}"
+//            )
         if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {//点击了屏幕
             Log.d(tag, "检测到点击事件，开始调试节点...")
             debugNodeTree(event.source)

@@ -17,8 +17,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.service.NCAccessibilityService
+import me.wjz.nekocrypt.ui.DecryptionPopupContent
 import me.wjz.nekocrypt.util.CryptoManager
 import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
+import me.wjz.nekocrypt.util.LifecycleOwnerProvider
+import me.wjz.nekocrypt.util.WindowPopupManager
 
 abstract class BaseChatAppHandler : ChatAppHandler {
     protected val tag = "NCBaseHandler"
@@ -33,6 +36,12 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     private var overlayView: View? = null
     private var overlayManagementJob: Job? = null
 
+    private var decryptionPopup: WindowPopupManager? = null //  密文弹窗管理器
+    private var lifecycleOwnerProvider: LifecycleOwnerProvider? = null  //  为弹出的密文提供生命周期
+
+    // ✨ 步骤1：为我们的按钮和输入框创建缓存变量
+    private var cachedSendBtnNode: AccessibilityNodeInfo? = null
+    private var cachedInputNode: AccessibilityNodeInfo? = null
     private val colorInt = "#80ff0000".toColorInt() //debug的时候调成可见色，正式环境应该是纯透明
 
     override fun onAccessibilityEvent(event: AccessibilityEvent, service: NCAccessibilityService) {
@@ -48,11 +57,11 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 removeOverlayView()
             }
         }
-
         // 点击解密逻辑
-        if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {
-
+        if (!service.isImmersiveMode && event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {
+            handleClickForDecryption(event.source)
         }
+
     }
 
     // 启动服务
@@ -65,6 +74,10 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     // 销毁服务
     override fun onHandlerDeactivated() {
         overlayManagementJob?.cancel()
+        decryptionPopup?.dismiss()  // dismiss会执行传入的回调，自动置为null
+        lifecycleOwnerProvider?.destroy()
+        cachedSendBtnNode = null
+        cachedInputNode = null
         removeOverlayView {
             // 在视图置空后，其他引用量也要置为空，方便gc回收
             this.service = null
@@ -73,20 +86,96 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         }
     }
 
+    /**
+     * 处理节点点击事件，检查是否需要解密。
+     * @param sourceNode 用户点击的源节点。
+     */
+    private fun handleClickForDecryption(sourceNode: AccessibilityNodeInfo?) {
+        val node = sourceNode ?: return
+        val text = node.text?.toString() ?: return
+        val currentService = service ?: return
+
+        // 1. 判断点击的文本是否包含我们的“猫语”
+        if (CryptoManager.containsCiphertext(text)) {
+            Log.d(tag, "检测到点击密文: $text")
+            // 2. 尝试用所有密钥进行解密
+            Log.d(tag,"目前的全部密钥${currentService.cryptoKeys.joinToString()}")
+            for (key in currentService.cryptoKeys) {
+                val decryptedText = CryptoManager.decrypt(text, key)
+                // 3. 只要有一个密钥解密成功...
+                if (decryptedText != null) {
+                    Log.d(tag, "解密成功 -> $decryptedText")
+                    // ...就立刻显示我们的解密弹窗！
+                    showDecryptionPopup(decryptedText, node)
+                    break // 停止尝试其他密钥
+                }
+            }
+        }
+    }
+
+    private fun showDecryptionPopup(decryptedText: String, anchorNode: AccessibilityNodeInfo) {
+        val currentService = service ?: return
+        // 先确保旧的弹窗和发电机被关闭
+        lifecycleOwnerProvider?.destroy()
+        decryptionPopup?.dismiss()
+
+        val anchorRect = Rect()
+        anchorNode.getBoundsInScreen(anchorRect)
+
+        // 创建并立刻启动生命周期引擎！
+        lifecycleOwnerProvider = LifecycleOwnerProvider().also { it.resume() }
+
+        // 创建并显示我们的弹窗
+        decryptionPopup = WindowPopupManager(
+            context = currentService,
+            onDismissRequest = { decryptionPopup = null }, // 关闭时清理引用
+            lifecycleOwnerProvider!! // ✨ 把“发电机”传进去
+        ) {
+            // 把UI内容传进去
+            DecryptionPopupContent(
+                text = decryptedText,
+                onDismiss = { decryptionPopup?.dismiss() }
+            )
+        }
+        decryptionPopup?.show(anchorRect)
+    }
+
+
     // --- 所有悬浮窗和加密逻辑都内聚在这里 ---
 
+    /**
+     * ✨ 终极形态的悬浮窗管理逻辑 ✨
+     * 先检查缓存，再搜索
+     */
     protected suspend fun handleOverlayManagement() {
-        delay(50)   //延迟一下防抖
-        val rootNode = service?.rootInActiveWindow ?: return
-        val sendBtnNode = findNodeById(rootNode, sendBtnId)
+        delay(50)
+        var sendBtnNode: AccessibilityNodeInfo?
+
+        // 1. 优先信任缓存：用廉价的 refresh() 给缓存“体检”
+        if (isNodeValid(cachedSendBtnNode)) {
+            sendBtnNode = cachedSendBtnNode
+        }
+        // 2. 缓存无效，才启动昂贵的“全楼大搜查”
+        else {
+            val rootNode = service?.rootInActiveWindow ?: return
+            sendBtnNode = findNodeById(rootNode, sendBtnId)
+            // 搜索到了就更新缓存，为下一次做准备
+            cachedSendBtnNode = sendBtnNode
+        }
+
+        // 3. 根据最终的节点状态来决定如何操作
         if (sendBtnNode != null) {
             val rect = Rect()
-            sendBtnNode.getBoundsInScreen(rect) //  获取要对齐的约束
+            sendBtnNode.getBoundsInScreen(rect)
             if (!rect.isEmpty) {
                 createOrUpdateOverlayView(rect)
+            } else {
+                // 节点虽然存在，但没有实际尺寸，也视为无效
+                removeOverlayView()
             }
         } else {
-            removeOverlayView() //已经找不到按钮了，就取消。
+            // 如果最终还是没有有效节点，就清理
+            removeOverlayView()
         }
     }
 
@@ -147,17 +236,26 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     // 自动加密并发送消息
     protected fun doEncryptAndClick() {
         val currentService = service ?: return
-        val root = currentService.rootInActiveWindow ?: return  //拿到根视图
-        val sendBtnNode = findNodeById(root, sendBtnId) //发送按钮节点
-        val inputNode = findNodeById(root, inputId) //输入框节点
-        if (sendBtnNode == null || inputNode == null) return
 
+        // 1. 获取发送按钮节点 (优先从缓存，不行再找)
+        if (!isNodeValid(cachedSendBtnNode)) {
+            val root = currentService.rootInActiveWindow ?: return
+            cachedSendBtnNode = findNodeById(root, sendBtnId)
+        }
+        val sendBtnNode = cachedSendBtnNode ?: return
+
+        // 2. 获取输入框节点 (逻辑同上)
+        if (!isNodeValid(cachedInputNode)) {
+            val root = currentService.rootInActiveWindow ?: return
+            cachedInputNode = findNodeById(root, inputId)
+        }
+        val inputNode = cachedInputNode ?: return
+
+        // 3. 执行核心加密逻辑
         val originalText = inputNode.text?.toString()
-        // 如果本来输入栏是空的，或者已经有密文了，就不加密，直接发送。
         if (originalText.isNullOrEmpty() || CryptoManager.containsCiphertext(originalText)) {
             sendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
         } else {
-            // 做加密处理，并添加咪咪talk。
             val encryptedText =
                 CryptoManager.encrypt(originalText, currentService.currentKey).appendNekoTalk()
             performSetText(inputNode, encryptedText)
@@ -199,5 +297,15 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             // 比如弹窗提示，或者把解密内容复制到剪贴板（并明确告知用户）。
             Log.d(tag, "节点不支持设置文本。解密内容: $text")
         }
+    }
+
+    /**
+     * ✨ 验证缓存节点有效性的“金标准”方法 ✨
+     */
+    private fun isNodeValid(node: AccessibilityNodeInfo?): Boolean {
+        if (node == null) return false
+        // node.refresh() 是最可靠的验证方法。
+        // 它会尝试与屏幕上的最新信息同步，如果失败则说明节点已失效。
+        return node.refresh()
     }
 }

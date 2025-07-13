@@ -24,7 +24,6 @@ interface ChatAppHandler {
      */
     val sendBtnId: String
 
-
     /**
      * 当该处理器被激活时调用（例如，用户打开了对应的App）。
      * @param service 无障碍服务的实例，用于获取上下文、协程作用域等。

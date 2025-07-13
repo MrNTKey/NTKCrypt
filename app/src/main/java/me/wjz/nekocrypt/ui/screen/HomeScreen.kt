@@ -18,6 +18,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -311,12 +312,24 @@ fun HomeScreen(modifier: Modifier = Modifier) {
         }
 
         // 在底部添加我们的设置卡片
+
+        //沉浸式加密开关
         SwitchSettingCard(
             key = SettingKeys.USE_AUTO_ENCRYPTION,
             defaultValue = false,
             title = stringResource(id = R.string.setting_encrypt_on_send_title),
             subtitle = stringResource(id = R.string.setting_encrypt_on_send_subtitle),
-            modifier = Modifier.padding(16.dp) // 添加一些边距让布局更好看
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp) // 添加一些边距让布局更好看
         )
+        //沉浸式解密开关
+        SwitchSettingCard(
+            key = SettingKeys.IS_IMMERSIVE_MODE,
+            defaultValue = false,
+            title = stringResource(id = R.string.setting_decrypt_immersive_mod_title),
+            subtitle = stringResource(id = R.string.setting_decrypt_immersive_mod_subtitle),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp) // 添加一些边距让布局更好看
+        )
+
+        Spacer(Modifier.padding(4.dp))
     }
 }
