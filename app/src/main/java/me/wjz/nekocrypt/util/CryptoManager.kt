@@ -1,5 +1,6 @@
 package me.wjz.nekocrypt.util
 
+import java.math.BigInteger
 import java.security.MessageDigest
 import java.security.SecureRandom
 import javax.crypto.AEADBadTagException
@@ -21,14 +22,16 @@ object CryptoManager {
     private const val IV_LENGTH_BYTES = 16  // GCM 推荐的IV长度，为了该死的兼容改成16
     private const val TAG_LENGTH_BITS = 128 // GCM 推荐的认证标签长度
 
-    // --- 隐写编解码所需的常量和映射表 ---
-    private const val HEX_ALPHABET = "0123456789abcdef"
+    // 下面是一些映射表
     private val STEALTH_ALPHABET = (0xFE00..0xFE0F).map { it.toChar() }.joinToString("")
 
-    // 预先生成映射表，这是最高效的方式。
-    // 查询Map的复杂度是O(1)，而每次都用indexOf查询字符串是O(N)。
-    private val HEX_TO_STEALTH_MAP = HEX_ALPHABET.zip(STEALTH_ALPHABET).toMap()
-    private val STEALTH_TO_HEX_MAP = STEALTH_ALPHABET.zip(HEX_ALPHABET).toMap()
+    /**
+     * 为了高效解码，预先创建一个从“猫语”字符到其在字母表中索引位置的映射。
+     * 这是一个关键的性能优化。
+     */
+    private val STEALTH_CHAR_TO_INDEX_MAP =
+        STEALTH_ALPHABET.withIndex().associate { (index, char) -> char to index }
+
 
 // --- 猫语短语库 (分类版) ---
 
@@ -36,15 +39,17 @@ object CryptoManager {
      * 猫娘的内心活动，用括号包裹，显得很可爱。
      */
     private val NEKO_INNER_THOUGHTS = listOf(
-        "(今天也要开心喵！)",
-        "(想吃小鱼干了...)",
-        "(那是什么，好想玩！)",
-        "(最喜欢你啦~)",
-        "(要抱抱才能好起来...)",
-        "(偷偷看你一眼。)",
-        "(今天也要努力加密哦！)",
-        "(这个bug好难喵...)",
-        "(打个哈欠~)"
+        "(探头)",
+        "(打哈欠)",
+        "(盯~)",
+        "(摇尾巴)",
+        "(伸懒腰)",
+        "(舔爪爪)",
+        "(歪头)",
+        "(耳朵动了动)",
+        "(用头蹭蹭)",
+        "(踩奶)",
+        "(缩成一团)"
     )
 
     /**
@@ -97,22 +102,6 @@ object CryptoManager {
         keyGenerator.init(KEY_SIZE_BITS)
         return keyGenerator.generateKey()
     }
-
-    /**
-     * 将 SecretKey 对象转换为十六进制编码的字符串，方便存储。
-     *
-     * @param key 要转换的 SecretKey。
-     * @return 十六进制编码的密钥字符串。
-     */
-    fun keyToHex(key: SecretKey): String {
-        return bytesToHex(key.encoded)
-    }
-
-    fun hexToKey(hexKey: String): SecretKey {
-        val decodedKey = hexToBytes(hexKey)
-        return SecretKeySpec(decodedKey, 0, decodedKey.size, ALGORITHM)
-    }
-
 
 
     /**
@@ -183,19 +172,16 @@ object CryptoManager {
         val ciphertextBytes = cipher.doFinal(plaintextBytes)
         //拼接iv和密文
         val combinedBytes = iv + ciphertextBytes
-        val hexCiphertext = bytesToHex(combinedBytes)
-        //5.转为隐写字符串返回
-        return hexToStealth(hexCiphertext)
+        return baseNEncode(combinedBytes)
     }
 
     //消息解密，智能地从含密文的混合字符串中解密
     fun decrypt(stealthCiphertext: String, key: String): String? { // 返回值改为可空的 String?
         try {
-            val hexCiphertext = stealthToHex(stealthCiphertext)
-            // 如果十六进制字符串为空（例如输入了不含任何隐写字符的普通文本），则直接返回null
-            if (hexCiphertext.isEmpty()) return null
+            // 直接将隐写字符串进行 BaseN 解码
+            val combinedBytes = baseNDecode(stealthCiphertext)
+            if (combinedBytes.isEmpty() || combinedBytes.size < IV_LENGTH_BYTES) return null
 
-            val combinedBytes = hexToBytes(hexCiphertext)
             val iv = combinedBytes.copyOfRange(0, IV_LENGTH_BYTES)
             val ciphertextBytes = combinedBytes.copyOfRange(IV_LENGTH_BYTES, combinedBytes.size)
             val cipher = Cipher.getInstance(TRANSFORMATION)
@@ -224,7 +210,7 @@ object CryptoManager {
      * 判断给定字符串是否包含密文
      */
     fun containsCiphertext(input: String): Boolean {
-        return input.any { STEALTH_TO_HEX_MAP.containsKey(it) }
+        return input.any { STEALTH_CHAR_TO_INDEX_MAP.containsKey(it) }
     }
 
     private fun deriveKeyFromString(keyString: String): SecretKey {
@@ -233,38 +219,56 @@ object CryptoManager {
         return SecretKeySpec(keyBytes, ALGORITHM)
     }
 
-    // -----------------一些辅助方法---------------------
+    // -----------------关键的baseN方法---------------------
 
-    private fun bytesToHex(bytes: ByteArray): String {
-        return bytes.joinToString("") { "%02x".format(it) }
-    }
-
-    private fun hexToBytes(hex: String): ByteArray {
-        require(hex.length % 2 == 0) { "十六进制字符串长度必须为偶数" }
-        return hex.chunked(2)
-            .map { it.toInt(16).toByte() }
-            .toByteArray()
+    /**
+     * 将字节数组编码为我们自定义的 BaseN 字符串。
+     * 算法核心：通过大数运算，将 Base256 的数据转换为 BaseN。
+     * @param data 原始二进制数据。
+     * @return 编码后的“猫语”字符串。
+     */
+    private fun baseNEncode(data: ByteArray): String {
+        if (data.isEmpty()) return ""
+        // 使用 BigInteger 来处理任意长度的二进制数据，避免溢出。
+        // 构造函数 `BigInteger(1, data)` 确保数字被解释为正数。
+        var bigInt = BigInteger(1, data)
+        val base = BigInteger.valueOf(STEALTH_ALPHABET.length.toLong())
+        val builder = StringBuilder()
+        while (bigInt > BigInteger.ZERO) {
+            // 除基取余法
+            val (quotient, remainder) = bigInt.divideAndRemainder(base)
+            bigInt = quotient
+            builder.append(STEALTH_ALPHABET[remainder.toInt()])
+        }
+        // 因为是从低位开始添加的，所以需要反转得到正确的顺序
+        return builder.reverse().toString()
     }
 
     /**
-     * hexString转为隐写字符串。
+     * 将我们自定义的 BaseN 字符串解码回字节数组。
+     * 算法核心：通过大数运算，将 BaseN 的数据转换回 Base256。
+     * @param encodedString 编码后的“猫语”字符串，可能混杂有其他字符。
+     * @return 原始二进制数据。
      */
-    private fun hexToStealth(hexString: String): String {
-        // 1. `map` 会遍历字符串中的每一个字符。
-        // 2. `HEX_TO_STEALTH_MAP[it]` 会在映射表中查找对应的隐写字符。
-        // 3. `joinToString("")` 将所有转换后的字符连接成一个新字符串。
-        // 这种写法不仅简洁，而且意图清晰：将每个字符进行映射，然后连接。
-        return hexString.lowercase().map { HEX_TO_STEALTH_MAP[it] }.joinToString("")
-    }
+    private fun baseNDecode(encodedString: String): ByteArray {
+        var bigInt = BigInteger.ZERO
+        val base = BigInteger.valueOf(STEALTH_ALPHABET.length.toLong())
+        // 遍历字符串，只处理在“猫语字典”中存在的字符
+        // 乘基加权法。
+        encodedString.forEach { char ->
+            val index = STEALTH_CHAR_TO_INDEX_MAP[char]
+            if (index != null) {
+                // 核心算法: result = result * base + index
+                bigInt = bigInt.multiply(base).add(BigInteger.valueOf(index.toLong()))
+            }
+        }
+        // 如果解码结果为0，直接返回空数组
+        if (bigInt == BigInteger.ZERO) return ByteArray(0)
 
-    /**
-     * 将“隐写”字符串解码回原始的十六进制字符串 (函数式实现)。
-     */
-    private fun stealthToHex(stealthString: String): String {
-        // 逻辑同上，只是使用了反向的映射表。
-        //这里必须用mapNotNull，否则如果匹配不上return的是null，会被.joinToString("")变为"null"字符串。
-        return stealthString
-            .mapNotNull { STEALTH_TO_HEX_MAP[it] }
-            .joinToString("")
+        // BigInteger.toByteArray() 可能会在开头添加一个0字节来表示正数，我们需要去掉它
+        val bytes = bigInt.toByteArray()
+        return if (bytes[0].toInt() == 0) {
+            bytes.copyOfRange(1, bytes.size)
+        } else { bytes }
     }
 }

@@ -138,7 +138,7 @@ fun MainMenu() {
             exitTransition = { fadeOut(animationSpec = tween(300)) }
         ) {
             // ✨ 步骤3: 在每个 composable 中定义更详细的、模拟 Pager 的动画
-            val animationSpec = tween<IntOffset>(durationMillis = 400)
+            val animationSpec = tween<IntOffset>(durationMillis = 300)
 
             // 为每个页面定义路由和动画
             navItems.forEachIndexed { index, screen ->
