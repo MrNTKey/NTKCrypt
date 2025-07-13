@@ -71,7 +71,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             this.windowManager = null
             Log.d(tag, "取消$packageName 处理器。")
         }
-
     }
 
     // --- 所有悬浮窗和加密逻辑都内聚在这里 ---
