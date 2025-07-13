@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "me.wjz.nekocrypt"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -20,7 +20,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
@@ -55,9 +55,10 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.1")
     // 用于 AndroidViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.1")
-    implementation("com.google.code.gson:gson:2.13.1")
-    implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
+    implementation("com.alibaba.fastjson2:fastjson2:2.0.57") //json解析
     implementation(libs.androidx.compiler)//安装preferences datastore 插件
+    // ✨ 关键步骤2: 确保你添加的是这个官方的、正确的安卓版 Navigation Compose 依赖！
+    implementation("androidx.navigation:navigation-compose:2.9.1")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -18,7 +18,7 @@ object CryptoManager {
     private const val ALGORITHM = "AES"
     private const val TRANSFORMATION = "AES/GCM/NoPadding"
     private const val KEY_SIZE_BITS = 256 // AES-256
-    private const val IV_LENGTH_BYTES = 12  // GCM 推荐的IV长度
+    private const val IV_LENGTH_BYTES = 16  // GCM 推荐的IV长度，为了该死的兼容改成16
     private const val TAG_LENGTH_BITS = 128 // GCM 推荐的认证标签长度
 
     // --- 隐写编解码所需的常量和映射表 ---

@@ -35,6 +35,26 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
     private val colorInt = "#80ff0000".toColorInt() //debug的时候调成可见色，正式环境应该是纯透明
 
+    override fun onAccessibilityEvent(event: AccessibilityEvent, service: NCAccessibilityService) {
+        // 悬浮窗管理逻辑
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED || event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            if (service.useAutoEncryption) {
+                //只有开启自动加密，才会加上悬浮窗，每次事件改变，都要更新悬浮窗位置
+                overlayManagementJob?.cancel()
+                overlayManagementJob = service.serviceScope.launch(Dispatchers.Default) {
+                    handleOverlayManagement()   // 可能是添加、更新、删除悬浮窗
+                }
+            } else {
+                removeOverlayView()
+            }
+        }
+
+        // 点击解密逻辑
+        if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {
+
+        }
+    }
+
     // 启动服务
     override fun onHandlerActivated(service: NCAccessibilityService) {
         this.service = service
@@ -50,22 +70,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             this.service = null
             this.windowManager = null
             Log.d(tag, "取消$packageName 处理器。")
-        }
-
-    }
-
-    override fun onAccessibilityEvent(event: AccessibilityEvent, service: NCAccessibilityService) {
-        // 悬浮窗管理逻辑
-        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED || event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-            if (service.useAutoEncryption) {
-                //只有开启自动加密，才会加上悬浮窗，每次事件改变，都要更新悬浮窗位置
-                overlayManagementJob?.cancel()
-                overlayManagementJob = service.serviceScope.launch(Dispatchers.Default) {
-                    handleOverlayManagement()   // 可能是添加、更新、删除悬浮窗
-                }
-            } else {
-                removeOverlayView()
-            }
         }
 
     }

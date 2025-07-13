@@ -7,7 +7,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
-import com.google.gson.Gson
+import com.alibaba.fastjson2.JSON
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -22,9 +22,6 @@ val LocalDataStoreManager = staticCompositionLocalOf<DataStoreManager> {
 }
 
 class DataStoreManager (private val context: Context) {
-
-    //不对外暴露自己的工具
-    private val gson = Gson()
 
     //通用的读取方法 (使用泛型)
     fun <T> getSettingFlow(key: Preferences.Key<T>, defaultValue: T): Flow<T> {
@@ -57,7 +54,7 @@ class DataStoreManager (private val context: Context) {
      * 调用者只需要传入一个数组，无需关心JSON转换的细节。
      */
     suspend fun saveKeyArray(keys: Array<String>) {
-        val jsonString = gson.toJson(keys)
+        val jsonString = JSON.toJSONString(keys)
         saveSetting(SettingKeys.ALL_THE_KEYS, jsonString)
     }
 
@@ -69,7 +66,7 @@ class DataStoreManager (private val context: Context) {
             if (jsonString.isEmpty()) arrayOf(Constant.DEFAULT_SECRET_KEY)
             else {
                 try {
-                    gson.fromJson(jsonString, Array<String>::class.java)
+                    JSON.parseObject(jsonString, Array<String>::class.java)
                 } catch (e: Exception) {
                     Log.e("Neko", "解析密钥数组失败!", e)
                     arrayOf(Constant.DEFAULT_SECRET_KEY) //解析失败返回默认值
