@@ -20,7 +20,6 @@ import me.wjz.nekocrypt.service.NCAccessibilityService
 import me.wjz.nekocrypt.ui.DecryptionPopupContent
 import me.wjz.nekocrypt.util.CryptoManager
 import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
-import me.wjz.nekocrypt.util.LifecycleOwnerProvider
 import me.wjz.nekocrypt.util.WindowPopupManager
 
 abstract class BaseChatAppHandler : ChatAppHandler {
@@ -37,7 +36,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     private var overlayManagementJob: Job? = null
 
     private var decryptionPopup: WindowPopupManager? = null //  密文弹窗管理器
-    private var lifecycleOwnerProvider: LifecycleOwnerProvider? = null  //  为弹出的密文提供生命周期
 
     // ✨ 步骤1：为我们的按钮和输入框创建缓存变量
     private var cachedSendBtnNode: AccessibilityNodeInfo? = null
@@ -75,7 +73,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     override fun onHandlerDeactivated() {
         overlayManagementJob?.cancel()
         decryptionPopup?.dismiss()  // dismiss会执行传入的回调，自动置为null
-        lifecycleOwnerProvider?.destroy()
         cachedSendBtnNode = null
         cachedInputNode = null
         removeOverlayView {
@@ -116,20 +113,15 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     private fun showDecryptionPopup(decryptedText: String, anchorNode: AccessibilityNodeInfo) {
         val currentService = service ?: return
         // 先确保旧的弹窗和发电机被关闭
-        lifecycleOwnerProvider?.destroy()
         decryptionPopup?.dismiss()
 
         val anchorRect = Rect()
         anchorNode.getBoundsInScreen(anchorRect)
 
-        // 创建并立刻启动生命周期引擎！
-        lifecycleOwnerProvider = LifecycleOwnerProvider().also { it.resume() }
-
         // 创建并显示我们的弹窗
         decryptionPopup = WindowPopupManager(
             context = currentService,
-            onDismissRequest = { decryptionPopup = null }, // 关闭时清理引用
-            lifecycleOwnerProvider!! // ✨ 把“发电机”传进去
+            onDismissRequest = { decryptionPopup = null }// 关闭时清理引用
         ) {
             // 把UI内容传进去
             DecryptionPopupContent(

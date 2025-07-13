@@ -25,28 +25,29 @@ class NCAccessibilityService : AccessibilityService() {
     private val dataStoreManager by lazy {
         (application as NekoCryptApp).dataStoreManager
     }
-
+    //  是否是沉浸式模式
     val isImmersiveMode: Boolean by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.IS_IMMERSIVE_MODE, false)
     }, initialValue = false)
+    //  所有密钥
     val cryptoKeys: Array<String> by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getKeyArrayFlow()
     }, initialValue = arrayOf(Constant.DEFAULT_SECRET_KEY))
-
+    //  当前密钥
     val currentKey: String by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.CURRENT_KEY, Constant.DEFAULT_SECRET_KEY)
     }, initialValue = Constant.DEFAULT_SECRET_KEY)
+
+    //是否开启自动加密
+    val useAutoEncryption: Boolean by serviceScope.observeAsState(flowProvider = {
+        dataStoreManager.getSettingFlow(SettingKeys.USE_AUTO_ENCRYPTION, false)
+    }, initialValue = false)
 
     // handler工厂方法
     private val handlerFactory: Map<String, () -> ChatAppHandler> = mapOf(
         PACKAGE_NAME_QQ to { QQHandler() }
     )
     private var currentHandler: ChatAppHandler? = null
-
-    //设置项，是否开启自动加密
-    val useAutoEncryption: Boolean by serviceScope.observeAsState(flowProvider = {
-        dataStoreManager.getSettingFlow(SettingKeys.USE_AUTO_ENCRYPTION, false)
-    }, initialValue = false)
 
     override fun onServiceConnected() {
         super.onServiceConnected()

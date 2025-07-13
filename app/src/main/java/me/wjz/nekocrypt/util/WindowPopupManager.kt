@@ -24,12 +24,11 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 class WindowPopupManager(
     private val context: Context,
     private val onDismissRequest: () -> Unit = {},
-    private val lifecycleOwnerProvider: LifecycleOwnerProvider,
     private val content: @Composable () -> Unit,
 ) {
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private var popupView: View? = null
-
+    private var lifecycleOwnerProvider: LifecycleOwnerProvider? = null
     /**
      * 显示弹窗。
      * @param anchorRect 一个可选的矩形，用于定位弹窗。如果为null，弹窗会居中。
@@ -37,6 +36,9 @@ class WindowPopupManager(
     fun show(anchorRect: Rect? = null) {
         //  防止重复显示
         if (popupView != null) return
+        //  创建并启动生命周期
+        lifecycleOwnerProvider = LifecycleOwnerProvider().also { it.resume() }
+
         //  创建ComposeView并设置内容
         popupView = ComposeView(context).apply {
             // ✨ 在设置内容之前，先给它“通上电”！
@@ -50,7 +52,6 @@ class WindowPopupManager(
         }
         // 创建 WindowManager 参数
         val params = createLayoutParams(anchorRect)
-
         // 添加到窗口
         windowManager.addView(popupView, params)
     }
@@ -66,6 +67,8 @@ class WindowPopupManager(
                 // 忽略窗口已经不存在等异常
             } finally {
                 popupView = null
+                lifecycleOwnerProvider?.destroy()
+                lifecycleOwnerProvider = null
                 // 调用外部传入的关闭回调
                 onDismissRequest()
             }
@@ -91,7 +94,7 @@ class WindowPopupManager(
         if (anchorRect != null) {
             params.gravity = Gravity.TOP or Gravity.START
             params.x = anchorRect.left
-            params.y = anchorRect.top - anchorRect.height()
+            params.y = anchorRect.top
         } else {
             params.gravity = Gravity.CENTER
         }
