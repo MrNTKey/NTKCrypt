@@ -35,18 +35,23 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
     private val colorInt = "#80ff0000".toColorInt() //debug的时候调成可见色，正式环境应该是纯透明
 
+    // 启动服务
     override fun onHandlerActivated(service: NCAccessibilityService) {
         this.service = service
         this.windowManager = service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
         Log.d(tag, "激活$packageName 处理器。")
     }
 
+    // 销毁服务
     override fun onHandlerDeactivated() {
         overlayManagementJob?.cancel()
-        removeOverlayView()
-        this.service = null
-        this.windowManager = null
-        Log.d(tag, "取消$packageName 处理器。")
+        removeOverlayView {
+            // 在视图置空后，其他引用量也要置为空，方便gc回收
+            this.service = null
+            this.windowManager = null
+            Log.d(tag, "取消$packageName 处理器。")
+        }
+
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent, service: NCAccessibilityService) {
@@ -73,82 +78,76 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         val sendBtnNode = findNodeById(rootNode, sendBtnId)
         if (sendBtnNode != null) {
             val rect = Rect()
-            sendBtnNode.getBoundsInScreen(rect)
+            sendBtnNode.getBoundsInScreen(rect) //  获取要对齐的约束
             if (!rect.isEmpty) {
-                if (overlayView == null) addOverlayView(rect) else updateOverlayPosition(rect)
+                createOrUpdateOverlayView(rect)
             }
         } else {
             removeOverlayView() //已经找不到按钮了，就取消。
         }
     }
 
-    protected fun addOverlayView(rect: Rect) {
+    /**
+     * @param rect 悬浮窗的目标位置和大小。
+     */
+    protected fun createOrUpdateOverlayView(rect: Rect) {
         val currentService = service ?: return
         currentService.serviceScope.launch(Dispatchers.Main) {
-            if (overlayView != null) return@launch
+            // 情况一：悬浮窗还不存在，创建它！
+            if (overlayView == null) {
+                //Log.d(tag, "悬浮窗不存在，执行创建...")
+                overlayView = View(currentService).apply {
+                    setBackgroundColor(colorInt)
+                    setOnClickListener { doEncryptAndClick() }
+                }
 
-            overlayView = View(currentService).apply {
-                setBackgroundColor(colorInt)
-                setOnClickListener { performClick(currentService.useAutoEncryption) }
+                val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+                } else WindowManager.LayoutParams.TYPE_PHONE
+
+                val params = WindowManager.LayoutParams(
+                    rect.width(), rect.height(), rect.left, rect.top - rect.height() + 6,
+                    layoutFlag,
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                    PixelFormat.TRANSLUCENT
+                ).apply { gravity = Gravity.TOP or Gravity.START }
+
+                windowManager?.addView(overlayView, params)
             }
-
-            val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            } else WindowManager.LayoutParams.TYPE_PHONE
-
-            val params = WindowManager.LayoutParams(
-                rect.width(), rect.height(), rect.left, rect.top - rect.height(),
-                layoutFlag,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-                PixelFormat.TRANSLUCENT
-            ).apply { gravity = Gravity.TOP or Gravity.START }
-
-            // 准备好悬浮窗后就添加到视图中
-            windowManager?.addView(overlayView, params)
-        }
-    }
-
-    protected fun updateOverlayPosition(rect: Rect) {
-        service?.serviceScope?.launch(Dispatchers.Main) {
-            overlayView?.let { view ->
-                val params = view.layoutParams as WindowManager.LayoutParams
-                params.x = rect.left
-                params.y = rect.top - rect.height()
-                params.width = rect.width()
-                params.height = rect.height()
-                // 更新视图约束
-                windowManager?.updateViewLayout(view, params)
+            // 情况二：悬浮窗已存在，更新它！
+            else {
+                //Log.d(tag, "悬浮窗已存在，执行更新...")
+                overlayView?.let { view ->
+                    val params = view.layoutParams as WindowManager.LayoutParams
+                    params.x = rect.left
+                    params.y = rect.top - rect.height() + 6
+                    params.width = rect.width()
+                    params.height = rect.height()
+                    windowManager?.updateViewLayout(view, params)
+                }
             }
         }
     }
 
     // 移除悬浮窗
-    protected fun removeOverlayView() {
+    protected fun removeOverlayView(onComplete: (() -> Unit)? = null) {
         service?.serviceScope?.launch(Dispatchers.Main) {
             if (overlayView != null && windowManager != null) {
                 windowManager?.removeView(overlayView)
                 overlayView = null
+
+                onComplete?.invoke()
             }
         }
     }
 
-    // 发送消息，自动判断是否加密
-    protected fun performClick(isAutoEncryption: Boolean) {
+    // 自动加密并发送消息
+    protected fun doEncryptAndClick() {
         val currentService = service ?: return
         val root = currentService.rootInActiveWindow ?: return  //拿到根视图
         val sendBtnNode = findNodeById(root, sendBtnId) //发送按钮节点
-        if (sendBtnNode == null) return
-
-        //  根据是否开启自动加密修改发送内容。
-        if (!isAutoEncryption) {
-            sendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-            return
-        }
-
-        //  下面走加密消息逻辑
         val inputNode = findNodeById(root, inputId) //输入框节点
-        if (inputNode == null) return
-
+        if (sendBtnNode == null || inputNode == null) return
 
         val originalText = inputNode.text?.toString()
         // 如果本来输入栏是空的，或者已经有密文了，就不加密，直接发送。
@@ -158,7 +157,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             // 做加密处理，并添加咪咪talk。
             val encryptedText =
                 CryptoManager.encrypt(originalText, currentService.currentKey).appendNekoTalk()
-            //
             performSetText(inputNode, encryptedText)
             currentService.serviceScope.launch {
                 delay(50)
