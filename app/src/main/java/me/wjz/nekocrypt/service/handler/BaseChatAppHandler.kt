@@ -1,12 +1,9 @@
 package me.wjz.nekocrypt.service.handler
 
 import android.content.Context
-import android.graphics.PixelFormat
 import android.graphics.Rect
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
@@ -39,6 +36,18 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     private var cachedSendBtnNode: AccessibilityNodeInfo? = null
     private var cachedInputNode: AccessibilityNodeInfo? = null
     private val colorInt = "#80ff0000".toColorInt() //debug的时候调成可见色，正式环境应该是纯透明
+
+    /**
+     * 根据发送按钮的矩形区域，创建加密悬浮窗的布局参数。
+     * 这是一个抽象方法，强制所有子类必须提供自己的具体实现。
+     *
+     * @param anchorRect 发送按钮在屏幕上的位置和大小。
+     * @return 配置好的 WindowManager.LayoutParams 对象。
+     */
+    abstract fun getOverlayLayoutParams(
+        anchorRect: Rect,
+    ): WindowManager.LayoutParams
+
 
     override fun onAccessibilityEvent(event: AccessibilityEvent, service: NCAccessibilityService) {
         // 悬浮窗管理逻辑
@@ -174,39 +183,22 @@ abstract class BaseChatAppHandler : ChatAppHandler {
      */
     protected fun createOrUpdateOverlayView(rect: Rect) {
         val currentService = service ?: return
+        //  绘制悬浮窗位置所需要用到的参数
+        val params = getOverlayLayoutParams(rect)
+
         currentService.serviceScope.launch(Dispatchers.Main) {
             // 情况一：悬浮窗还不存在，创建它！
             if (overlayView == null) {
                 //Log.d(tag, "悬浮窗不存在，执行创建...")
                 overlayView = View(currentService).apply {
                     setBackgroundColor(colorInt)
-                    setOnClickListener { doEncryptAndClick() }
+                    setOnClickListener { doEncryptAndClick() }  // 配置点击事件。点击加密。
                 }
-
-                val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-                } else WindowManager.LayoutParams.TYPE_PHONE
-
-                val params = WindowManager.LayoutParams(
-                    rect.width(), rect.height(), rect.left, rect.top - rect.height() + 6,
-                    layoutFlag,
-                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-                    PixelFormat.TRANSLUCENT
-                ).apply { gravity = Gravity.TOP or Gravity.START }
-
                 windowManager?.addView(overlayView, params)
             }
             // 情况二：悬浮窗已存在，更新它！
             else {
-                //Log.d(tag, "悬浮窗已存在，执行更新...")
-                overlayView?.let { view ->
-                    val params = view.layoutParams as WindowManager.LayoutParams
-                    params.x = rect.left
-                    params.y = rect.top - rect.height() + 6
-                    params.width = rect.width()
-                    params.height = rect.height()
-                    windowManager?.updateViewLayout(view, params)
-                }
+                windowManager?.updateViewLayout(overlayView, params)
             }
         }
     }
@@ -293,9 +285,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
      * ✨ 验证缓存节点有效性的“金标准”方法 ✨
      */
     private fun isNodeValid(node: AccessibilityNodeInfo?): Boolean {
-        if (node == null) return false
-        // node.refresh() 是最可靠的验证方法。
-        // 它会尝试与屏幕上的最新信息同步，如果失败则说明节点已失效。
-        return node.refresh()
+        return node?.refresh() ?: false
     }
 }
