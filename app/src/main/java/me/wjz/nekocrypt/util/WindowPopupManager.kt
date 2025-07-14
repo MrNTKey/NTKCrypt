@@ -24,6 +24,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 class WindowPopupManager(
     private val context: Context,
     private val onDismissRequest: () -> Unit = {},
+    private val anchorRect: Rect?,
     private val content: @Composable () -> Unit,
 ) {
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -33,7 +34,7 @@ class WindowPopupManager(
      * 显示弹窗。
      * @param anchorRect 一个可选的矩形，用于定位弹窗。如果为null，弹窗会居中。
      */
-    fun show(anchorRect: Rect? = null) {
+    fun show() {
         //  防止重复显示
         if (popupView != null) return
         //  创建并启动生命周期

@@ -33,7 +33,7 @@ import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
  * 它完全不知道什么是无障碍服务，什么是处理器。
  */
 @Composable
-fun DecryptionPopupContent(text: String, durationMills: Int = 5000, onDismiss: () -> Unit) {
+fun DecryptionPopupContent(text: String, durationMills: Int = 3000, onDismiss: () -> Unit) {
     // 不手动指定darkTheme，会出问题。
 
     // 创建一个从1.0开始的动画值。

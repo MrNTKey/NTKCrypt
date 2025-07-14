@@ -35,9 +35,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     private var overlayView: View? = null
     private var overlayManagementJob: Job? = null
 
-    private var decryptionPopup: WindowPopupManager? = null //  密文弹窗管理器
-
-    // ✨ 步骤1：为我们的按钮和输入框创建缓存变量
+    // 为我们的按钮和输入框创建缓存变量
     private var cachedSendBtnNode: AccessibilityNodeInfo? = null
     private var cachedInputNode: AccessibilityNodeInfo? = null
     private val colorInt = "#80ff0000".toColorInt() //debug的时候调成可见色，正式环境应该是纯透明
@@ -72,7 +70,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     // 销毁服务
     override fun onHandlerDeactivated() {
         overlayManagementJob?.cancel()
-        decryptionPopup?.dismiss()  // dismiss会执行传入的回调，自动置为null
         cachedSendBtnNode = null
         cachedInputNode = null
         removeOverlayView {
@@ -96,7 +93,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         if (CryptoManager.containsCiphertext(text)) {
             Log.d(tag, "检测到点击密文: $text")
             // 2. 尝试用所有密钥进行解密
-            Log.d(tag,"目前的全部密钥${currentService.cryptoKeys.joinToString()}")
+            Log.d(tag, "目前的全部密钥${currentService.cryptoKeys.joinToString()}")
             for (key in currentService.cryptoKeys) {
                 val decryptedText = CryptoManager.decrypt(text, key)
                 // 3. 只要有一个密钥解密成功...
@@ -112,24 +109,25 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
     private fun showDecryptionPopup(decryptedText: String, anchorNode: AccessibilityNodeInfo) {
         val currentService = service ?: return
-        // 先确保旧的弹窗和发电机被关闭
-        decryptionPopup?.dismiss()
 
         val anchorRect = Rect()
         anchorNode.getBoundsInScreen(anchorRect)
 
+        // 每个弹窗都有自己的管理器实例。
+        var popupManager: WindowPopupManager? = null
         // 创建并显示我们的弹窗
-        decryptionPopup = WindowPopupManager(
+        popupManager = WindowPopupManager(
             context = currentService,
-            onDismissRequest = { decryptionPopup = null }// 关闭时清理引用
+            onDismissRequest = { popupManager = null },// 关闭时清理引用
+            anchorRect = anchorRect
         ) {
             // 把UI内容传进去
             DecryptionPopupContent(
                 text = decryptedText,
-                onDismiss = { decryptionPopup?.dismiss() }
+                onDismiss = { popupManager?.dismiss() }
             )
         }
-        decryptionPopup?.show(anchorRect)
+        popupManager?.show()
     }
 
 
