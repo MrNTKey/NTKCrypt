@@ -1,12 +1,18 @@
 package me.wjz.nekocrypt.service
 
 import android.accessibilityservice.AccessibilityService
+import android.graphics.PixelFormat
+import android.os.Build
 import android.util.Log
+import android.view.Gravity
+import android.view.View
+import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import me.wjz.nekocrypt.Constant
 import me.wjz.nekocrypt.Constant.PACKAGE_NAME_QQ
 import me.wjz.nekocrypt.NekoCryptApp
@@ -25,14 +31,23 @@ class NCAccessibilityService : AccessibilityService() {
     private val dataStoreManager by lazy {
         (application as NekoCryptApp).dataStoreManager
     }
+
+    // 保活窗口
+    private var keepAliveOverlay: View? = null
+    private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
+
+    // ——————————————————————————设置选项——————————————————————————
+
     //  是否是沉浸式模式
     val isImmersiveMode: Boolean by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.IS_IMMERSIVE_MODE, false)
     }, initialValue = false)
+
     //  所有密钥
     val cryptoKeys: Array<String> by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getKeyArrayFlow()
     }, initialValue = arrayOf(Constant.DEFAULT_SECRET_KEY))
+
     //  当前密钥
     val currentKey: String by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.CURRENT_KEY, Constant.DEFAULT_SECRET_KEY)
@@ -43,6 +58,8 @@ class NCAccessibilityService : AccessibilityService() {
         dataStoreManager.getSettingFlow(SettingKeys.USE_AUTO_ENCRYPTION, false)
     }, initialValue = false)
 
+    // —————————————————————————— override ——————————————————————————
+
     // handler工厂方法
     private val handlerFactory: Map<String, () -> ChatAppHandler> = mapOf(
         PACKAGE_NAME_QQ to { QQHandler() }
@@ -52,6 +69,21 @@ class NCAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         Log.d(tag, "无障碍服务已连接！")
+        createKeepAliveOverlay()
+    }
+
+    // ✨ 新增：重写 onDestroy 方法，这是服务生命周期结束时最后的清理机会
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d(tag, "无障碍服务正在销毁...")
+        // 清理保活悬浮窗
+        removeKeepAliveOverlay()
+        // ✨ 非常重要：取消协程作用域，释放所有运行中的协程，防止内存泄漏
+        serviceScope.cancel()
+    }
+
+    override fun onInterrupt() {
+        Log.w(tag, "无障碍服务被打断！")
     }
 
 
@@ -99,9 +131,8 @@ class NCAccessibilityService : AccessibilityService() {
         }
     }
 
-    override fun onInterrupt() {
-        Log.w(tag, "无障碍服务被打断！")
-    }
+
+    // —————————————————————————— helper ——————————————————————————
 
     /**
      * 调试节点树的函数
@@ -145,6 +176,42 @@ class NCAccessibilityService : AccessibilityService() {
     private fun getNodeDescription(node: AccessibilityNodeInfo): String {
         // 我们把最关键的几个属性都打印出来
         return "类名: ${node.className}, 文本: '${node.text}', 描述: '${node.contentDescription}', ID: ${node.viewIdResourceName}"
+    }
+
+    private fun createKeepAliveOverlay() {
+        if (keepAliveOverlay != null) return
+        keepAliveOverlay = View(this)
+        val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        } else {
+            WindowManager.LayoutParams.TYPE_PHONE
+        }
+        val params = WindowManager.LayoutParams(
+            0, 0, 0, 0, layoutFlag,
+            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            PixelFormat.TRANSPARENT
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+        }
+        try {
+            windowManager.addView(keepAliveOverlay, params)
+            Log.d(tag, "“保活”悬浮窗创建成功！")
+        } catch (e: Exception) {
+            Log.e(tag, "创建“保活”悬浮窗失败", e)
+        }
+    }
+
+    private fun removeKeepAliveOverlay() {
+        keepAliveOverlay?.let {
+            try {
+                windowManager.removeView(it)
+                Log.d(tag, "“保活”悬浮窗已移除。")
+            } catch (e: Exception) {
+                // 忽略窗口已经不存在等异常
+            } finally {
+                keepAliveOverlay = null
+            }
+        }
     }
 }
 

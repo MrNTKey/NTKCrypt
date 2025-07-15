@@ -46,9 +46,7 @@ fun DecryptionPopupContent(text: String, durationMills: Int = 3000, onDismiss: (
 
     NekoCryptTheme(darkTheme = false) {
         Card(
-            modifier = Modifier
-                .padding(16.dp)
-                .shadow(elevation = 8.dp, shape = RoundedCornerShape(12.dp)),
+            modifier = Modifier.shadow(elevation = 8.dp, shape = RoundedCornerShape(12.dp)),
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
         ) {
