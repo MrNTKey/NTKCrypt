@@ -1,17 +1,10 @@
 package me.wjz.nekocrypt.ui
 
-import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Key
-import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -23,37 +16,35 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.R
-import me.wjz.nekocrypt.ui.screen.CryptoScreen
-import me.wjz.nekocrypt.ui.screen.HomeScreen
-import me.wjz.nekocrypt.ui.screen.KeyScreen
-import me.wjz.nekocrypt.ui.screen.SettingsScreen
-
-//用一个枚举类定义所有的屏幕
-enum class Screen(val route: String) {
-    Home("home"),
-    Crypto("crypto"),
-    Key("key"),
-    Setting("setting")
-}
+import me.wjz.nekocrypt.ui.screen.Screen
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun MainMenu() {
-    val navController = rememberNavController()
-    val navItems = remember { listOf(Screen.Home, Screen.Crypto, Screen.Key, Screen.Setting) }
+    val navItems = remember { Screen.allScreens }   //  所有的屏幕
+    //  创建一个 PagerState，记住当前页面索引
+    //pagerState 是 Jetpack Compose 中用于控制和观察
+    //HorizontalPager 或 VerticalPager 状态的对象。
+    val pagerState = rememberPagerState(pageCount = { navItems.size })
+    //  用自己的协程作用域
+    val scope = rememberCoroutineScope()
+    // 搞个intState追踪当前选中标签页
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(pagerState.targetPage) {
+        selectedTabIndex = pagerState.targetPage
+    }
 
     Scaffold(
         topBar = {
@@ -67,45 +58,25 @@ fun MainMenu() {
         },
         bottomBar = {
             NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentDestination = navBackStackEntry?.destination
-
-                // 遍历导航项列表来动态创建 BottomBar 的 Item
+                // ✨ 关键修正 1: 遍历时需要索引
                 navItems.forEachIndexed { index, screen ->
-                    val label = when (screen) {
-                        Screen.Home -> stringResource(R.string.home)
-                        Screen.Crypto -> stringResource(R.string.crypto)
-                        Screen.Key -> stringResource(R.string.key)
-                        Screen.Setting -> stringResource(R.string.settings)
-                    }
-                    val icon = @Composable {
-                        when (screen) {
-                            Screen.Home -> Icon(
-                                Icons.Outlined.Home,
-                                contentDescription = label,
+                    NavigationBarItem(
+                        icon = {
+                            Icon(
+                                imageVector = screen.icon,
+                                contentDescription = stringResource(id = screen.titleResId),
                                 modifier = Modifier.size(28.dp)
                             )
-
-                            Screen.Crypto -> Icon(Icons.Outlined.Lock, contentDescription = label)
-                            Screen.Key -> Icon(Icons.Outlined.Key, contentDescription = label)
-                            Screen.Setting -> Icon(
-                                Icons.Outlined.Settings,
-                                contentDescription = label
-                            )
-                        }
-                    }
-
-                    NavigationBarItem(
-                        icon = icon,
-                        label = { Text(label) },
-                        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                        },
+                        label = { Text(stringResource(id = screen.titleResId)) },
+                        // 每个图标是否选中，应该跟 selectedTabIndex 比较
+                        selected = (index == selectedTabIndex),
                         onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
+                            // 1. 更新我们自己的状态
+                            selectedTabIndex = index
+                            // 2. 使用协程命令 Pager 滚动到新页面
+                            scope.launch {
+                                pagerState.animateScrollToPage(index)
                             }
                         },
                         colors = NavigationBarItemDefaults.colors(
@@ -129,50 +100,15 @@ fun MainMenu() {
 //            }
     )
     { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Home.route,
+        HorizontalPager(
+            state = pagerState,
             modifier = Modifier.padding(innerPadding),
-            // 定义全局的进入和退出动画
-            enterTransition = { fadeIn(animationSpec = tween(300)) },
-            exitTransition = { fadeOut(animationSpec = tween(300)) }
-        ) {
-            // ✨ 步骤3: 在每个 composable 中定义更详细的、模拟 Pager 的动画
-            val animationSpec = tween<IntOffset>(durationMillis = 300)
-
-            // 为每个页面定义路由和动画
-            navItems.forEachIndexed { index, screen ->
-                composable(
-                    route = screen.route,
-                    enterTransition = {
-                        // 根据页面索引判断是向左还是向右滑动
-                        val direction =
-                            if ((initialState.destination.route?.let { navItems.indexOfFirst { s -> s.route == it } }
-                                    ?: -1) < index)
-                                AnimatedContentTransitionScope.SlideDirection.Left
-                            else
-                                AnimatedContentTransitionScope.SlideDirection.Right
-                        slideIntoContainer(direction, animationSpec)
-                    },
-                    exitTransition = {
-                        val direction =
-                            if ((targetState.destination.route?.let { navItems.indexOfFirst { s -> s.route == it } }
-                                    ?: -1) > index)
-                                AnimatedContentTransitionScope.SlideDirection.Left
-                            else
-                                AnimatedContentTransitionScope.SlideDirection.Right
-                        slideOutOfContainer(direction, animationSpec)
-                    }
-                ) {
-                    // 根据路由显示对应的屏幕
-                    when (screen) {
-                        Screen.Home -> HomeScreen()
-                        Screen.Crypto -> CryptoScreen()
-                        Screen.Key -> KeyScreen()
-                        Screen.Setting -> SettingsScreen()
-                    }
-                }
-            }
+            // key 的作用是帮助 Compose 识别每个页面的唯一性，提高性能
+            key = { index -> navItems[index].route }
+        ) { pageIndex ->
+            // 直接根据 Pager 提供的页面索引，从列表里找到对应的 Screen 对象，
+            // 然后调用它的 content() 方法来显示界面。
+            navItems[pageIndex].content()
         }
     }
 }

@@ -20,7 +20,11 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
+            isMinifyEnabled = true  //开启代码压缩、混淆、优化
+            isShrinkResources = true    //删除代码中没有用到的资源
+            // ✨ 指定混淆规则文件
+            // proguard-android-optimize.txt 是安卓SDK自带的默认规则
+            // proguard-rules.pro 是你项目里自己的规则文件，你可以添加不想被混淆的类
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )

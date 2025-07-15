@@ -35,7 +35,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     // 为我们的按钮和输入框创建缓存变量
     private var cachedSendBtnNode: AccessibilityNodeInfo? = null
     private var cachedInputNode: AccessibilityNodeInfo? = null
-    private val colorInt = "#80ff0000".toColorInt() //debug的时候调成可见色，正式环境应该是纯透明
+    private val colorInt = "#5066ccff".toColorInt() //debug的时候调成可见色，正式环境应该是纯透明
 
     /**
      * 根据发送按钮的矩形区域，创建加密悬浮窗的布局参数。

@@ -1,5 +1,6 @@
 package me.wjz.nekocrypt.ui.screen
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
@@ -17,7 +18,7 @@ import me.wjz.nekocrypt.ui.SwitchSettingItem
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier) {
     LazyColumn(
-        modifier = modifier,
+        modifier = modifier.fillMaxSize(),
         // verticalArrangement = Arrangement.spacedBy(16.dp), 选项之间不需要间隔
     ) {
         // 第一个分组：主要设置
