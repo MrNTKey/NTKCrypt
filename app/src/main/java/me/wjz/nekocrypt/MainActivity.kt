@@ -8,6 +8,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import me.wjz.nekocrypt.data.LocalDataStoreManager
 import me.wjz.nekocrypt.ui.MainMenu
 import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
+import me.wjz.nekocrypt.util.PermissionGuard
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -20,9 +21,13 @@ class MainActivity : ComponentActivity() {
             //这里不要在Compose UI中直接引用dataStoreManager，而是在这里注入一个，这样可以方便替换不同的manager，解耦方便复用
             val app = application as NekoCryptApp
             NekoCryptTheme {
-                CompositionLocalProvider(LocalDataStoreManager provides app.dataStoreManager) {
-                    MainMenu()
+                //  权限检查
+                PermissionGuard {
+                    CompositionLocalProvider(LocalDataStoreManager provides app.dataStoreManager) {
+                        MainMenu()
+                    }
                 }
+
             }
         }
     }
