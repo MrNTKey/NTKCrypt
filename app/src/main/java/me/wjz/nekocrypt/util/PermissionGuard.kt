@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Layers
+import androidx.compose.material.icons.outlined.SyncProblem
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,11 +23,34 @@ import me.wjz.nekocrypt.ui.dialog.NCDialog
 fun PermissionGuard(content: @Composable () -> Unit) {
     val context = LocalContext.current
     var activeDialog by remember { mutableStateOf<NCDialog?>(null) }
-    val settingsLauncher = rememberLauncherForActivityResult(
+
+    //  用于跳转到应用详细信息，方便设置权限
+    val appDetailsLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) {}
+    //  跳转到“显示在其他应用上层”权限设置页面
+    val overlayPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) {
-        // 用户从设置页返回，我们可以选择在这里重新检查，
-        // 但为了简化，让用户下次启动时再检查。
+        if (!PermissionUtil.isOverlayPermissionGranted(context)) {
+            // 弹出对话引导用户跳转到权限设置页面
+            activeDialog = PermissionDialog(
+                dialogIcon = Icons.Outlined.SyncProblem,
+                dialogTitle = context.getString(R.string.permission_still_missing_title),
+                dialogText = context.getString(R.string.permission_still_missing_text),
+                onDismissRequest = { activeDialog = null },
+                onConfirmRequest = {
+                    appDetailsLauncher.launch(
+                        Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            "package:${context.packageName}".toUri()
+                        )
+                    )
+                    activeDialog = null
+                }
+
+            )
+        }
     }
 
     // UI首次加载的时候做一次权限检查
@@ -39,7 +63,7 @@ fun PermissionGuard(content: @Composable () -> Unit) {
                 dialogText = context.getString(R.string.permission_overlay_text),
                 onDismissRequest = { activeDialog = null },
                 onConfirmRequest = {
-                    settingsLauncher.launch(
+                    overlayPermissionLauncher.launch(
                         Intent(
                             Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                             "package:${context.packageName}".toUri()
