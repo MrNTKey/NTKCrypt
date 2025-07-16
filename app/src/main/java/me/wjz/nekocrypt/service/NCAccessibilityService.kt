@@ -38,9 +38,9 @@ class NCAccessibilityService : AccessibilityService() {
 
     // ——————————————————————————设置选项——————————————————————————
 
-    //  是否是沉浸式模式
-    val isImmersiveMode: Boolean by serviceScope.observeAsState(flowProvider = {
-        dataStoreManager.getSettingFlow(SettingKeys.IS_IMMERSIVE_MODE, false)
+    //  是否是沉浸式解密模式
+    val isImmersiveDecryptionMode: Boolean by serviceScope.observeAsState(flowProvider = {
+        dataStoreManager.getSettingFlow(SettingKeys.IS_IMMERSIVE_DECRYPTION_MODE, false)
     }, initialValue = false)
 
     //  所有密钥

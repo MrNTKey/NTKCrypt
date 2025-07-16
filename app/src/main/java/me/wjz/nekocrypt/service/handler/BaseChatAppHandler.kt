@@ -63,7 +63,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             }
         }
         // 点击解密逻辑
-        if (!service.isImmersiveMode && event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {
+        if (!service.isImmersiveDecryptionMode && event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {
             handleClickForDecryption(event.source)
         }
 
