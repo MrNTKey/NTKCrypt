@@ -1,6 +1,12 @@
 package me.wjz.nekocrypt.ui.screen
 
 import android.content.Context
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -8,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -15,8 +22,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.SettingKeys
+import me.wjz.nekocrypt.hook.rememberDataStoreState
 import me.wjz.nekocrypt.service.NCAccessibilityService
 import me.wjz.nekocrypt.ui.CatPawButton
+import me.wjz.nekocrypt.ui.RadioOption
+import me.wjz.nekocrypt.ui.SegmentedButtonSetting
 import me.wjz.nekocrypt.ui.SwitchSettingCard
 import me.wjz.nekocrypt.util.openAccessibilitySettings
 import me.wjz.nekocrypt.util.rememberAccessibilityServiceState
@@ -31,6 +41,9 @@ fun HomeScreen(modifier: Modifier = Modifier) {
     // 2. 使用我们新的 Composable 函数来获取并监听无障碍服务的状态
     //    你需要将 MyAccessibilityService::class.java 替换成你自己的服务类名
     val isEnabled by rememberAccessibilityServiceState(context, NCAccessibilityService::class.java)
+
+    val useAutoEncryption by rememberDataStoreState(SettingKeys.USE_AUTO_ENCRYPTION, false)
+
 
     // 使用 Column 作为根布局，以垂直排列组件
     Column(
@@ -55,7 +68,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 
         // 在底部添加我们的设置卡片
 
-        //沉浸式加密开关
+        //加密开关
         SwitchSettingCard(
             key = SettingKeys.USE_AUTO_ENCRYPTION,
             defaultValue = false,
@@ -63,6 +76,29 @@ fun HomeScreen(modifier: Modifier = Modifier) {
             subtitle = stringResource(id = R.string.setting_encrypt_on_send_subtitle),
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp) // 添加一些边距让布局更好看
         )
+
+        AnimatedVisibility(
+            visible = useAutoEncryption,
+            enter = expandVertically(animationSpec = tween(400)) + fadeIn(),
+            exit = shrinkVertically(animationSpec = tween(400)) + fadeOut()
+        ) {
+            val encryptionModeOptions = remember {
+                listOf(
+                    RadioOption("standard", "标准模式"),
+                    RadioOption("immersive", "沉浸模式")
+                )
+            }
+            // ✨ 调用修正后的组件
+            SegmentedButtonSetting(
+                settingKey = SettingKeys.ENCRYPTION_MODE, // ✨ 确保这个 Key 已经被添加
+                title = stringResource(id = R.string.setting_encryption_mode_title),
+                options = encryptionModeOptions,
+                defaultOptionKey = "standard",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        }
+
+
         //沉浸式解密开关
         SwitchSettingCard(
             key = SettingKeys.IS_IMMERSIVE_DECRYPTION_MODE,
@@ -71,6 +107,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
             subtitle = stringResource(id = R.string.setting_decrypt_immersive_mod_subtitle),
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp) // 添加一些边距让布局更好看
         )
+
 
         Spacer(Modifier.padding(4.dp))
     }

@@ -43,6 +43,8 @@
     <string name="setting_encrypt_on_send_subtitle">发送消息时将会自动进行加密。</string>
     <string name="setting_decrypt_immersive_mod_title">沉浸式解密</string>
     <string name="setting_decrypt_immersive_mod_subtitle">自动显示解密文本，但会增加一定耗电量。</string>
+    <string name="setting_encryption_mode_title">设置加密模式</string>
+
     <!--    通知栏显示文本-->
     <string name="notification_title">NekoCrypt 喵密服务运行中</string>
     <!--    权限检查相关-->
