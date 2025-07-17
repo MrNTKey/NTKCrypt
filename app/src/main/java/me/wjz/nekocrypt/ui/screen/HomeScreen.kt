@@ -11,7 +11,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -68,34 +73,46 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 
         // 在底部添加我们的设置卡片
 
-        //加密开关
-        SwitchSettingCard(
-            key = SettingKeys.USE_AUTO_ENCRYPTION,
-            defaultValue = false,
-            title = stringResource(id = R.string.setting_encrypt_on_send_title),
-            subtitle = stringResource(id = R.string.setting_encrypt_on_send_subtitle),
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp) // 添加一些边距让布局更好看
-        )
-
-        AnimatedVisibility(
-            visible = useAutoEncryption,
-            enter = expandVertically(animationSpec = tween(400)) + fadeIn(),
-            exit = shrinkVertically(animationSpec = tween(400)) + fadeOut()
+        // ✨ 关键改动：将加密相关的设置项全部放进一个 Card 里
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            val encryptionModeOptions = remember {
-                listOf(
-                    RadioOption("standard", "标准模式"),
-                    RadioOption("immersive", "沉浸模式")
+            Column {
+                // 1. 开关部分，我们直接在这里实现，不再用独立的 SwitchSettingCard
+                SwitchSettingCard(
+                    key = SettingKeys.USE_AUTO_ENCRYPTION,
+                    defaultValue = false,
+                    title = stringResource(id = R.string.setting_encrypt_on_send_title),
+                    subtitle = stringResource(id = R.string.setting_encrypt_on_send_subtitle)
+                    // 这里不再需要 modifier，因为它由父 Card 控制
                 )
+
+                // 2. 模式选择部分，用 AnimatedVisibility 控制
+                AnimatedVisibility(
+                    visible = useAutoEncryption,
+                    enter = expandVertically(animationSpec = tween(400)) + fadeIn(),
+                    exit = shrinkVertically(animationSpec = tween(400)) + fadeOut()
+                ) {
+                    val encryptionModeOptions = remember {
+                        listOf(
+                            RadioOption("standard", "标准模式"),
+                            RadioOption("immersive", "沉浸模式")
+                        )
+                    }
+                    SegmentedButtonSetting(
+                        settingKey = SettingKeys.ENCRYPTION_MODE,
+                        title = stringResource(id = R.string.setting_encryption_mode_title),
+                        options = encryptionModeOptions,
+                        defaultOptionKey = "standard"
+                        // 这里也不再需要 modifier
+                    )
+                }
             }
-            // ✨ 调用修正后的组件
-            SegmentedButtonSetting(
-                settingKey = SettingKeys.ENCRYPTION_MODE, // ✨ 确保这个 Key 已经被添加
-                title = stringResource(id = R.string.setting_encryption_mode_title),
-                options = encryptionModeOptions,
-                defaultOptionKey = "standard",
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
         }
 
 

@@ -51,6 +51,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -411,7 +412,7 @@ fun SegmentedButtonSetting(
 ) {
     var currentSelection by rememberDataStoreState(settingKey, defaultOptionKey)
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+    Column(modifier = modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp)) {
         Text(
             text = title,
             fontWeight = FontWeight.Bold,
@@ -420,13 +421,22 @@ fun SegmentedButtonSetting(
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
-        // ✨ 使用 Material 3 提供的 SingleChoiceSegmentedButtonRow ✨
         SingleChoiceSegmentedButtonRow(
             modifier = Modifier.fillMaxWidth()
         ) {
             options.forEachIndexed { index, option ->
+                // ✨ 关键改动：根据位置动态计算形状！
+                val shape = when (index) {
+                    // 第一个按钮：左边是圆角，右边是直角
+                    0 -> RoundedCornerShape(topStartPercent = 50, bottomStartPercent = 50)
+                    // 最后一个按钮：左边是直角，右边是圆角
+                    options.lastIndex -> RoundedCornerShape(topEndPercent = 50, bottomEndPercent = 50)
+                    // 中间的按钮：两边都是直角
+                    else -> RectangleShape
+                }
+
                 SegmentedButton(
-                    shape = RoundedCornerShape(50), // 让按钮边缘更圆滑
+                    shape = shape, // ✨ 使用我们动态计算的形状
                     onClick = { currentSelection = option.key },
                     selected = currentSelection == option.key
                 ) {
