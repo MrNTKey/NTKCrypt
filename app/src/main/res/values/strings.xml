@@ -44,6 +44,8 @@
     <string name="setting_decrypt_immersive_mod_title">沉浸式解密</string>
     <string name="setting_decrypt_immersive_mod_subtitle">自动显示解密文本，但会增加一定耗电量。</string>
     <string name="setting_encryption_mode_title">设置加密模式</string>
+    <string name="setting_encryption_mode_info_text">加密模式说明</string>
+    <string name="setting_encryption_mode_info_desc">标准模式：\n长按发送按钮发送密文，点按则正常发送明文。\n\n沉浸模式：\n点按直接发送密文。</string>
 
     <!--    通知栏显示文本-->
     <string name="notification_title">NekoCrypt 喵密服务运行中</string>

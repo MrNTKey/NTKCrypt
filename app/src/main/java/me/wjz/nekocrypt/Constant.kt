@@ -23,5 +23,6 @@ object SettingKeys {
 }
 
 object CommonKeys {
-
+    const val ENCRYPTION_MODE_STANDARD = "standard"
+    const val ENCRYPTION_MODE_IMMERSIVE = "immersive"
 }

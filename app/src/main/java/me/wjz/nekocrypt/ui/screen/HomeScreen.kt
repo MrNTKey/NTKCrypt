@@ -25,11 +25,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import me.wjz.nekocrypt.CommonKeys.ENCRYPTION_MODE_IMMERSIVE
+import me.wjz.nekocrypt.CommonKeys.ENCRYPTION_MODE_STANDARD
 import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.SettingKeys
 import me.wjz.nekocrypt.hook.rememberDataStoreState
 import me.wjz.nekocrypt.service.NCAccessibilityService
 import me.wjz.nekocrypt.ui.CatPawButton
+import me.wjz.nekocrypt.ui.InfoTooltipIcon
 import me.wjz.nekocrypt.ui.RadioOption
 import me.wjz.nekocrypt.ui.SegmentedButtonSetting
 import me.wjz.nekocrypt.ui.SwitchSettingCard
@@ -44,8 +47,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
     val context: Context = LocalContext.current
 
     // 2. 使用我们新的 Composable 函数来获取并监听无障碍服务的状态
-    //    你需要将 MyAccessibilityService::class.java 替换成你自己的服务类名
-    val isEnabled by rememberAccessibilityServiceState(context, NCAccessibilityService::class.java)
+    val isAccessibilityEnabled by rememberAccessibilityServiceState(context, NCAccessibilityService::class.java)
 
     val useAutoEncryption by rememberDataStoreState(SettingKeys.USE_AUTO_ENCRYPTION, false)
 
@@ -62,8 +64,8 @@ fun HomeScreen(modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             CatPawButton(
-                isEnabled = isEnabled,
-                statusText = if (isEnabled)
+                isEnabled = isAccessibilityEnabled,
+                statusText = if (isAccessibilityEnabled)
                     stringResource(id = R.string.accessibility_service_enabled)
                 else
                     stringResource(id = R.string.accessibility_service_disabled),
@@ -100,16 +102,23 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                 ) {
                     val encryptionModeOptions = remember {
                         listOf(
-                            RadioOption("standard", "标准模式"),
-                            RadioOption("immersive", "沉浸模式")
+                            RadioOption(ENCRYPTION_MODE_STANDARD, "标准模式"),
+                            RadioOption(ENCRYPTION_MODE_IMMERSIVE, "沉浸模式")
                         )
                     }
                     SegmentedButtonSetting(
                         settingKey = SettingKeys.ENCRYPTION_MODE,
+                        defaultOptionKey = ENCRYPTION_MODE_STANDARD,
                         title = stringResource(id = R.string.setting_encryption_mode_title),
                         options = encryptionModeOptions,
-                        defaultOptionKey = "standard"
-                        // 这里也不再需要 modifier
+                        titleExtraContent = {
+                            // ✨ 看！之前所有复杂的 TooltipBox 代码，
+                            // 现在都变成了这一行极其清晰的调用！
+                            InfoTooltipIcon(
+                                tooltipText = stringResource(R.string.setting_encryption_mode_info_desc),
+                                contentDescription = stringResource(R.string.setting_encryption_mode_info_text)
+                            )
+                        }
                     )
                 }
             }

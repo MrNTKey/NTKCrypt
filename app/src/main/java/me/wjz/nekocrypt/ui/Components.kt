@@ -420,20 +420,29 @@ fun SegmentedButtonSetting(
     options: List<RadioOption>,
     defaultOptionKey: String,
     modifier: Modifier = Modifier,
+    titleExtraContent: (@Composable () -> Unit)? = null,    //标题旁边的内容
 ) {
     var currentSelection by rememberDataStoreState(settingKey, defaultOptionKey)
 
-    Column(modifier = modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp)) {
-        Text(
-            text = title,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+    Column(modifier = modifier.padding(start = 8.dp, end = 8.dp)) {
+        Row(
+            modifier = Modifier.padding(start = 8.dp, end = 8.dp), // 调整内边距以适应IconButton
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Start   // 从左到右排列
+        ) {
+            Text(
+                text = title,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+            )
+            // 如果传入了额外内容，就在这里显示它
+            titleExtraContent?.invoke()
+        }
 
         SingleChoiceSegmentedButtonRow(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp)
         ) {
             options.forEachIndexed { index, option ->
                 // ✨ 关键改动：根据位置动态计算形状！
@@ -441,7 +450,10 @@ fun SegmentedButtonSetting(
                     // 第一个按钮：左边是圆角，右边是直角
                     0 -> RoundedCornerShape(topStartPercent = 50, bottomStartPercent = 50)
                     // 最后一个按钮：左边是直角，右边是圆角
-                    options.lastIndex -> RoundedCornerShape(topEndPercent = 50, bottomEndPercent = 50)
+                    options.lastIndex -> RoundedCornerShape(
+                        topEndPercent = 50,
+                        bottomEndPercent = 50
+                    )
                     // 中间的按钮：两边都是直角
                     else -> RectangleShape
                 }
@@ -460,14 +472,13 @@ fun SegmentedButtonSetting(
 }
 
 // 带tooltip的infoIcon实现
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InfoTooltipIcon(
     tooltipText: String,
     modifier: Modifier = Modifier,
     icon: ImageVector = Icons.Outlined.Info,
-    contentDescription: String? = null
+    contentDescription: String? = null,
 ) {
     // 将所有 Tooltip 相关的状态和逻辑都封装在这里
     val tooltipState = rememberTooltipState()
@@ -477,7 +488,7 @@ fun InfoTooltipIcon(
         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
         tooltip = {
             PlainTooltip {
-                Text(tooltipText)
+                Text(tooltipText, fontSize = 14.sp)
             }
         },
         state = tooltipState,
