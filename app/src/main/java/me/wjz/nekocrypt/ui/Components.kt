@@ -27,21 +27,30 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -55,11 +64,13 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
+import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.hook.rememberDataStoreState
 
 /**
@@ -445,5 +456,41 @@ fun SegmentedButtonSetting(
             }
         }
 
+    }
+}
+
+// 带tooltip的infoIcon实现
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun InfoTooltipIcon(
+    tooltipText: String,
+    modifier: Modifier = Modifier,
+    icon: ImageVector = Icons.Outlined.Info,
+    contentDescription: String? = null
+) {
+    // 将所有 Tooltip 相关的状态和逻辑都封装在这里
+    val tooltipState = rememberTooltipState()
+    val scope = rememberCoroutineScope()
+
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+        tooltip = {
+            PlainTooltip {
+                Text(tooltipText)
+            }
+        },
+        state = tooltipState,
+        modifier = modifier
+    ) {
+        // 触发器就是我们传入的图标
+        IconButton(onClick = {
+            scope.launch { tooltipState.show() }
+        }) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription
+            )
+        }
     }
 }
