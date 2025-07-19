@@ -1,8 +1,6 @@
 <resources>
     <string name="app_name">NekoCrypt</string>
-    <string name="main_settings">主要设置</string>
-    <string name="general">通用</string>
-    <string name="about">关于</string>
+
     <!--    闲杂信息-->
     <string name="ok">原来是这样，现在我完全搞懂了</string>
     <string name="cancel">关 闭 你</string>
@@ -66,4 +64,7 @@
     <!--    下面这两条暂时用不着-->
     <string name="permission_accessibility_title">需要无障碍服务</string>
     <string name="permission_accessibility_text">为了实现自动加解密和读取聊天内容，请在设置列表中找到“NekoCrypt”并开启它的无障碍服务。</string>
+    <!--    设置界面相关信息-->
+    <string name="crypto_settings">加解密设置</string>
+    <string name="about">关于</string>
 </resources>

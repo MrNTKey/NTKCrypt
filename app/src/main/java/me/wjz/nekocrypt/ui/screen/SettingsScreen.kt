@@ -1,14 +1,18 @@
 package me.wjz.nekocrypt.ui.screen
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.DividerDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.SettingKeys
 import me.wjz.nekocrypt.ui.ClickableSettingItem
@@ -21,13 +25,13 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize(),
         // verticalArrangement = Arrangement.spacedBy(16.dp), 选项之间不需要间隔
     ) {
-        // 第一个分组：主要设置
+        // 第一个分组：加解密设置
         item {
-            SettingsHeader(stringResource(R.string.main_settings))
+            SettingsHeader(stringResource(R.string.crypto_settings))
         }
         item {
             SwitchSettingItem(
-                key  = SettingKeys.IS_GLOBAL_ENCRYPTION_MODE,
+                key = SettingKeys.IS_GLOBAL_ENCRYPTION_MODE,
                 defaultValue = false,
                 icon = { Icon(Icons.Default.Lock, contentDescription = "Enable Encryption") },
                 title = "启用全局加密",
@@ -35,8 +39,16 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             )
         }
         item {
+            // 给 Divider 加上水平内边距，让它两端不要顶到屏幕边缘，更好看
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                thickness = DividerDefaults.Thickness,
+                color = DividerDefaults.color
+            )
+        }
+        item {
             SwitchSettingItem(
-                key  = SettingKeys.IS_GLOBAL_ENCRYPTION_MODE,
+                key = SettingKeys.IS_GLOBAL_ENCRYPTION_MODE,
                 defaultValue = false,
                 icon = { Icon(Icons.Default.Lock, contentDescription = "Enable Encryption") },
                 title = "123123",

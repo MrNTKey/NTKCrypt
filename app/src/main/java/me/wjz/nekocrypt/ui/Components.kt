@@ -41,6 +41,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -514,5 +515,73 @@ fun InfoDialogIcon(
                 }
             }
         )
+    }
+}
+
+@Composable
+fun SliderSettingItem(
+    key: Preferences.Key<Long>,
+    defaultValue: Long,
+    icon: @Composable () -> Unit,
+    title: String,
+    subtitle: String,
+    valueRange: LongRange,
+    steps: Int, // 滑块上的离散步数
+    modifier: Modifier = Modifier
+){
+    // 使用你的 Hook 来自动同步 DataStore
+    var currentValue by rememberDataStoreState(key, defaultValue)
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 左侧的图标
+            Box(modifier = Modifier.padding(end = 16.dp)) {
+                icon()
+            }
+            // 右侧的文字和滑块
+            Column(modifier = Modifier.weight(1f)) {
+                // 标题和当前值
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    // 实时显示当前选中的值
+                    Text(
+                        text = "$currentValue ms",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                // 副标题
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                // 滑块本体
+                Slider(
+                    value = currentValue.toFloat(),
+                    onValueChange = {
+                        // 当用户滑动时，更新状态
+                        currentValue = it.toLong()
+                    },
+                    valueRange = valueRange.first.toFloat()..valueRange.last.toFloat(),
+                    steps = steps, // 设置步数，让滑块可以吸附到整数值
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
     }
 }
