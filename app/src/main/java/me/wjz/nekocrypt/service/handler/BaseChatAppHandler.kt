@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Rect
 import android.os.Bundle
 import android.util.Log
+import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
@@ -13,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import me.wjz.nekocrypt.CryptoMode
 import me.wjz.nekocrypt.service.NCAccessibilityService
 import me.wjz.nekocrypt.ui.DecryptionPopupContent
 import me.wjz.nekocrypt.util.CryptoManager
@@ -62,9 +64,25 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 removeOverlayView()
             }
         }
-        // 点击解密逻辑
-        if (!service.isImmersiveDecryptionMode && event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {
-            handleClickForDecryption(event.source)
+
+        // 解密逻辑，开启解密，才进行解密操作。
+        if (service.useAutoDecryption) {
+            when (service.decryptionMode) {
+                // 标准模式：用户点击密文时，才进行解密
+                CryptoMode.STANDARD.key -> {
+                    if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {
+                        handleClickForDecryption(event.source)
+                    }
+                }
+                // 沉浸模式：当窗口内容变化时，主动扫描并解密
+                CryptoMode.IMMERSIVE.key -> {
+                    if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
+                        // ✨ 这里可以添加一个新的、更复杂的沉浸式解密逻辑
+                        // 比如遍历屏幕上的所有节点，找到密文并自动显示弹窗
+                        // Log.d(tag, "沉浸式解密触发（逻辑待实现）")
+                    }
+                }
+            }
         }
 
     }
@@ -187,17 +205,61 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         val params = getOverlayLayoutParams(rect)
 
         currentService.serviceScope.launch(Dispatchers.Main) {
-            // 情况一：悬浮窗还不存在，创建它！
             if (overlayView == null) {
-                //Log.d(tag, "悬浮窗不存在，执行创建...")
                 overlayView = View(currentService).apply {
                     setBackgroundColor(colorInt)
-                    setOnClickListener { doEncryptAndClick() }  // 配置点击事件。点击加密。
+
+                    // ✨ 1. 首先，为视图定义一个标准的“单击”行为
+                    // 这就是我们的“标准门铃按钮”。
+                    setOnClickListener {
+                        // 标准模式下，短按执行普通发送
+                        if (currentService.encryptionMode == CryptoMode.STANDARD.key) {
+                            Log.d(currentService.tag, "标准模式短按，执行普通发送！")
+                            doNormalClick()
+                        }
+                        // 沉浸模式下，短按（单击）也执行加密发送
+                        else if (currentService.encryptionMode == CryptoMode.IMMERSIVE.key) {
+                            Log.d(currentService.tag, "沉浸模式点击，执行加密！")
+                            doEncryptAndClick()
+                        }
+                    }
+
+                    // ✨ 2. 然后，我们只用 onTouch 来“监听”手势，特别是长按
+                    var longPressJob: Job? = null
+                    setOnTouchListener { v, event -> // 'v' 就是这个 View 本身
+                        // 只在标准模式下才需要区分长按和短按
+                        if (currentService.encryptionMode == CryptoMode.STANDARD.key) {
+                            when (event.action) {
+                                MotionEvent.ACTION_DOWN -> {
+                                    longPressJob = currentService.serviceScope.launch {
+                                        delay(500L) // 长按阈值
+                                        Log.d(currentService.tag, "标准模式长按，执行加密！")
+                                        doEncryptAndClick()
+                                    }
+                                    true // 我们要处理后续事件
+                                }
+                                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                                    // 如果手指抬起时，长按任务还在“准备中”...
+                                    if (longPressJob?.isActive == true) {
+                                        // ...说明这是一个短按，取消长按任务...
+                                        longPressJob.cancel()
+                                        // ✨ ...然后“按响”那个标准的门铃！
+                                        v.performClick()
+                                    }
+                                    // 如果长按任务已经执行或被取消，这里就什么都不做
+                                    true
+                                }
+                                else -> false
+                            }
+                        } else {
+                            // 在沉浸模式下，我们让标准的 OnClickListener 去处理所有点击
+                            // onTouch 只需要返回 false，表示“我不管，让别人来处理”
+                            false
+                        }
+                    }
                 }
                 windowManager?.addView(overlayView, params)
-            }
-            // 情况二：悬浮窗已存在，更新它！
-            else {
+            } else {
                 windowManager?.updateViewLayout(overlayView, params)
             }
         }
@@ -246,6 +308,15 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 sendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
             }
         }
+    }
+
+    // 普通点击的发送逻辑 (用于标准模式的短按)
+    protected fun doNormalClick() {
+        if (!isNodeValid(cachedSendBtnNode)) {
+            val root = service?.rootInActiveWindow ?: return
+            cachedSendBtnNode = findNodeById(root, sendBtnId)
+        }
+        cachedSendBtnNode?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
     }
 
     protected fun findNodeById(

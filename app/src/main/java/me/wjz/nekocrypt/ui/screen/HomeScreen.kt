@@ -103,10 +103,13 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                     enter = expandVertically(animationSpec = tween(400)) + fadeIn(),
                     exit = shrinkVertically(animationSpec = tween(400)) + fadeOut()
                 ) {
+                    val modeStandardText = stringResource(R.string.mode_standard)
+                    val modeImmersiveText = stringResource(R.string.mode_immersive)
+
                     val encryptionModeOptions = remember {
                         listOf(
-                            RadioOption(ENCRYPTION_MODE_STANDARD, "标准模式"),
-                            RadioOption(ENCRYPTION_MODE_IMMERSIVE, "沉浸模式")
+                            RadioOption(ENCRYPTION_MODE_STANDARD, modeStandardText),
+                            RadioOption(ENCRYPTION_MODE_IMMERSIVE, modeImmersiveText)
                         )
                     }
                     SegmentedButtonSetting(

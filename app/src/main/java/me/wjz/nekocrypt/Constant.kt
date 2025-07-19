@@ -1,5 +1,6 @@
 package me.wjz.nekocrypt
 
+import androidx.annotation.StringRes
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 
@@ -14,8 +15,6 @@ object Constant {
 object SettingKeys {
     val IS_GLOBAL_ENCRYPTION_MODE = booleanPreferencesKey("global_encryption_enabled")
     val CURRENT_KEY = stringPreferencesKey("current_key")
-    // 是否是沉浸式解密模式
-    val IS_IMMERSIVE_DECRYPTION_MODE= booleanPreferencesKey("is_immersive_decryption_mode")
     // 用 String 类型的 Key 来存储序列化后的密钥数组
     val ALL_THE_KEYS = stringPreferencesKey("all_the_keys")
     val USE_AUTO_ENCRYPTION = booleanPreferencesKey("use_auto_encryption")
@@ -29,4 +28,20 @@ object CommonKeys {
     const val ENCRYPTION_MODE_IMMERSIVE = "immersive"
     const val DECRYPTION_MODE_STANDARD = "standard"
     const val DECRYPTION_MODE_IMMERSIVE = "immersive"
+}
+
+enum class CryptoMode(val key: String, @StringRes val labelResId: Int){
+    STANDARD("standard", R.string.mode_standard),
+    IMMERSIVE("immersive", R.string.mode_immersive);
+
+    companion object {
+        /**
+         * 一个辅助函数，可以根据存储的 key 安全地找回对应的枚举实例。
+         * 如果找不到，就返回一个默认值。
+         */
+        fun fromKey(key: String?): CryptoMode {
+            // entries 是一个由编译器自动生成的属性，包含了枚举的所有实例
+            return entries.find { it.key == key } ?: STANDARD
+        }
+    }
 }

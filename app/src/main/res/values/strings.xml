@@ -3,7 +3,7 @@
     <string name="main_settings">主要设置</string>
     <string name="general">通用</string>
     <string name="about">关于</string>
-<!--    闲杂信息-->
+    <!--    闲杂信息-->
     <string name="ok">原来是这样，现在我完全搞懂了</string>
     <string name="cancel">关 闭 你</string>
 
@@ -13,6 +13,9 @@
     <string name="key">密钥</string>
     <string name="settings">设置</string>
 
+    <!--    加解密模式-->
+    <string name="mode_standard">标准模式</string>
+    <string name="mode_immersive">沉浸模式</string>
     <!--    CryptoScreen -->
     <string name="crypto_input_label">输入原文或密文</string>
     <string name="crypto_input_placeholder">在此处输入或粘贴文本...</string>
@@ -60,7 +63,7 @@
     <string name="permission_overlay_text">为了功能正常使用，请您手动授予权限。\n\n在设置页面，请寻找并开启“显示在其他应用上层”选项。\n\n在部分手机(如小米、华为)上，还可能额外有“悬浮窗权限”，请一同在应用的权限管理中寻找并开启它。</string>
     <string name="permission_still_missing_title">仍未检测到悬浮窗权限</string>
     <string name="permission_still_missing_text">喵密检测到悬浮窗权限仍未开启。别担心，这是因为各大手机厂商有更高的悬浮窗权限控制。\n\n请在接下来打开的应用设置页面中，手动找到并开启“悬浮窗”或“显示在其他应用上层”的相关权限。</string>
-<!--    下面这两条暂时用不着-->
+    <!--    下面这两条暂时用不着-->
     <string name="permission_accessibility_title">需要无障碍服务</string>
     <string name="permission_accessibility_text">为了实现自动加解密和读取聊天内容，请在设置列表中找到“NekoCrypt”并开启它的无障碍服务。</string>
 </resources>

@@ -15,6 +15,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import me.wjz.nekocrypt.Constant
 import me.wjz.nekocrypt.Constant.PACKAGE_NAME_QQ
+import me.wjz.nekocrypt.CryptoMode
 import me.wjz.nekocrypt.NekoCryptApp
 import me.wjz.nekocrypt.SettingKeys
 import me.wjz.nekocrypt.hook.observeAsState
@@ -22,7 +23,7 @@ import me.wjz.nekocrypt.service.handler.ChatAppHandler
 import me.wjz.nekocrypt.service.handler.QQHandler
 
 class NCAccessibilityService : AccessibilityService() {
-    private val tag = "NekoAccessibility"
+    val tag = "NekoAccessibility"
 
     // 1. 创建一个 Service 自己的协程作用域，它的生命周期和 Service 绑定
     val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -38,11 +39,6 @@ class NCAccessibilityService : AccessibilityService() {
 
     // ——————————————————————————设置选项——————————————————————————
 
-    //  是否是沉浸式解密模式
-    val isImmersiveDecryptionMode: Boolean by serviceScope.observeAsState(flowProvider = {
-        dataStoreManager.getSettingFlow(SettingKeys.IS_IMMERSIVE_DECRYPTION_MODE, false)
-    }, initialValue = false)
-
     //  所有密钥
     val cryptoKeys: Array<String> by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getKeyArrayFlow()
@@ -57,6 +53,22 @@ class NCAccessibilityService : AccessibilityService() {
     val useAutoEncryption: Boolean by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.USE_AUTO_ENCRYPTION, false)
     }, initialValue = false)
+    //是否开启解密功能
+    val useAutoDecryption: Boolean by serviceScope.observeAsState(flowProvider = {
+        dataStoreManager.getSettingFlow(SettingKeys.USE_AUTO_DECRYPTION, false)
+    }, initialValue = false)
+
+    // ✨ 新增：监听当前的“加密模式”
+    val encryptionMode: String by serviceScope.observeAsState(flowProvider = {
+        dataStoreManager.getSettingFlow(SettingKeys.ENCRYPTION_MODE, CryptoMode.STANDARD.key)
+    }, initialValue = CryptoMode.STANDARD.key)
+
+    // ✨ 新增：监听当前的“解密模式”
+    val decryptionMode: String by serviceScope.observeAsState(flowProvider = {
+        dataStoreManager.getSettingFlow(SettingKeys.DECRYPTION_MODE, CryptoMode.STANDARD.key)
+    }, initialValue = CryptoMode.STANDARD.key)
+
+
 
     // —————————————————————————— override ——————————————————————————
 
