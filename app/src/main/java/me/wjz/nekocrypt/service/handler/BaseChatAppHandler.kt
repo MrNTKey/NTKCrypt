@@ -53,7 +53,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         // 悬浮窗管理逻辑
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED || event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             if (service.useAutoEncryption) {
-                //只有开启自动加密，才会加上悬浮窗，每次事件改变，都要更新悬浮窗位置
+                //只有开启加密，才会加上悬浮窗，每次事件改变，都要更新悬浮窗位置
                 overlayManagementJob?.cancel()
                 overlayManagementJob = service.serviceScope.launch(Dispatchers.Default) {
                     handleOverlayManagement()   // 可能是添加、更新、删除悬浮窗

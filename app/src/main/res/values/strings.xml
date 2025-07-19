@@ -3,6 +3,9 @@
     <string name="main_settings">主要设置</string>
     <string name="general">通用</string>
     <string name="about">关于</string>
+<!--    闲杂信息-->
+    <string name="ok">原来是这样，现在我完全搞懂了</string>
+    <string name="cancel">关 闭 你</string>
 
     <!--    bottomBar的label-->
     <string name="home">主页</string>
@@ -39,19 +42,20 @@
     <!--    Home界面的一些文本-->
     <string name="accessibility_service_enabled">已获取无障碍权限</string>
     <string name="accessibility_service_disabled">点击开启无障碍权限</string>
-    <string name="setting_encrypt_on_send_title">沉浸式加密</string>
-    <string name="setting_encrypt_on_send_subtitle">发送消息时将会自动进行加密。</string>
-    <string name="setting_decrypt_immersive_mod_title">沉浸式解密</string>
-    <string name="setting_decrypt_immersive_mod_subtitle">自动显示解密文本，但会增加一定耗电量。</string>
-    <string name="setting_encryption_mode_title">设置加密模式</string>
+    <string name="setting_encrypt_on_send_title">加密开关</string>
+    <string name="setting_encrypt_on_send_subtitle">开启喵密世界的大门。</string>
+    <string name="setting_decrypt_immersive_mod_title">解密开关</string>
+    <string name="setting_decrypt_immersive_mod_subtitle">读懂猫咪语言的必选项！</string>
+    <string name="setting_encryption_mode_info_title">设置加密模式</string>
     <string name="setting_encryption_mode_info_text">加密模式说明</string>
-    <string name="setting_encryption_mode_info_desc">标准模式：\n长按发送按钮发送密文，点按则正常发送明文。\n\n沉浸模式：\n点按直接发送密文。</string>
+    <string name="setting_encryption_mode_info_desc">标准模式：\n长按发送按钮才会发送密文。\n\n沉浸模式：\n点按直接发送密文。</string>
+    <string name="setting_decryption_mode_info_text">解密模式说明</string>
+    <string name="setting_decryption_mode_info_desc">标准模式：\n点击密文弹出悬浮窗显示解密结果。\n\n沉浸模式：\n无需点击，直接以悬浮窗显示解密后的密文，但会增加一定耗电量。</string>
 
     <!--    通知栏显示文本-->
     <string name="notification_title">NekoCrypt 喵密服务运行中</string>
     <!--    权限检查相关-->
     <string name="permission_go_to_settings">前往设置</string>
-    <string name="cancel">取消</string>
     <string name="permission_overlay_title">需要悬浮窗权限</string>
     <string name="permission_overlay_text">为了功能正常使用，请您手动授予权限。\n\n在设置页面，请寻找并开启“显示在其他应用上层”选项。\n\n在部分手机(如小米、华为)上，还可能额外有“悬浮窗权限”，请一同在应用的权限管理中寻找并开启它。</string>
     <string name="permission_still_missing_title">仍未检测到悬浮窗权限</string>

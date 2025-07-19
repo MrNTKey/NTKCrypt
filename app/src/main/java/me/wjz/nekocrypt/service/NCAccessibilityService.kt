@@ -53,7 +53,7 @@ class NCAccessibilityService : AccessibilityService() {
         dataStoreManager.getSettingFlow(SettingKeys.CURRENT_KEY, Constant.DEFAULT_SECRET_KEY)
     }, initialValue = Constant.DEFAULT_SECRET_KEY)
 
-    //是否开启自动加密
+    //是否开启加密功能
     val useAutoEncryption: Boolean by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.USE_AUTO_ENCRYPTION, false)
     }, initialValue = false)

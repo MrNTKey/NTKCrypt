@@ -1,5 +1,6 @@
 package me.wjz.nekocrypt.ui
 
+import android.R.attr.tooltipText
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
@@ -29,6 +30,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,6 +44,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
@@ -49,6 +52,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -65,12 +69,14 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
 import kotlinx.coroutines.launch
+import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.hook.rememberDataStoreState
 
 /**
@@ -474,34 +480,39 @@ fun SegmentedButtonSetting(
 // 带tooltip的infoIcon实现
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InfoTooltipIcon(
-    tooltipText: String,
+fun InfoDialogIcon(
+    title: String,
+    text: String,
     modifier: Modifier = Modifier,
     icon: ImageVector = Icons.Outlined.Info,
     contentDescription: String? = null,
 ) {
-    // 将所有 Tooltip 相关的状态和逻辑都封装在这里
-    val tooltipState = rememberTooltipState()
-    val scope = rememberCoroutineScope()
+    // ✨ 关键：组件自己管理自己的弹窗状态，外部完全无需关心！
+    var showDialog by remember { mutableStateOf(false) }
 
-    TooltipBox(
-        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-        tooltip = {
-            PlainTooltip {
-                Text(tooltipText, fontSize = 14.sp)
-            }
-        },
-        state = tooltipState,
+    // 1. 这是用户能看到的触发器：一个图标按钮
+    IconButton(
+        onClick = { showDialog = true }, // 点击时，只改变自己的内部状态
         modifier = modifier
     ) {
-        // 触发器就是我们传入的图标
-        IconButton(onClick = {
-            scope.launch { tooltipState.show() }
-        }) {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDescription
-            )
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription
+        )
+    }
+
+    // 2. 这是与触发器绑定的弹窗UI
+    //    当内部状态为 true 时，它就会自动显示出来
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text(text = title) },
+            text = { Text(text = text) },
+            confirmButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text(stringResource(R.string.ok))
+                }
+            }
+        )
     }
 }

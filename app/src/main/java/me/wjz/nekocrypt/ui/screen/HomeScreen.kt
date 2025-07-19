@@ -25,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import me.wjz.nekocrypt.CommonKeys.DECRYPTION_MODE_IMMERSIVE
+import me.wjz.nekocrypt.CommonKeys.DECRYPTION_MODE_STANDARD
 import me.wjz.nekocrypt.CommonKeys.ENCRYPTION_MODE_IMMERSIVE
 import me.wjz.nekocrypt.CommonKeys.ENCRYPTION_MODE_STANDARD
 import me.wjz.nekocrypt.R
@@ -32,7 +34,7 @@ import me.wjz.nekocrypt.SettingKeys
 import me.wjz.nekocrypt.hook.rememberDataStoreState
 import me.wjz.nekocrypt.service.NCAccessibilityService
 import me.wjz.nekocrypt.ui.CatPawButton
-import me.wjz.nekocrypt.ui.InfoTooltipIcon
+import me.wjz.nekocrypt.ui.InfoDialogIcon
 import me.wjz.nekocrypt.ui.RadioOption
 import me.wjz.nekocrypt.ui.SegmentedButtonSetting
 import me.wjz.nekocrypt.ui.SwitchSettingCard
@@ -47,10 +49,13 @@ fun HomeScreen(modifier: Modifier = Modifier) {
     val context: Context = LocalContext.current
 
     // 2. 使用我们新的 Composable 函数来获取并监听无障碍服务的状态
-    val isAccessibilityEnabled by rememberAccessibilityServiceState(context, NCAccessibilityService::class.java)
+    val isAccessibilityEnabled by rememberAccessibilityServiceState(
+        context,
+        NCAccessibilityService::class.java
+    )
 
     val useAutoEncryption by rememberDataStoreState(SettingKeys.USE_AUTO_ENCRYPTION, false)
-
+    val useAutoDecryption by rememberDataStoreState(SettingKeys.USE_AUTO_DECRYPTION, false)
 
     // 使用 Column 作为根布局，以垂直排列组件
     Column(
@@ -85,16 +90,14 @@ fun HomeScreen(modifier: Modifier = Modifier) {
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Column {
-                // 1. 开关部分，我们直接在这里实现，不再用独立的 SwitchSettingCard
                 SwitchSettingCard(
                     key = SettingKeys.USE_AUTO_ENCRYPTION,
                     defaultValue = false,
                     title = stringResource(id = R.string.setting_encrypt_on_send_title),
                     subtitle = stringResource(id = R.string.setting_encrypt_on_send_subtitle)
-                    // 这里不再需要 modifier，因为它由父 Card 控制
                 )
 
-                // 2. 模式选择部分，用 AnimatedVisibility 控制
+                // 2. 模式选择
                 AnimatedVisibility(
                     visible = useAutoEncryption,
                     enter = expandVertically(animationSpec = tween(400)) + fadeIn(),
@@ -109,14 +112,13 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                     SegmentedButtonSetting(
                         settingKey = SettingKeys.ENCRYPTION_MODE,
                         defaultOptionKey = ENCRYPTION_MODE_STANDARD,
-                        title = stringResource(id = R.string.setting_encryption_mode_title),
+                        title = stringResource(id = R.string.setting_encryption_mode_info_title),
                         options = encryptionModeOptions,
-                        titleExtraContent = {
-                            // ✨ 看！之前所有复杂的 TooltipBox 代码，
-                            // 现在都变成了这一行极其清晰的调用！
-                            InfoTooltipIcon(
-                                tooltipText = stringResource(R.string.setting_encryption_mode_info_desc),
-                                contentDescription = stringResource(R.string.setting_encryption_mode_info_text)
+                        titleExtraContent = {   // 标题旁边的额外内容。
+                            InfoDialogIcon(
+                                title = stringResource(R.string.setting_encryption_mode_info_text),
+                                text = stringResource(R.string.setting_encryption_mode_info_desc),
+                                contentDescription = stringResource(R.string.setting_encryption_mode_info_desc)
                             )
                         }
                     )
@@ -124,17 +126,52 @@ fun HomeScreen(modifier: Modifier = Modifier) {
             }
         }
 
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column {
+                //解密开关
+                SwitchSettingCard(
+                    key = SettingKeys.USE_AUTO_DECRYPTION,
+                    defaultValue = false,
+                    title = stringResource(id = R.string.setting_decrypt_immersive_mod_title),
+                    subtitle = stringResource(id = R.string.setting_decrypt_immersive_mod_subtitle),
+                )
+                AnimatedVisibility(
+                    visible = useAutoDecryption,
+                    enter = expandVertically(animationSpec = tween(400)) + fadeIn(),
+                    exit = shrinkVertically(animationSpec = tween(400)) + fadeOut()
+                ) {
+                    val decryptionModeOptions = remember {
+                        listOf(
+                            RadioOption(DECRYPTION_MODE_STANDARD, "标准模式"),
+                            RadioOption(DECRYPTION_MODE_IMMERSIVE, "沉浸模式")
+                        )
+                    }
+                    SegmentedButtonSetting(
+                        settingKey = SettingKeys.DECRYPTION_MODE,
+                        defaultOptionKey = DECRYPTION_MODE_STANDARD,
+                        title = stringResource(id = R.string.setting_encryption_mode_info_title),
+                        options = decryptionModeOptions,
+                        titleExtraContent = {
+                            // ✨ 看！之前所有复杂的 TooltipBox 代码，
+                            // 现在都变成了这一行极其清晰的调用！
+                            InfoDialogIcon(
+                                title = stringResource(R.string.setting_decryption_mode_info_text),
+                                text = stringResource(R.string.setting_decryption_mode_info_desc),
+                                contentDescription = stringResource(R.string.setting_encryption_mode_info_desc)
+                            )
+                        }
+                    )
+                }
+            }
 
-        //沉浸式解密开关
-        SwitchSettingCard(
-            key = SettingKeys.IS_IMMERSIVE_DECRYPTION_MODE,
-            defaultValue = false,
-            title = stringResource(id = R.string.setting_decrypt_immersive_mod_title),
-            subtitle = stringResource(id = R.string.setting_decrypt_immersive_mod_subtitle),
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp) // 添加一些边距让布局更好看
-        )
-
-
+        }
         Spacer(Modifier.padding(4.dp))
     }
 }
