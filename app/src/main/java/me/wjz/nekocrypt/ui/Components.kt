@@ -1,6 +1,5 @@
 package me.wjz.nekocrypt.ui
 
-import android.R.attr.tooltipText
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
@@ -38,7 +37,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
@@ -46,16 +44,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TooltipBox
-import androidx.compose.material3.TooltipDefaults
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -76,7 +70,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
-import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.hook.rememberDataStoreState
 
@@ -89,6 +82,7 @@ fun SettingsHeader(title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.ExtraBold,
         modifier = Modifier
             .padding(horizontal = 16.dp, vertical = 8.dp)
     )
@@ -526,14 +520,14 @@ fun SliderSettingItem(
     title: String,
     subtitle: String,
     valueRange: LongRange,
-    steps: Int, // 滑块上的离散步数
-    modifier: Modifier = Modifier
-){
+    step: Long, // 单步步长
+    modifier: Modifier = Modifier,
+) {
     // 使用你的 Hook 来自动同步 DataStore
     var currentValue by rememberDataStoreState(key, defaultValue)
 
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().clickable{},
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
@@ -578,7 +572,7 @@ fun SliderSettingItem(
                         currentValue = it.toLong()
                     },
                     valueRange = valueRange.first.toFloat()..valueRange.last.toFloat(),
-                    steps = steps, // 设置步数，让滑块可以吸附到整数值
+                    steps = ((valueRange.last - valueRange.first) / step - 1).toInt(), // 设置步数，让滑块可以吸附到整数值
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }

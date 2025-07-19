@@ -164,8 +164,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
      * ✨ 终极形态的悬浮窗管理逻辑 ✨
      * 先检查缓存，再搜索
      */
-    protected suspend fun handleOverlayManagement() {
-        delay(50)
+    protected fun handleOverlayManagement() {
+        // delay(50)
         var sendBtnNode: AccessibilityNodeInfo?
 
         // 1. 优先信任缓存：用廉价的 refresh() 给缓存“体检”

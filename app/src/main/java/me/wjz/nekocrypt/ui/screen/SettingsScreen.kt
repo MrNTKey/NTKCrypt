@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -17,6 +18,7 @@ import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.SettingKeys
 import me.wjz.nekocrypt.ui.ClickableSettingItem
 import me.wjz.nekocrypt.ui.SettingsHeader
+import me.wjz.nekocrypt.ui.SliderSettingItem
 import me.wjz.nekocrypt.ui.SwitchSettingItem
 
 @Composable
@@ -30,6 +32,26 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             SettingsHeader(stringResource(R.string.crypto_settings))
         }
         item {
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                thickness = DividerDefaults.Thickness,
+                color = DividerDefaults.color
+            )
+        }
+        item {
+            // ✨ 在这里使用我们全新的滑块设置项！
+            SliderSettingItem(
+                key = SettingKeys.ENCRYPTION_LONG_PRESS_DELAY,
+                defaultValue = 500L, // 默认 500 毫秒
+                icon = { Icon(Icons.Outlined.Timer, contentDescription = "Long Press Delay") },
+                title = stringResource(R.string.decryption_long_press_delay),
+                subtitle = stringResource(R.string.decryption_long_press_delay_desc),
+                valueRange = 50L..1000L, // 允许用户在 200ms 到 1500ms 之间选择
+                step = 50L //每50ms一个挡位
+            )
+
+        }
+        item {
             SwitchSettingItem(
                 key = SettingKeys.IS_GLOBAL_ENCRYPTION_MODE,
                 defaultValue = false,
@@ -38,8 +60,8 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 subtitle = "开启后，将自动处理复制的文本",
             )
         }
+        // 给 Divider 加上水平内边距，让它两端不要顶到屏幕边缘，更好看
         item {
-            // 给 Divider 加上水平内边距，让它两端不要顶到屏幕边缘，更好看
             HorizontalDivider(
                 modifier = Modifier.padding(horizontal = 16.dp),
                 thickness = DividerDefaults.Thickness,

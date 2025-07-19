@@ -50,6 +50,7 @@
     <string name="setting_encryption_mode_info_title">设置加密模式</string>
     <string name="setting_encryption_mode_info_text">加密模式说明</string>
     <string name="setting_encryption_mode_info_desc">标准模式：\n长按发送按钮才会发送密文。\n\n沉浸模式：\n点按直接发送密文。</string>
+    <string name="setting_decryption_mode_info_title">设置解密模式</string>
     <string name="setting_decryption_mode_info_text">解密模式说明</string>
     <string name="setting_decryption_mode_info_desc">标准模式：\n点击密文弹出悬浮窗显示解密结果。\n\n沉浸模式：\n无需点击，直接以悬浮窗显示解密后的密文，但会增加一定耗电量。</string>
 
@@ -66,5 +67,8 @@
     <string name="permission_accessibility_text">为了实现自动加解密和读取聊天内容，请在设置列表中找到“NekoCrypt”并开启它的无障碍服务。</string>
     <!--    设置界面相关信息-->
     <string name="crypto_settings">加解密设置</string>
+    <string name="decryption_long_press_delay">长按解密延时</string>
+    <string name="decryption_long_press_delay_desc">设置触发长按加密所需的时间</string>
+
     <string name="about">关于</string>
 </resources>

@@ -159,7 +159,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                     SegmentedButtonSetting(
                         settingKey = SettingKeys.DECRYPTION_MODE,
                         defaultOptionKey = DECRYPTION_MODE_STANDARD,
-                        title = stringResource(id = R.string.setting_encryption_mode_info_title),
+                        title = stringResource(id = R.string.setting_decryption_mode_info_title),
                         options = decryptionModeOptions,
                         titleExtraContent = {
                             // ✨ 看！之前所有复杂的 TooltipBox 代码，
@@ -167,7 +167,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                             InfoDialogIcon(
                                 title = stringResource(R.string.setting_decryption_mode_info_text),
                                 text = stringResource(R.string.setting_decryption_mode_info_desc),
-                                contentDescription = stringResource(R.string.setting_encryption_mode_info_desc)
+                                contentDescription = stringResource(R.string.setting_decryption_mode_info_desc)
                             )
                         }
                     )
