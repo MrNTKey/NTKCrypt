@@ -2,6 +2,7 @@ package me.wjz.nekocrypt
 
 import androidx.annotation.StringRes
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 
 object Constant {
@@ -21,6 +22,8 @@ object SettingKeys {
     val USE_AUTO_DECRYPTION = booleanPreferencesKey("use_auto_decryption")
     val ENCRYPTION_MODE = stringPreferencesKey("encryption_mode")
     val DECRYPTION_MODE = stringPreferencesKey("decryption_mode")
+    // 标准加密模式下，长按时间设置
+    val ENCRYPTION_LONG_PRESS_DELAY = longPreferencesKey("encryption_long_press_delay")
 }
 
 object CommonKeys {

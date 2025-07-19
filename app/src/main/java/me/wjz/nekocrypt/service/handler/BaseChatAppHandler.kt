@@ -232,7 +232,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                             when (event.action) {
                                 MotionEvent.ACTION_DOWN -> {
                                     longPressJob = currentService.serviceScope.launch {
-                                        delay(500L) // 长按阈值
+                                        delay(currentService.longPressDelay) // 长按阈值
                                         Log.d(currentService.tag, "标准模式长按，执行加密！")
                                         doEncryptAndClick()
                                     }

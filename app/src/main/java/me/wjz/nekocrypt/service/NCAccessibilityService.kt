@@ -53,6 +53,7 @@ class NCAccessibilityService : AccessibilityService() {
     val useAutoEncryption: Boolean by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.USE_AUTO_ENCRYPTION, false)
     }, initialValue = false)
+
     //是否开启解密功能
     val useAutoDecryption: Boolean by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.USE_AUTO_DECRYPTION, false)
@@ -67,7 +68,10 @@ class NCAccessibilityService : AccessibilityService() {
     val decryptionMode: String by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.DECRYPTION_MODE, CryptoMode.STANDARD.key)
     }, initialValue = CryptoMode.STANDARD.key)
-
+    // 标准加密模式下的长按发送delay。
+    val longPressDelay: Long by serviceScope.observeAsState(flowProvider = {
+        dataStoreManager.getSettingFlow(SettingKeys.ENCRYPTION_LONG_PRESS_DELAY, 250)
+    }, initialValue = 250)
 
 
     // —————————————————————————— override ——————————————————————————
