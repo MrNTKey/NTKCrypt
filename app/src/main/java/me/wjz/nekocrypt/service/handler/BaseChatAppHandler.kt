@@ -91,7 +91,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                         // 启动一个新的扫描任务
                         immersiveDecryptionJob = service.serviceScope.launch(Dispatchers.Default) {
                             // ✨ 等待300毫秒，如果在这期间又有新的事件进来，这个任务就会被取消
-                            delay(300L)
+                            delay(250L)
                             Log.d(tag, "UI稳定，开始执行沉浸式解密...")
                             performImmersiveDecryption()
                         }
