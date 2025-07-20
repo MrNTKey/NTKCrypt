@@ -69,6 +69,7 @@
     <string name="crypto_settings">加解密设置</string>
     <string name="decryption_long_press_delay">长按解密延时</string>
     <string name="decryption_long_press_delay_desc">设置触发长按加密所需的时间</string>
-
+    <string name="decryption_window_show_time">解密密文展示时长</string>
+    <string name="decryption_window_show_time_desc">设置解密密文悬浮窗的显示时间</string>
     <string name="about">关于</string>
 </resources>

@@ -72,7 +72,10 @@ class NCAccessibilityService : AccessibilityService() {
     val longPressDelay: Long by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.ENCRYPTION_LONG_PRESS_DELAY, 250)
     }, initialValue = 250)
-
+    // 标准解密模式下的密文悬浮窗显示时长。
+    val decryptionWindowShowTime:Long by serviceScope.observeAsState(flowProvider = {
+        dataStoreManager.getSettingFlow(SettingKeys.DECRYPTION_WINDOW_SHOW_TIME, 1500)
+    }, initialValue = 1500)
 
     // —————————————————————————— override ——————————————————————————
 

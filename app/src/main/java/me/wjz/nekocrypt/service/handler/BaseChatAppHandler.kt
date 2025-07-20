@@ -127,14 +127,14 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 if (decryptedText != null) {
                     Log.d(tag, "解密成功 -> $decryptedText")
                     // ...就立刻显示我们的解密弹窗！
-                    showDecryptionPopup(decryptedText, node)
+                    showDecryptionPopup(decryptedText, node,currentService.decryptionWindowShowTime)
                     break // 停止尝试其他密钥
                 }
             }
         }
     }
 
-    private fun showDecryptionPopup(decryptedText: String, anchorNode: AccessibilityNodeInfo) {
+    private fun showDecryptionPopup(decryptedText: String, anchorNode: AccessibilityNodeInfo,showTime: Long) {
         val currentService = service ?: return
 
         val anchorRect = Rect()
@@ -151,7 +151,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             // 把UI内容传进去
             DecryptionPopupContent(
                 text = decryptedText,
-                onDismiss = { popupManager?.dismiss() }
+                onDismiss = { popupManager?.dismiss() },
+                durationMills = showTime
             )
         }
         popupManager?.show()
@@ -344,11 +345,11 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
             // 2. 对节点下达“执行设置文本”的命令，并把装有文本的“包裹”递给它。
             nodeInfo.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
-            Log.d(tag, "已将解密内容直接设置到节点: $text")
+            Log.d(tag, "已将加密内容直接设置到节点: $text")
         } else {
             // 如果节点不支持直接设置文本（比如不可编辑的TextView），我们再考虑其他策略。
             // 比如弹窗提示，或者把解密内容复制到剪贴板（并明确告知用户）。
-            Log.d(tag, "节点不支持设置文本。解密内容: $text")
+            Log.d(tag, "节点不支持设置文本。加密内容: $text")
         }
     }
 

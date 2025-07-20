@@ -39,8 +39,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             )
         }
         item {
-            // ✨ 在这里使用我们全新的滑块设置项！
-            SliderSettingItem(
+            SliderSettingItem(  //  长按发送密文所需时间
                 key = SettingKeys.ENCRYPTION_LONG_PRESS_DELAY,
                 defaultValue = 500L, // 默认 500 毫秒
                 icon = { Icon(Icons.Outlined.Timer, contentDescription = "Long Press Delay") },
@@ -49,7 +48,31 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 valueRange = 50L..1000L, // 允许用户在 200ms 到 1500ms 之间选择
                 step = 50L //每50ms一个挡位
             )
-
+        }
+        item {
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                thickness = DividerDefaults.Thickness,
+                color = DividerDefaults.color
+            )
+        }
+        item {
+            SliderSettingItem( //   点击密文解密的所需时间。
+                key = SettingKeys.DECRYPTION_WINDOW_SHOW_TIME,
+                defaultValue = 500L, // 默认 500 毫秒
+                icon = { Icon(Icons.Outlined.Timer, contentDescription = "Long Press Delay") },
+                title = stringResource(R.string.decryption_window_show_time),
+                subtitle = stringResource(R.string.decryption_window_show_time_desc),
+                valueRange = 100L..3000L, // 允许用户在 200ms 到 1500ms 之间选择
+                step = 200L // 单步步长
+            )
+        }
+        item {
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                thickness = DividerDefaults.Thickness,
+                color = DividerDefaults.color
+            )
         }
         item {
             SwitchSettingItem(
@@ -60,7 +83,6 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 subtitle = "开启后，将自动处理复制的文本",
             )
         }
-        // 给 Divider 加上水平内边距，让它两端不要顶到屏幕边缘，更好看
         item {
             HorizontalDivider(
                 modifier = Modifier.padding(horizontal = 16.dp),
@@ -75,6 +97,13 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 icon = { Icon(Icons.Default.Lock, contentDescription = "Enable Encryption") },
                 title = "123123",
                 subtitle = "开启后，测试测试",
+            )
+        }
+        item {
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                thickness = DividerDefaults.Thickness,
+                color = DividerDefaults.color
             )
         }
         // 第二个分组：关于

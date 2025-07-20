@@ -46,6 +46,9 @@ class WindowPopupManager(
             setViewTreeLifecycleOwner(lifecycleOwnerProvider)
             setViewTreeViewModelStoreOwner(lifecycleOwnerProvider)
             setViewTreeSavedStateRegistryOwner(lifecycleOwnerProvider)
+            // 不要裁剪子视图，避免子视图做动画时超出边界被裁剪
+            clipChildren = false
+            clipToPadding = false
 
             // 使用最安全通用的生命周期策略
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)

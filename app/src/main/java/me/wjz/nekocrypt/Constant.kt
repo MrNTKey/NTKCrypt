@@ -24,6 +24,8 @@ object SettingKeys {
     val DECRYPTION_MODE = stringPreferencesKey("decryption_mode")
     // 标准加密模式下，长按时间设置
     val ENCRYPTION_LONG_PRESS_DELAY = longPreferencesKey("encryption_long_press_delay")
+    // 标准解密模式下，悬浮窗的显示时间设置
+    val DECRYPTION_WINDOW_SHOW_TIME = longPreferencesKey("decryption_window_show_time")
 }
 
 object CommonKeys {
