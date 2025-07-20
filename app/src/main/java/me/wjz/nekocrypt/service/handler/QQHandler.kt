@@ -1,6 +1,5 @@
 package me.wjz.nekocrypt.service.handler
 
-import android.content.Context
 import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.os.Build
@@ -29,7 +28,9 @@ class QQHandler : BaseChatAppHandler() {
     override fun getOverlayLayoutParams(anchorRect: Rect): WindowManager.LayoutParams {
         val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        } else { WindowManager.LayoutParams.TYPE_PHONE }
+        } else {
+            WindowManager.LayoutParams.TYPE_PHONE
+        }
 
         // 这里是 QQ 的具体布局逻辑
         val yOffset = 6 // 可以在这里为QQ定义特定的偏移值
@@ -46,5 +47,11 @@ class QQHandler : BaseChatAppHandler() {
         ).apply {
             gravity = Gravity.TOP or Gravity.START
         }
+    }
+
+    // QQ定制解密悬浮窗显示位置微调
+    override fun modifyDecryptionWindowRect(rect: Rect): Rect {
+        rect.offset(10, -10)
+        return rect
     }
 }

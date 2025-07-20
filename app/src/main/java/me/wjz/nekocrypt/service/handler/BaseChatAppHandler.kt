@@ -50,6 +50,9 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         anchorRect: Rect,
     ): WindowManager.LayoutParams
 
+    // 根据不同APP定向修改解密弹窗的window位置。
+    abstract fun modifyDecryptionWindowRect(rect: Rect): Rect
+
 
     override fun onAccessibilityEvent(event: AccessibilityEvent, service: NCAccessibilityService) {
         // 悬浮窗管理逻辑
@@ -127,14 +130,22 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 if (decryptedText != null) {
                     Log.d(tag, "解密成功 -> $decryptedText")
                     // ...就立刻显示我们的解密弹窗！
-                    showDecryptionPopup(decryptedText, node,currentService.decryptionWindowShowTime)
+                    showDecryptionPopup(
+                        decryptedText,
+                        node,
+                        currentService.decryptionWindowShowTime
+                    )
                     break // 停止尝试其他密钥
                 }
             }
         }
     }
 
-    private fun showDecryptionPopup(decryptedText: String, anchorNode: AccessibilityNodeInfo,showTime: Long) {
+    private fun showDecryptionPopup(
+        decryptedText: String,
+        anchorNode: AccessibilityNodeInfo,
+        showTime: Long,
+    ) {
         val currentService = service ?: return
 
         val anchorRect = Rect()
@@ -146,7 +157,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         popupManager = WindowPopupManager(
             context = currentService,
             onDismissRequest = { popupManager = null },// 关闭时清理引用
-            anchorRect = anchorRect
+            anchorRect = modifyDecryptionWindowRect(anchorRect) // 根据不同APP定向微调位置
         ) {
             // 把UI内容传进去
             DecryptionPopupContent(
@@ -239,6 +250,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                                     }
                                     true // 我们要处理后续事件
                                 }
+
                                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                                     // 如果手指抬起时，长按任务还在“准备中”...
                                     if (longPressJob?.isActive == true) {
@@ -250,6 +262,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                                     // 如果长按任务已经执行或被取消，这里就什么都不做
                                     true
                                 }
+
                                 else -> false
                             }
                         } else {
