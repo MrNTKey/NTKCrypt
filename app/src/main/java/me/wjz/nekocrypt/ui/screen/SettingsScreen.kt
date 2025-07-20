@@ -63,8 +63,8 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 icon = { Icon(Icons.Outlined.Timer, contentDescription = "Long Press Delay") },
                 title = stringResource(R.string.decryption_window_show_time),
                 subtitle = stringResource(R.string.decryption_window_show_time_desc),
-                valueRange = 100L..3000L, // 允许用户在 200ms 到 1500ms 之间选择
-                step = 200L // 单步步长
+                valueRange = 500L..3000L,
+                step = 250L // 单步步长
             )
         }
         item {

@@ -157,7 +157,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         popupManager = WindowPopupManager(
             context = currentService,
             onDismissRequest = { popupManager = null },// 关闭时清理引用
-            anchorRect = modifyDecryptionWindowRect(anchorRect) // 根据不同APP定向微调位置
+            anchorRect = modifyDecryptionWindowRect(anchorRect)
         ) {
             // 把UI内容传进去
             DecryptionPopupContent(
