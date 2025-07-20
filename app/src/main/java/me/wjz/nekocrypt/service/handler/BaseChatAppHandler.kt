@@ -27,6 +27,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     // 由子类提供具体应用的ID
     abstract override val inputId: String
     abstract override val sendBtnId: String
+    abstract override val messageTextId: String
+    abstract override val messageListClassName: String
 
     // 处理器内部状态
     private var service: NCAccessibilityService? = null
@@ -34,14 +36,18 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     private var overlayView: View? = null
     private var overlayManagementJob: Job? = null
 
-    // 为我们的按钮和输入框创建缓存变量
+    // 为我们的界面节点变量做缓存
     private var cachedSendBtnNode: AccessibilityNodeInfo? = null
     private var cachedInputNode: AccessibilityNodeInfo? = null
+    private var cachedMessageListNode: AccessibilityNodeInfo? = null// 为 RecyclerView/ListView 创建一个专属的缓存
+
+    // ✨ 新增：为沉浸式解密创建一个“防抖”任务，避免过于频繁的扫描
+    private var immersiveDecryptionJob: Job? = null
+
     private val colorInt = "#5066ccff".toColorInt() //debug的时候调成可见色，正式环境应该是纯透明
 
     /**
-     * 根据发送按钮的矩形区域，创建加密悬浮窗的布局参数。
-     * 这是一个抽象方法，强制所有子类必须提供自己的具体实现。
+     * 根据发送按钮的矩形区域，基于每个APP定向创建加密悬浮窗的布局参数。
      *
      * @param anchorRect 发送按钮在屏幕上的位置和大小。
      * @return 配置好的 WindowManager.LayoutParams 对象。
@@ -80,9 +86,15 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 // 沉浸模式：当窗口内容变化时，主动扫描并解密
                 CryptoMode.IMMERSIVE.key -> {
                     if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-                        // ✨ 这里可以添加一个新的、更复杂的沉浸式解密逻辑
-                        // 比如遍历屏幕上的所有节点，找到密文并自动显示弹窗
-                        // Log.d(tag, "沉浸式解密触发（逻辑待实现）")
+                        //带防抖处理
+                        immersiveDecryptionJob?.cancel()
+                        // 启动一个新的扫描任务
+                        immersiveDecryptionJob = service.serviceScope.launch(Dispatchers.Default) {
+                            // ✨ 等待300毫秒，如果在这期间又有新的事件进来，这个任务就会被取消
+                            delay(300L)
+                            Log.d(tag, "UI稳定，开始执行沉浸式解密...")
+                            performImmersiveDecryption()
+                        }
                     }
                 }
             }
@@ -139,6 +151,58 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 }
             }
         }
+    }
+
+    /**
+     * 执行沉浸式解密相关逻辑。
+     */
+    private fun performImmersiveDecryption(){
+        val currentService = service ?: return
+        // ✨ 1. 优先信任缓存：检查消息列表节点的缓存是否依然有效
+        val messageList = if (isNodeValid(cachedMessageListNode)) {
+            cachedMessageListNode
+        } else {
+            // ✨ 2. 缓存无效，则在整个窗口中查找一次列表容器，并存入缓存
+            findMessageListContainer(currentService.rootInActiveWindow)?.also {
+                Log.d(tag, "找到了新的消息列表容器并已缓存！")
+                cachedMessageListNode = it
+            }
+        }
+        // 3. 如果最终我们拥有了一个有效的列表容器...
+        if (messageList != null) {
+            // ✨ 4. ...就在这个“小世界”里进行精准的ID搜索，而不是全局搜索！
+            val messageNodes = messageList.findAccessibilityNodeInfosByViewId(messageTextId)
+            if (messageNodes.isNullOrEmpty()) return
+
+            // ... (后续的遍历、解密、弹窗逻辑完全不变)
+            for (node in messageNodes) {
+                Log.d(tag,"节点消息: ${node.text}")
+            }
+        } else {
+            Log.w(tag, "未找到消息列表容器，无法执行沉浸式解密。")
+        }
+    }
+
+    /**
+     * ✨ 新增：一个专门用来查找消息列表容器的辅助函数。
+     * 它使用广度优先搜索来查找第一个符合条件的节点。
+     */
+    private fun findMessageListContainer(rootNode: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
+        if (rootNode == null) return null
+
+        val nodesToProcess = ArrayDeque<AccessibilityNodeInfo>()
+        nodesToProcess.add(rootNode)
+
+        while (nodesToProcess.isNotEmpty()) {
+            val node = nodesToProcess.removeFirst()
+            if (node.className?.toString()?.contains(messageListClassName) == true) {
+                return node // 找到了！
+            }
+            for (i in 0 until node.childCount) {
+                node.getChild(i)?.let { nodesToProcess.add(it) }
+            }
+        }
+        return null // 没找到
     }
 
     private fun showDecryptionPopup(

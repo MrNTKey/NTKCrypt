@@ -22,6 +22,8 @@ class QQHandler : BaseChatAppHandler() {
 
     override val messageTextId: String
         get() = Constant.ID_QQ_MESSAGE_TEXT
+    override val messageListClassName: String
+        get() = Constant.CLASS_NAME_QQ_RECYCLER_VIEW
 
     /**
      * ✨ 为 QQ 定制的悬浮窗布局实现。

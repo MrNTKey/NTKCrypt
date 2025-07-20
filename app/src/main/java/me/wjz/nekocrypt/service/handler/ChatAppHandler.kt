@@ -30,6 +30,11 @@ interface ChatAppHandler {
     val messageTextId: String
 
     /**
+     * 存放消息列表的className，QQ的这个class无ID，则不提供
+     */
+    val messageListClassName: String
+
+    /**
      * 当该处理器被激活时调用（例如，用户打开了对应的App）。
      * @param service 无障碍服务的实例，用于获取上下文、协程作用域等。
      */
