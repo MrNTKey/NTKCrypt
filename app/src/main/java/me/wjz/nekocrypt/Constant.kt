@@ -10,6 +10,7 @@ object Constant {
     const val DEFAULT_SECRET_KEY = "20040821"//You know what it means.
     const val ID_QQ_SEND_BTN="com.tencent.mobileqq:id/send_btn"
     const val ID_QQ_INPUT="com.tencent.mobileqq:id/input"
+    const val ID_QQ_MESSAGE_TEXT="com.tencent.mobileqq:id/sbl"
     const val PACKAGE_NAME_QQ ="com.tencent.mobileqq"
 }
 

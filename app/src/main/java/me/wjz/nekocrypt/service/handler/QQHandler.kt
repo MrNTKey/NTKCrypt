@@ -20,6 +20,9 @@ class QQHandler : BaseChatAppHandler() {
     override val sendBtnId: String
         get() = Constant.ID_QQ_SEND_BTN
 
+    override val messageTextId: String
+        get() = Constant.ID_QQ_MESSAGE_TEXT
+
     /**
      * ✨ 为 QQ 定制的悬浮窗布局实现。
      * 这里我们提供了之前作为默认值的实现。

@@ -174,7 +174,7 @@ class NCAccessibilityService : AccessibilityService() {
             // 我们要找的就是这个能滚动的列表！
             if (className.contains("RecyclerView") || className.contains("ListView")) {
                 listContainerNode = currentNode
-                Log.d(tag, "🎉 找到了列表容器! Class: $className")
+                Log.d(tag, "🎉 找到了列表容器! Class: $className ID: ${listContainerNode?.viewIdResourceName}")
                 break
             }
             currentNode = currentNode?.parent
