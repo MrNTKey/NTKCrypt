@@ -68,12 +68,14 @@ class NCAccessibilityService : AccessibilityService() {
     val decryptionMode: String by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.DECRYPTION_MODE, CryptoMode.STANDARD.key)
     }, initialValue = CryptoMode.STANDARD.key)
+
     // 标准加密模式下的长按发送delay。
     val longPressDelay: Long by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.ENCRYPTION_LONG_PRESS_DELAY, 250)
     }, initialValue = 250)
+
     // 标准解密模式下的密文悬浮窗显示时长。
-    val decryptionWindowShowTime:Long by serviceScope.observeAsState(flowProvider = {
+    val decryptionWindowShowTime: Long by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.DECRYPTION_WINDOW_SHOW_TIME, 1500)
     }, initialValue = 1500)
 
@@ -154,48 +156,73 @@ class NCAccessibilityService : AccessibilityService() {
     // —————————————————————————— helper ——————————————————————————
 
     /**
-     * 调试节点树的函数
+     * 调试节点树的函数 (列表全扫描版)
+     * 它会向上查找到列表容器(RecyclerView/ListView)，然后递归遍历并打印出该容器下所有的文本内容。
      */
     private fun debugNodeTree(sourceNode: AccessibilityNodeInfo?) {
         if (sourceNode == null) {
             Log.d(tag, "===== DEBUG NODE: 节点为空 =====")
             return
         }
-        // 使用一个醒目的分隔符，方便在 Logcat 中查找
-        Log.d(tag, "===== Neko 节点调试器 =====")
+        Log.d(tag, "===== Neko 节点调试器 (列表全扫描) =====")
 
-        // 1. 打印被点击的节点本身的信息
-        Log.d(tag, "[点击的节点] -> ${getNodeDescription(sourceNode)}")
-        // 2. 打印它的父节点信息
-        val parentNode = sourceNode.parent
-        if (parentNode != null) {
-            Log.d(tag, "[父节点]   -> ${getNodeDescription(parentNode)}")
-        } else {
-            Log.d(tag, "[父节点]   -> (无父节点)")
-        }
-        // 3. 遍历并打印它的所有直接子节点信息
-        if (sourceNode.childCount > 0) {
-            Log.d(tag, "--- 子节点列表 (共 ${sourceNode.childCount} 个) ---")
-            for (i in 0 until sourceNode.childCount) {
-                val childNode = sourceNode.getChild(i)
-                if (childNode != null) {
-                    Log.d(tag, "[子节点 $i] -> ${getNodeDescription(childNode)}")
-                }
+        // 1. 向上查找列表容器
+        var listContainerNode: AccessibilityNodeInfo? = null
+        var currentNode: AccessibilityNodeInfo? = sourceNode
+        for (i in 1..15) { // 增加查找深度，确保能爬到顶
+            val className = currentNode?.className?.toString() ?: ""
+            // 我们要找的就是这个能滚动的列表！
+            if (className.contains("RecyclerView") || className.contains("ListView")) {
+                listContainerNode = currentNode
+                Log.d(tag, "🎉 找到了列表容器! Class: $className")
+                break
             }
-        } else {
-            Log.d(tag, "--- (无子节点) ---")
+            currentNode = currentNode?.parent
+            if (currentNode == null) break // 爬到顶了就停
         }
 
-        Log.d(tag, "==========================")
+        // 2. 如果成功找到了列表容器，就遍历它下面的所有文本
+        if (listContainerNode != null) {
+            Log.d(tag, "--- 遍历列表容器 [${listContainerNode.className}] 下的所有文本 ---")
+            printAllTextFromNode(listContainerNode, 0) // 从深度0开始递归
+        } else {
+            // 如果找不到列表，就执行一个备用方案：打印整个窗口的内容
+            Log.d(tag, "警告: 未能在父节点中找到 RecyclerView 或 ListView。")
+            Log.d(tag, "--- 备用方案: 遍历整个窗口的所有文本 ---")
+
+            rootInActiveWindow?.let {
+                printAllTextFromNode(it, 0)
+            }
+        }
+
+        Log.d(tag, "==================================================")
     }
 
     /**
-     * 辅助函数，用来格式化节点的描述信息，方便阅读。
+     * 递归辅助函数，用于深度遍历节点并打印所有非空文本。
+     * @param node 当前要处理的节点。
+     * @param depth 当前的递归深度，用于格式化输出（创建缩进）。
      */
-    private fun getNodeDescription(node: AccessibilityNodeInfo): String {
-        // 我们把最关键的几个属性都打印出来
-        return "类名: ${node.className}, 文本: '${node.text}', 描述: '${node.contentDescription}', ID: ${node.viewIdResourceName}"
+    private fun printAllTextFromNode(node: AccessibilityNodeInfo, depth: Int) {
+        // 根据深度创建缩进，让日志的层级关系一目了然
+        val indent = "  ".repeat(depth)
+
+        // 1. 检查当前节点本身是否有文本，如果有就打印出来
+        val text = node.text
+        if (!text.isNullOrEmpty()) {
+            // 为了更清晰，我们把ID也打印出来
+            Log.d(tag, "$indent[文本] -> '$text' (ID: ${node.viewIdResourceName})")
+        }
+
+        // 2. 遍历所有子节点，并对每个子节点递归调用自己
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i)
+            if (child != null) {
+                printAllTextFromNode(child, depth + 1)
+            }
+        }
     }
+
 
     private fun createKeepAliveOverlay() {
         if (keepAliveOverlay != null) return

@@ -70,7 +70,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.StrokeCap
@@ -661,8 +660,8 @@ fun DecryptionPopupContent(text: String, durationMills: Long = 3000, onDismiss: 
                     Row(
                         modifier = Modifier.padding(
                             start = 12.dp,
-                            top = 6.dp,
-                            bottom = 6.dp,
+                            top = 8.dp,
+                            bottom = 8.dp,
                             end = 8.dp
                         ),
                         verticalAlignment = Alignment.CenterVertically
