@@ -51,7 +51,7 @@ class QQHandler : BaseChatAppHandler() {
 
     // QQ定制解密悬浮窗显示位置微调
     override fun modifyDecryptionWindowRect(rect: Rect): Rect {
-        rect.offset(rect.width()/4, -112)
+        rect.offset(5, -112)
         return rect
     }
 }

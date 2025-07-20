@@ -94,6 +94,13 @@ class WindowPopupManager(
             PixelFormat.TRANSLUCENT
         )
 
+        // ✨ --- 关键的“开光”仪式在这里！ --- ✨
+        // 只有 Android 12 (API 31) 及以上版本支持
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // 设置模糊的半径（单位是 px），这个值越大，模糊效果越明显
+            params.blurBehindRadius = 30
+        }
+
         // 如果提供了锚点，就根据锚点定位；否则居中。
         if (anchorRect != null) {
             params.gravity = Gravity.TOP or Gravity.START

@@ -18,6 +18,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -69,12 +70,15 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -651,13 +655,14 @@ fun DecryptionPopupContent(text: String, durationMills: Long = 3000, onDismiss: 
                         .wrapContentSize() // 让卡片包裹内容，而不是撑满
                         .shadow(elevation = 8.dp, shape = RoundedCornerShape(12.dp)),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.92f)),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.8f))
                 ) {
                     Row(
                         modifier = Modifier.padding(
-                            start = 16.dp,
-                            top = 8.dp,
-                            bottom = 8.dp,
+                            start = 12.dp,
+                            top = 6.dp,
+                            bottom = 6.dp,
                             end = 8.dp
                         ),
                         verticalAlignment = Alignment.CenterVertically
@@ -665,7 +670,14 @@ fun DecryptionPopupContent(text: String, durationMills: Long = 3000, onDismiss: 
                         Text(
                             text = text,
                             fontSize = 18.sp,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = MaterialTheme.colorScheme.primary,
+                            style = TextStyle(
+                                shadow = Shadow(
+                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f), // 阴影颜色
+                                    offset = Offset(2f, 2f), // 阴影偏移量
+                                    blurRadius = 4f // 阴影模糊半径
+                                )
+                            ),
                             // ✨ 限制文本的最大宽度，防止一行文本过长导致弹窗撑得太大
                             modifier = Modifier.weight(1f, fill = false)
                         )
