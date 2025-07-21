@@ -279,7 +279,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         val currentService = service ?: return
         //  绘制悬浮窗位置所需要用到的参数
         val params = getOverlayLayoutParams(rect)
-
         currentService.serviceScope.launch(Dispatchers.Main) {
             if (overlayView == null) {
                 overlayView = View(currentService).apply {

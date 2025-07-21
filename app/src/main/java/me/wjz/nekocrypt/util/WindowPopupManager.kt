@@ -109,7 +109,6 @@ class WindowPopupManager(
         } else {
             params.gravity = Gravity.CENTER
         }
-
         return params
     }
 }
