@@ -141,15 +141,11 @@ class NCAccessibilityService : AccessibilityService() {
             // 否则，即使收到了其他包的事件，但只要活跃窗口没变，就保持处理器不变，忽略这些“噪音”事件。
         }
 
-        // debug逻辑
-//        if (event.packageName == PACKAGE_NAME_QQ)
-//            Log.i(tag,
-//                "接收到QQ的事件 -> 类型: ${AccessibilityEvent.eventTypeToString(event.eventType)}, 包名: ${event.packageName}"
-//            )
-        if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {//点击了屏幕
-            Log.d(tag, "检测到点击事件，开始调试节点...")
-            debugNodeTree(event.source)
-        }
+        // debug逻辑，会变卡
+//        if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {//点击了屏幕
+//            Log.d(tag, "检测到点击事件，开始调试节点...")
+//            debugNodeTree(event.source)
+//        }
     }
 
 

@@ -39,7 +39,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     // 为我们的界面节点变量做缓存
     private var cachedSendBtnNode: AccessibilityNodeInfo? = null
     private var cachedInputNode: AccessibilityNodeInfo? = null
-    private var cachedMessageListNode: AccessibilityNodeInfo? = null// 为 RecyclerView/ListView 创建一个专属的缓存
+    private var cachedMessageListNode: AccessibilityNodeInfo? =
+        null// 为 RecyclerView/ListView 创建一个专属的缓存
 
     // ✨ 新增：为沉浸式解密创建一个“防抖”任务，避免过于频繁的扫描
     private var immersiveDecryptionJob: Job? = null
@@ -80,7 +81,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 // 标准模式：用户点击密文时，才进行解密
                 CryptoMode.STANDARD.key -> {
                     if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {
-                        handleClickForDecryption(event.source)
+                        handleDecryption(event.source)
                     }
                 }
                 // 沉浸模式：当窗口内容变化时，主动扫描并解密
@@ -123,17 +124,20 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     }
 
     /**
-     * 处理节点点击事件，检查是否需要解密。
+     * 处理节点检查是否需要解密。
      * @param sourceNode 用户点击的源节点。
      */
-    private fun handleClickForDecryption(sourceNode: AccessibilityNodeInfo?) {
+    private fun handleDecryption(
+        sourceNode: AccessibilityNodeInfo?,
+        isShowLongTime: Boolean = false,
+    ) {
         val node = sourceNode ?: return
         val text = node.text?.toString() ?: return
         val currentService = service ?: return
 
-        // 1. 判断点击的文本是否包含我们的“猫语”
+        // 1. 判断节点文本是否包含我们的“猫语”
         if (CryptoManager.containsCiphertext(text)) {
-            Log.d(tag, "检测到点击密文: $text")
+            Log.d(tag, "检测到密文: $text")
             // 2. 尝试用所有密钥进行解密
             Log.d(tag, "目前的全部密钥${currentService.cryptoKeys.joinToString()}")
             for (key in currentService.cryptoKeys) {
@@ -145,7 +149,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                     showDecryptionPopup(
                         decryptedText,
                         node,
-                        currentService.decryptionWindowShowTime
+                        if (isShowLongTime) 60 else currentService.decryptionWindowShowTime
                     )
                     break // 停止尝试其他密钥
                 }
@@ -156,7 +160,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     /**
      * 执行沉浸式解密相关逻辑。
      */
-    private fun performImmersiveDecryption(){
+    private fun performImmersiveDecryption() {
         val currentService = service ?: return
         // ✨ 1. 优先信任缓存：检查消息列表节点的缓存是否依然有效
         val messageList = if (isNodeValid(cachedMessageListNode)) {
@@ -170,13 +174,51 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         }
         // 3. 如果最终我们拥有了一个有效的列表容器...
         if (messageList != null) {
-            // ✨ 4. ...就在这个“小世界”里进行精准的ID搜索，而不是全局搜索！
             val messageNodes = messageList.findAccessibilityNodeInfosByViewId(messageTextId)
             if (messageNodes.isNullOrEmpty()) return
 
-            // ... (后续的遍历、解密、弹窗逻辑完全不变)
+            // ✨ --- 关键优化 2：将UI更新任务“分批”处理 --- ✨
+            // 我们不再是在后台循环里疯狂地向主线程扔任务，
+            // 而是先在后台把所有需要解密的“任务清单”准备好。
+            val tasks = mutableListOf<Pair<String, AccessibilityNodeInfo>>()
             for (node in messageNodes) {
-                Log.d(tag,"节点消息: ${node.text}")
+                val text = node.text?.toString()
+                if (text.isNullOrEmpty() || !CryptoManager.containsCiphertext(text)) continue
+
+                val nodeBounds = Rect()
+                node.getBoundsInScreen(nodeBounds)
+                val cacheKey = "${nodeBounds}_${text}"
+                val lastDecryptionTime = immersiveDecryptionCache[cacheKey]
+                val currentTime = System.currentTimeMillis()
+
+                if (lastDecryptionTime == null || currentTime - lastDecryptionTime > 5000) {
+                    for (key in currentService.cryptoKeys) {
+                        val decryptedText = CryptoManager.decrypt(text, key)
+                        if (decryptedText != null) {
+                            // 只是把任务加到清单里，不做任何UI操作
+                            tasks.add(decryptedText to node)
+                            immersiveDecryptionCache[cacheKey] = currentTime
+                            break
+                        }
+                    }
+                }
+            }
+
+            // ✨ 当所有后台计算都完成后，我们只启动一个协程，
+            // 让“服务员”按照自己的节奏，从容地、一个一个地去上菜。
+            if (tasks.isNotEmpty()) {
+                currentService.serviceScope.launch(Dispatchers.Main) {
+                    for ((decryptedText, node) in tasks) {
+                        showDecryptionPopup(
+                            decryptedText,
+                            node,
+                            currentService.decryptionWindowShowTime
+                        )
+                        // ✨ 每显示一个弹窗，就“喘口气”（让出一帧），
+                        // 把执行机会让给动画渲染等更重要的任务。
+                        delay(32L) // 约等于2帧的时间
+                    }
+                }
             }
         } else {
             Log.w(tag, "未找到消息列表容器，无法执行沉浸式解密。")
