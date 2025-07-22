@@ -44,6 +44,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
     // ✨ 新增：为沉浸式解密创建一个“防抖”任务，避免过于频繁的扫描
     private var immersiveDecryptionJob: Job? = null
+    private val immersiveDecryptionCache = mutableMapOf<String, Long>()
 
     private val colorInt = "#5066ccff".toColorInt() //debug的时候调成可见色，正式环境应该是纯透明
 
