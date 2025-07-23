@@ -192,12 +192,11 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             if (messageList != null) {
                 val messageNodes = messageList.findAccessibilityNodeInfosByViewId(messageTextId)
                 if (messageNodes.isNullOrEmpty()) return
-                // 分成三类，依然可见
-                val visibleCacheKeys = mutableSetOf<String>()
+                // 分成三类
+                val visibleCacheKeys = mutableSetOf<String>()   // 此轮可见的缓存key。
                 val creationTasks = mutableListOf<Triple<String, AccessibilityNodeInfo, String>>()
                 val updateTasks = mutableListOf<Pair<WindowPopupManager, Rect>>()
 
-                val tasks = mutableListOf<Pair<String, AccessibilityNodeInfo>>()
                 for (node in messageNodes) {
                     val text = node.text?.toString()
                     if (text.isNullOrEmpty() || !CryptoManager.containsCiphertext(text)) continue
@@ -224,9 +223,18 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                         }
                     }
                 }
-                // 找到需要被清除的弹窗。比如用户华东了窗口，有的弹窗对应的气泡不再可见，就需要消失。
+                // 找到需要被清除的弹窗。比如用户滑动了窗口，有的弹窗对应的气泡不再可见，就需要消失。
                 val cachedKeys = immersiveDecryptionCache.keys.toSet()
                 val keysToDismiss = cachedKeys - visibleCacheKeys
+
+                if (keysToDismiss.isNotEmpty() || updateTasks.isNotEmpty() || creationTasks.isNotEmpty()) {
+                    Log.d(tag, "--- 沉浸式解密任务分配 ---")
+                    Log.d(tag, "需要销毁的弹窗 (${keysToDismiss.size}个): $keysToDismiss")
+                    Log.d(tag, "需要更新位置的弹窗 (${updateTasks.size}个)")
+                    Log.d(tag, "需要新创建的弹窗 (${creationTasks.size}个): ${creationTasks.map { it.third }}")
+                    Log.d(tag, "--------------------------")
+                }
+
 
                 // 整理完毕，在主线程执行操作
                 if (keysToDismiss.isNotEmpty() || updateTasks.isNotEmpty() || creationTasks.isNotEmpty()) {
@@ -245,7 +253,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                             val popupManager = showDecryptionPopup(
                                 decryptedText = decryptedText,
                                 anchorNode = node,
-                                showTime = currentService.decryptionWindowShowTime,
+                                showTime = 30000, // 配置项为 currentService.decryptionWindowShowTime
                                 onDismiss = {
                                     // 这个回调在弹窗关闭时执行，完美地维护了缓存
                                     immersiveDecryptionCache.remove(cacheKey)
