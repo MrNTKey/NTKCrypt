@@ -13,6 +13,7 @@ import androidx.core.graphics.toColorInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.CryptoMode
 import me.wjz.nekocrypt.service.NCAccessibilityService
@@ -40,10 +41,11 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     // 为我们的界面节点变量做缓存
     private var cachedSendBtnNode: AccessibilityNodeInfo? = null
     private var cachedInputNode: AccessibilityNodeInfo? = null
-    private var cachedMessageListNode: AccessibilityNodeInfo? =
-        null// 为 RecyclerView/ListView 创建一个专属的缓存
 
-    // ✨ 新增：为沉浸式解密创建一个“防抖”任务，避免过于频繁的扫描
+    // 为 RecyclerView/ListView 创建一个专属的缓存
+    private var cachedMessageListNode: AccessibilityNodeInfo? = null
+
+    // 为沉浸式解密创建一个“防抖”任务，避免过于频繁的扫描
     private var immersiveDecryptionJob: Job? = null
 
     // Key: 一个消息气泡的唯一标识符 (位置 + 文本哈希)
@@ -190,10 +192,11 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             if (messageList != null) {
                 val messageNodes = messageList.findAccessibilityNodeInfosByViewId(messageTextId)
                 if (messageNodes.isNullOrEmpty()) return
+                // 分成三类，依然可见
+                val visibleCacheKeys = mutableSetOf<String>()
+                val creationTasks = mutableListOf<Triple<String, AccessibilityNodeInfo, String>>()
+                val updateTasks = mutableListOf<Pair<WindowPopupManager, Rect>>()
 
-                // ✨ --- 关键优化 2：将UI更新任务“分批”处理 --- ✨
-                // 我们不再是在后台循环里疯狂地向主线程扔任务，
-                // 而是先在后台把所有需要解密的“任务清单”准备好。
                 val tasks = mutableListOf<Pair<String, AccessibilityNodeInfo>>()
                 for (node in messageNodes) {
                     val text = node.text?.toString()
@@ -201,38 +204,62 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
                     val nodeBounds = Rect()
                     node.getBoundsInScreen(nodeBounds)
-                    val cacheKey = "${nodeBounds}_${text.hashCode()}"
-                    val lastDecryptionTime = immersiveDecryptionCache[cacheKey]
-                    val currentTime = System.currentTimeMillis()
+                    val cacheKey = "${nodeBounds.top}_${text.hashCode()}"
+                    visibleCacheKeys.add(cacheKey)
 
-                    if (lastDecryptionTime == null || currentTime - lastDecryptionTime > 5000) {
+                    val existingManager = immersiveDecryptionCache[cacheKey]
+
+                    if (existingManager != null) {
+                        // ✨ 如果弹窗已存在，则加入“更新位置”任务列表
+                        val targetPopupRect = modifyDecryptionWindowRect(nodeBounds)
+                        updateTasks.add(existingManager to targetPopupRect)
+                    } else {
+                        // ✨ 如果弹窗不存在，则加入“创建弹窗”任务列表
                         for (key in currentService.cryptoKeys) {
                             val decryptedText = CryptoManager.decrypt(text, key)
                             if (decryptedText != null) {
-                                // 只是把任务加到清单里，不做任何UI操作
-                                tasks.add(decryptedText to node)
-                                immersiveDecryptionCache[cacheKey] = currentTime
+                                creationTasks.add(Triple(decryptedText, node, cacheKey))
                                 break
                             }
                         }
                     }
                 }
+                // 找到需要被清除的弹窗。比如用户华东了窗口，有的弹窗对应的气泡不再可见，就需要消失。
+                val cachedKeys = immersiveDecryptionCache.keys.toSet()
+                val keysToDismiss = cachedKeys - visibleCacheKeys
 
-                // ✨ 当所有后台计算都完成后，我们只启动一个协程，
-                // 让“服务员”按照自己的节奏，从容地、一个一个地去上菜。
-                if (tasks.isNotEmpty()) {
+                // 整理完毕，在主线程执行操作
+                if (keysToDismiss.isNotEmpty() || updateTasks.isNotEmpty() || creationTasks.isNotEmpty()) {
                     currentService.serviceScope.launch(Dispatchers.Main) {
-                        for ((decryptedText, node) in tasks) {
-                            showDecryptionPopup(
-                                decryptedText,
-                                node,
-                                currentService.decryptionWindowShowTime
+                        keysToDismiss.forEach {
+                            immersiveDecryptionCache[it]?.dismiss() // dismiss里面会自动让对象本身为null
+                        }
+                        updateTasks.forEach { (manager, rect) ->
+                            if (!isActive) return@forEach
+                            manager.updatePosition(rect)
+                        }
+                        creationTasks.forEach { (decryptedText, node, cacheKey) ->
+                            if (!isActive) return@forEach
+
+                            // ✨ [正确逻辑] 1. 调用通用函数，并传入“从缓存移除自己”的正确回调
+                            val popupManager = showDecryptionPopup(
+                                decryptedText = decryptedText,
+                                anchorNode = node,
+                                showTime = currentService.decryptionWindowShowTime,
+                                onDismiss = {
+                                    // 这个回调在弹窗关闭时执行，完美地维护了缓存
+                                    immersiveDecryptionCache.remove(cacheKey)
+                                    Log.d(tag, "弹窗关闭，从缓存中移除: $cacheKey")
+                                }
                             )
-                            // ✨ 每显示一个弹窗，就“喘口气”（让出一帧），
-                            // 把执行机会让给动画渲染等更重要的任务。
-                            delay(32L) // 约等于2帧的时间
+                            // ✨ [正确逻辑] 2. 将返回的管理器实例存入缓存
+                            immersiveDecryptionCache[cacheKey] = popupManager
+                            Log.d(tag, "新弹窗已创建并加入缓存: $cacheKey")
+
+                            delay(32L)
                         }
                     }
+
                 }
             } else {
                 Log.w(tag, "未找到消息列表容器，无法执行沉浸式解密。")
@@ -267,8 +294,9 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         decryptedText: String,
         anchorNode: AccessibilityNodeInfo,
         showTime: Long,
-    ) {
-        val currentService = service ?: return
+        onDismiss: (() -> Unit)? = null,
+    ): WindowPopupManager {
+        val currentService = service!!
 
         val anchorRect = Rect()
         anchorNode.getBoundsInScreen(anchorRect)
@@ -277,8 +305,10 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         var popupManager: WindowPopupManager? = null
         // 创建并显示我们的弹窗
         popupManager = WindowPopupManager(
-            context = currentService,
-            onDismissRequest = { popupManager = null },// 关闭时清理引用
+            context = currentService, onDismissRequest = {
+                onDismiss?.invoke()
+                popupManager = null
+            },// 关闭时清理引用
             anchorRect = modifyDecryptionWindowRect(anchorRect)
         ) {
             // 把UI内容传进去
@@ -289,6 +319,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             )
         }
         popupManager?.show()
+        return popupManager!!
     }
 
 
@@ -473,8 +504,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             // 1. 创建一个 Bundle (包裹)，用来存放我们要设置的文本。
             val arguments = Bundle()
             arguments.putCharSequence(
-                AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,
-                text
+                AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text
             )
 
             // 2. 对节点下达“执行设置文本”的命令，并把装有文本的“包裹”递给它。

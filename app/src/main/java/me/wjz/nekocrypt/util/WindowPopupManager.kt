@@ -1,5 +1,6 @@
 package me.wjz.nekocrypt.util
 
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.PixelFormat
 import android.graphics.Rect
@@ -7,12 +8,14 @@ import android.os.Build
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
+import android.view.animation.DecelerateInterpolator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+
 /**
  * 一个通用的、用于在 WindowManager 上显示 Compose UI 的弹窗工具类。
  * 它封装了所有创建、显示和销毁悬浮窗的复杂逻辑。
@@ -30,6 +33,8 @@ class WindowPopupManager(
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private var popupView: View? = null
     private var lifecycleOwnerProvider: LifecycleOwnerProvider? = null
+    private var positionAnimator: ValueAnimator? = null
+
     /**
      * 显示弹窗。
      * @param anchorRect 一个可选的矩形，用于定位弹窗。如果为null，弹窗会居中。
@@ -110,5 +115,40 @@ class WindowPopupManager(
             params.gravity = Gravity.CENTER
         }
         return params
+    }
+
+    // 带有平滑效果的位置更新函数
+    fun updatePosition(targetRect: Rect) {
+        // 如果视图不存在直接返回
+        val view = popupView ?: return
+        // 取消正在进行的任何旧动画
+        positionAnimator?.cancel()
+
+        val currentParams = view.layoutParams as? WindowManager.LayoutParams ?: return
+        val startX = currentParams.x
+        val startY = currentParams.y
+        val endX = targetRect.left
+        val endY = targetRect.top
+
+        // 如果位置没有变化，就没必要执行动画
+        if (startX == endX && startY == endY) return
+
+        positionAnimator= ValueAnimator.ofFloat(0f,1f).apply {
+            duration = 250 //动画时长
+            interpolator = DecelerateInterpolator() // 减速插值器，动画效果更自然
+            // 根据动画进度计算当前帧的x,y坐标
+            addUpdateListener { animation ->
+                val fraction = animation.animatedFraction
+                // 根据动画进度计算当前帧的x, y坐标
+                currentParams.x = (startX + (endX - startX) * fraction).toInt()
+                currentParams.y = (startY + (endY - startY) * fraction).toInt()
+
+                // 只有当视图还附着在窗口上时才更新布局
+                if (view.isAttachedToWindow) {
+                    windowManager.updateViewLayout(view, currentParams)
+                }
+            }
+            start()
+        }
     }
 }
