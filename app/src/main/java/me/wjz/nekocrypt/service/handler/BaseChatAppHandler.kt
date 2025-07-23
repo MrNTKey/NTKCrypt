@@ -20,6 +20,7 @@ import me.wjz.nekocrypt.ui.DecryptionPopupContent
 import me.wjz.nekocrypt.util.CryptoManager
 import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
 import me.wjz.nekocrypt.util.WindowPopupManager
+import kotlin.system.measureTimeMillis
 
 abstract class BaseChatAppHandler : ChatAppHandler {
     protected val tag = "NCBaseHandler"
@@ -44,7 +45,10 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
     // ✨ 新增：为沉浸式解密创建一个“防抖”任务，避免过于频繁的扫描
     private var immersiveDecryptionJob: Job? = null
-    private val immersiveDecryptionCache = mutableMapOf<String, Long>()
+
+    // Key: 一个消息气泡的唯一标识符 (位置 + 文本哈希)
+    // Value: 管理这个气泡弹窗的 WindowPopupManager 实例
+    private val immersiveDecryptionCache = mutableMapOf<String, WindowPopupManager>()
 
     private val colorInt = "#5066ccff".toColorInt() //debug的时候调成可见色，正式环境应该是纯透明
 
@@ -114,8 +118,16 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     // 销毁服务
     override fun onHandlerDeactivated() {
         overlayManagementJob?.cancel()
+        immersiveDecryptionJob?.cancel()
+        // 用一个副本做遍历避免删除时下标异常
+        val managersToDismiss = immersiveDecryptionCache.values.toList()
+        // 依次关闭所有弹窗
+        managersToDismiss.forEach { it.dismiss() }
+        immersiveDecryptionCache.clear()    // 最后确保万无一失
+
         cachedSendBtnNode = null
         cachedInputNode = null
+        cachedMessageListNode = null
         removeOverlayView {
             // 在视图置空后，其他引用量也要置为空，方便gc回收
             this.service = null
@@ -162,68 +174,71 @@ abstract class BaseChatAppHandler : ChatAppHandler {
      * 执行沉浸式解密相关逻辑。
      */
     private fun performImmersiveDecryption() {
-        val currentService = service ?: return
-        // ✨ 1. 优先信任缓存：检查消息列表节点的缓存是否依然有效
-        val messageList = if (isNodeValid(cachedMessageListNode)) {
-            cachedMessageListNode
-        } else {
-            // ✨ 2. 缓存无效，则在整个窗口中查找一次列表容器，并存入缓存
-            findMessageListContainer(currentService.rootInActiveWindow)?.also {
-                Log.d(tag, "找到了新的消息列表容器并已缓存！")
-                cachedMessageListNode = it
+        val executionTime = measureTimeMillis {
+            val currentService = service ?: return
+            // ✨ 1. 优先信任缓存：检查消息列表节点的缓存是否依然有效
+            val messageList = if (isNodeValid(cachedMessageListNode)) {
+                cachedMessageListNode
+            } else {
+                // ✨ 2. 缓存无效，则在整个窗口中查找一次列表容器，并存入缓存
+                findMessageListContainer(currentService.rootInActiveWindow)?.also {
+                    Log.d(tag, "找到了新的消息列表容器并已缓存！")
+                    cachedMessageListNode = it
+                }
             }
-        }
-        // 3. 如果最终我们拥有了一个有效的列表容器...
-        if (messageList != null) {
-            val messageNodes = messageList.findAccessibilityNodeInfosByViewId(messageTextId)
-            if (messageNodes.isNullOrEmpty()) return
+            // 3. 如果最终我们拥有了一个有效的列表容器...
+            if (messageList != null) {
+                val messageNodes = messageList.findAccessibilityNodeInfosByViewId(messageTextId)
+                if (messageNodes.isNullOrEmpty()) return
 
-            // ✨ --- 关键优化 2：将UI更新任务“分批”处理 --- ✨
-            // 我们不再是在后台循环里疯狂地向主线程扔任务，
-            // 而是先在后台把所有需要解密的“任务清单”准备好。
-            val tasks = mutableListOf<Pair<String, AccessibilityNodeInfo>>()
-            for (node in messageNodes) {
-                val text = node.text?.toString()
-                if (text.isNullOrEmpty() || !CryptoManager.containsCiphertext(text)) continue
+                // ✨ --- 关键优化 2：将UI更新任务“分批”处理 --- ✨
+                // 我们不再是在后台循环里疯狂地向主线程扔任务，
+                // 而是先在后台把所有需要解密的“任务清单”准备好。
+                val tasks = mutableListOf<Pair<String, AccessibilityNodeInfo>>()
+                for (node in messageNodes) {
+                    val text = node.text?.toString()
+                    if (text.isNullOrEmpty() || !CryptoManager.containsCiphertext(text)) continue
 
-                val nodeBounds = Rect()
-                node.getBoundsInScreen(nodeBounds)
-                val cacheKey = "${nodeBounds}_${text}"
-                val lastDecryptionTime = immersiveDecryptionCache[cacheKey]
-                val currentTime = System.currentTimeMillis()
+                    val nodeBounds = Rect()
+                    node.getBoundsInScreen(nodeBounds)
+                    val cacheKey = "${nodeBounds}_${text.hashCode()}"
+                    val lastDecryptionTime = immersiveDecryptionCache[cacheKey]
+                    val currentTime = System.currentTimeMillis()
 
-                if (lastDecryptionTime == null || currentTime - lastDecryptionTime > 5000) {
-                    for (key in currentService.cryptoKeys) {
-                        val decryptedText = CryptoManager.decrypt(text, key)
-                        if (decryptedText != null) {
-                            // 只是把任务加到清单里，不做任何UI操作
-                            tasks.add(decryptedText to node)
-                            immersiveDecryptionCache[cacheKey] = currentTime
-                            break
+                    if (lastDecryptionTime == null || currentTime - lastDecryptionTime > 5000) {
+                        for (key in currentService.cryptoKeys) {
+                            val decryptedText = CryptoManager.decrypt(text, key)
+                            if (decryptedText != null) {
+                                // 只是把任务加到清单里，不做任何UI操作
+                                tasks.add(decryptedText to node)
+                                immersiveDecryptionCache[cacheKey] = currentTime
+                                break
+                            }
                         }
                     }
                 }
-            }
 
-            // ✨ 当所有后台计算都完成后，我们只启动一个协程，
-            // 让“服务员”按照自己的节奏，从容地、一个一个地去上菜。
-            if (tasks.isNotEmpty()) {
-                currentService.serviceScope.launch(Dispatchers.Main) {
-                    for ((decryptedText, node) in tasks) {
-                        showDecryptionPopup(
-                            decryptedText,
-                            node,
-                            currentService.decryptionWindowShowTime
-                        )
-                        // ✨ 每显示一个弹窗，就“喘口气”（让出一帧），
-                        // 把执行机会让给动画渲染等更重要的任务。
-                        delay(32L) // 约等于2帧的时间
+                // ✨ 当所有后台计算都完成后，我们只启动一个协程，
+                // 让“服务员”按照自己的节奏，从容地、一个一个地去上菜。
+                if (tasks.isNotEmpty()) {
+                    currentService.serviceScope.launch(Dispatchers.Main) {
+                        for ((decryptedText, node) in tasks) {
+                            showDecryptionPopup(
+                                decryptedText,
+                                node,
+                                currentService.decryptionWindowShowTime
+                            )
+                            // ✨ 每显示一个弹窗，就“喘口气”（让出一帧），
+                            // 把执行机会让给动画渲染等更重要的任务。
+                            delay(32L) // 约等于2帧的时间
+                        }
                     }
                 }
+            } else {
+                Log.w(tag, "未找到消息列表容器，无法执行沉浸式解密。")
             }
-        } else {
-            Log.w(tag, "未找到消息列表容器，无法执行沉浸式解密。")
         }
+        Log.d(tag, "沉浸式解密扫描和任务分派完成，总耗时: ${executionTime}ms")
     }
 
     /**
