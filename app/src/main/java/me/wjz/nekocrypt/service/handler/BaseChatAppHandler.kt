@@ -191,7 +191,18 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             // 3. 如果最终我们拥有了一个有效的列表容器...
             if (messageList != null) {
                 val messageNodes = messageList.findAccessibilityNodeInfosByViewId(messageTextId)
-                if (messageNodes.isNullOrEmpty()) return
+                if (messageNodes.isNullOrEmpty()) {
+                    Log.d(tag, "消息列表中无消息或已离开聊天界面，开始清理所有弹窗...")
+                    // 如果缓存中还有弹窗，说明是用户离开了聊天界面，需要全部清理
+                    if (immersiveDecryptionCache.isNotEmpty()) {
+                        currentService.serviceScope.launch(Dispatchers.Main) {
+                            val managersToDismiss = immersiveDecryptionCache.values.toList()
+                            Log.d(tag, "清理 ${managersToDismiss.size} 个残留弹窗。")
+                            managersToDismiss.forEach { it.dismiss() }
+                        }
+                    }
+                    return // 这里直接退出整个函数，也不会执行计时了
+                }
                 // 分成三类
                 val visibleCacheKeys = mutableSetOf<String>()   // 此轮可见的缓存key。
                 val creationTasks = mutableListOf<Triple<String, AccessibilityNodeInfo, String>>()
@@ -203,7 +214,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
                     val nodeBounds = Rect()
                     node.getBoundsInScreen(nodeBounds)
-                    val cacheKey = "${nodeBounds.top}_${text.hashCode()}"
+                    val cacheKey = text.hashCode().toString()   // key就直接哈希
                     visibleCacheKeys.add(cacheKey)
 
                     val existingManager = immersiveDecryptionCache[cacheKey]
@@ -231,7 +242,10 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                     Log.d(tag, "--- 沉浸式解密任务分配 ---")
                     Log.d(tag, "需要销毁的弹窗 (${keysToDismiss.size}个): $keysToDismiss")
                     Log.d(tag, "需要更新位置的弹窗 (${updateTasks.size}个)")
-                    Log.d(tag, "需要新创建的弹窗 (${creationTasks.size}个): ${creationTasks.map { it.third }}")
+                    Log.d(
+                        tag,
+                        "需要新创建的弹窗 (${creationTasks.size}个): ${creationTasks.map { it.third }}"
+                    )
                     Log.d(tag, "--------------------------")
                 }
 
