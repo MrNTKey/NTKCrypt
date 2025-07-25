@@ -146,30 +146,34 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         sourceNode: AccessibilityNodeInfo?,
         isShowLongTime: Boolean = false,
     ) {
-        val node = sourceNode ?: return
-        val text = node.text?.toString() ?: return
-        val currentService = service ?: return
+        // 经过多次实际测试，单次解密()
+         val costTime=measureTimeMillis {
+             val node = sourceNode ?: return
+             val text = node.text?.toString() ?: return
+             val currentService = service ?: return
 
-        // 1. 判断节点文本是否包含我们的“猫语”
-        if (CryptoManager.containsCiphertext(text)) {
-            Log.d(tag, "检测到密文: $text")
-            // 2. 尝试用所有密钥进行解密
-            Log.d(tag, "目前的全部密钥${currentService.cryptoKeys.joinToString()}")
-            for (key in currentService.cryptoKeys) {
-                val decryptedText = CryptoManager.decrypt(text, key)
-                // 3. 只要有一个密钥解密成功...
-                if (decryptedText != null) {
-                    Log.d(tag, "解密成功 -> $decryptedText")
-                    // ...就立刻显示我们的解密弹窗！
-                    showDecryptionPopup(
-                        decryptedText,
-                        node,
-                        if (isShowLongTime) 60 else currentService.decryptionWindowShowTime
-                    )
-                    break // 停止尝试其他密钥
-                }
-            }
-        }
+             // 1. 判断节点文本是否包含我们的“猫语”
+             if (CryptoManager.containsCiphertext(text)) {
+                 Log.d(tag, "检测到密文: $text")
+                 // 2. 尝试用所有密钥进行解密
+                 Log.d(tag, "目前的全部密钥${currentService.cryptoKeys.joinToString()}")
+                 for (key in currentService.cryptoKeys) {
+                     val decryptedText = CryptoManager.decrypt(text, key)
+                     // 3. 只要有一个密钥解密成功...
+                     if (decryptedText != null) {
+                         Log.d(tag, "解密成功 -> $decryptedText")
+                         // ...就立刻显示我们的解密弹窗！
+                         showDecryptionPopup(
+                             decryptedText,
+                             node,
+                             if (isShowLongTime) 60 else currentService.decryptionWindowShowTime
+                         )
+                         break // 停止尝试其他密钥
+                     }
+                 }
+             }
+         }
+        Log.d(tag,"解密耗时$costTime ms")
     }
 
     /**
