@@ -16,7 +16,7 @@
     <string name="mode_immersive">沉浸模式</string>
     <!--    CryptoScreen -->
     <string name="crypto_input_label">输入原文或密文</string>
-    <string name="crypto_input_placeholder">在此处输入或粘贴文本...</string>
+    <string name="crypto_input_placeholder">在此处输入或粘贴文本…</string>
     <string name="crypto_decrypt_fail">解密失败！密文被篡改或密钥错误.\n ｡ﾟ(ﾟ´Д｀ﾟ)ﾟ｡</string>
     <string name="crypto_input_icon_desc">输入图标</string>
     <string name="crypto_pasted_from_clipboard">已从剪贴板粘贴</string>
@@ -56,7 +56,7 @@
 
     <!--    通知栏显示文本-->
     <string name="notification_title">NekoCrypt 喵密服务运行中</string>
-    <string name="set_text_failed">密文设置失败！可能是字数过多：%d 字</string>
+    <string name="set_text_failed">密文设置失败喵！可能是字数过多喵… (｡◕ˇ‸ˇ◕｡)：%d 字</string>
 
     <!--    权限检查相关-->
     <string name="permission_go_to_settings">前往设置</string>
