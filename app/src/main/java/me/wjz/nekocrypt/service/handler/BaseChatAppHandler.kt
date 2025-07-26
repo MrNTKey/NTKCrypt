@@ -9,6 +9,7 @@ import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.widget.Toast
 import androidx.core.graphics.toColorInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -16,6 +17,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.CryptoMode
+import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.service.NCAccessibilityService
 import me.wjz.nekocrypt.ui.DecryptionPopupContent
 import me.wjz.nekocrypt.util.CryptoManager
@@ -145,33 +147,33 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         isShowLongTime: Boolean = false,
     ) {
         // 经过多次实际测试，单次解密()
-         val costTime=measureTimeMillis {
-             val node = sourceNode ?: return
-             val text = node.text?.toString() ?: return
-             val currentService = service ?: return
+        val costTime = measureTimeMillis {
+            val node = sourceNode ?: return
+            val text = node.text?.toString() ?: return
+            val currentService = service ?: return
 
-             // 1. 判断节点文本是否包含我们的“猫语”
-             if (CryptoManager.containsCiphertext(text)) {
-                 Log.d(tag, "检测到密文: $text")
-                 // 2. 尝试用所有密钥进行解密
-                 Log.d(tag, "目前的全部密钥${currentService.cryptoKeys.joinToString()}")
-                 for (key in currentService.cryptoKeys) {
-                     val decryptedText = CryptoManager.decrypt(text, key)
-                     // 3. 只要有一个密钥解密成功...
-                     if (decryptedText != null) {
-                         Log.d(tag, "解密成功 -> $decryptedText")
-                         // ...就立刻显示我们的解密弹窗！
-                         showDecryptionPopup(
-                             decryptedText,
-                             node,
-                             if (isShowLongTime) 60 else currentService.decryptionWindowShowTime
-                         )
-                         break // 停止尝试其他密钥
-                     }
-                 }
-             }
-         }
-        Log.d(tag,"解密耗时$costTime ms")
+            // 1. 判断节点文本是否包含我们的“猫语”
+            if (CryptoManager.containsCiphertext(text)) {
+                Log.d(tag, "检测到密文: $text")
+                // 2. 尝试用所有密钥进行解密
+                Log.d(tag, "目前的全部密钥${currentService.cryptoKeys.joinToString()}")
+                for (key in currentService.cryptoKeys) {
+                    val decryptedText = CryptoManager.decrypt(text, key)
+                    // 3. 只要有一个密钥解密成功...
+                    if (decryptedText != null) {
+                        Log.d(tag, "解密成功 -> $decryptedText")
+                        // ...就立刻显示我们的解密弹窗！
+                        showDecryptionPopup(
+                            decryptedText,
+                            node,
+                            if (isShowLongTime) 60 else currentService.decryptionWindowShowTime
+                        )
+                        break // 停止尝试其他密钥
+                    }
+                }
+            }
+        }
+        Log.d(tag, "解密耗时$costTime ms")
     }
 
     /**
@@ -487,15 +489,28 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
         // 3. 执行核心加密逻辑
         val originalText = inputNode.text?.toString()
-        if (originalText.isNullOrEmpty() || CryptoManager.containsCiphertext(originalText)) {
+        if (originalText.isNullOrEmpty()) {
+            // 输入框内容为空，直接发送。
             sendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
         } else {
             val encryptedText =
                 CryptoManager.encrypt(originalText, currentService.currentKey).appendNekoTalk()
-            performSetText(inputNode, encryptedText)
-            currentService.serviceScope.launch {
-                delay(50)
-                sendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            val isSetText = performSetText(inputNode, encryptedText)
+
+            if (isSetText)
+                currentService.serviceScope.launch {
+                    delay(50)
+                    sendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                }
+            else {
+                // 设置密文失败了，弹出toast同志用户
+                service?.serviceScope?.launch(Dispatchers.Main) {
+                    Toast.makeText(
+                        service,
+                        service?.getString(R.string.set_text_failed, encryptedText.length),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
     }
@@ -522,9 +537,10 @@ abstract class BaseChatAppHandler : ChatAppHandler {
      * @param nodeInfo 目标节点。
      * @param text 要设置的文本。
      */
-    protected fun performSetText(nodeInfo: AccessibilityNodeInfo, text: String) {
+    protected fun performSetText(nodeInfo: AccessibilityNodeInfo, text: String): Boolean {
         // 检查节点是否支持“设置文本”这个动作。
         if (nodeInfo.actionList.contains(AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_TEXT)) {
+            Log.d(tag,"准备设置加密文本到输入框")
             // 1. 创建一个 Bundle (包裹)，用来存放我们要设置的文本。
             val arguments = Bundle()
             arguments.putCharSequence(
@@ -532,12 +548,24 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             )
 
             // 2. 对节点下达“执行设置文本”的命令，并把装有文本的“包裹”递给它。
-            nodeInfo.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
-            Log.d(tag, "已将加密内容直接设置到节点: $text")
+            if (!nodeInfo.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)) {
+                Log.e(tag, "performAction(ACTION_SET_TEXT) 直接返回失败。")
+                return false
+            }
+            // 刷新节点，验证文本内容是否正确更新
+            nodeInfo.refresh()
+            if (nodeInfo.text.toString() == text) {
+                Log.d(tag, "已将加密内容直接设置到节点: $text")
+                return true
+            } else {
+                Log.d(tag, "加密内容设置到textField失败，可能是内容过长: ${text.length}字")
+                return false
+            }
         } else {
             // 如果节点不支持直接设置文本（比如不可编辑的TextView），我们再考虑其他策略。
             // 比如弹窗提示，或者把解密内容复制到剪贴板（并明确告知用户）。
             Log.d(tag, "节点不支持设置文本。加密内容: $text")
+            return false
         }
     }
 

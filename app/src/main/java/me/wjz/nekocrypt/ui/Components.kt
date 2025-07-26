@@ -41,7 +41,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -94,6 +96,7 @@ import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.hook.rememberDataStoreState
 import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
 import androidx.core.graphics.toColorInt
+import kotlin.math.roundToLong
 
 /**
  * 这是一个自定义的、用于显示设置分组标题的组件。
@@ -593,11 +596,11 @@ fun SliderSettingItem(
                     value = currentValue.toFloat(),
                     onValueChange = {
                         // 当用户滑动时，更新状态
-                        currentValue = it.toLong()
+                        currentValue = it.roundToLong()
                     },
                     valueRange = valueRange.first.toFloat()..valueRange.last.toFloat(),
                     steps = ((valueRange.last - valueRange.first) / step - 1).toInt(), // 设置步数，让滑块可以吸附到整数值
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.height(30.dp).padding(top = 4.dp),
                 )
             }
         }
@@ -734,7 +737,6 @@ fun DecryptionPopupContent(text: String, durationMills: Long = 3000, onDismiss: 
 fun ColorSettingItem(
     key: Preferences.Key<String>,
     defaultValue: String,
-    icon: @Composable () -> Unit,
     title: String,
     subtitle: String,
     modifier: Modifier = Modifier,
@@ -766,8 +768,9 @@ fun ColorSettingItem(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        icon()
+        Icon(Icons.Outlined.Palette, contentDescription = "send btn overlay color")
         Spacer(modifier = Modifier.width(16.dp))
+
         Column(modifier = Modifier.weight(1f)) {
             Text(text = title, style = MaterialTheme.typography.titleMedium)
             Text(
@@ -834,8 +837,8 @@ private fun ColorPickerDialog(
     // 一些预设的颜色，方便用户快速选择
     val predefinedColors = listOf(
         "#80FF69B4", "#80FF4500", "#80FFD700", "#80ADFF2F",
-        "#8000CED1", "#801E90FF", "#809370DB", "#FFFFFFFF", // 白色全不透明
-        "#FFC0C0C0", "#FF808080", "#FF000000", "#5066ccff",  // 灰色黑色全不透明，最后一个保持原样
+        "#8000CED1", "#801E90FF", "#809370DB", "#80FFFFFF",
+        "#80C0C0C0", "#FF808080", "#80000000", "#5066ccff",
         "#00000000" //纯透明
     )
 

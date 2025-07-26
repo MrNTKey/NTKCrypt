@@ -56,6 +56,8 @@
 
     <!--    通知栏显示文本-->
     <string name="notification_title">NekoCrypt 喵密服务运行中</string>
+    <string name="set_text_failed">密文设置失败！可能是字数过多：%d 字</string>
+
     <!--    权限检查相关-->
     <string name="permission_go_to_settings">前往设置</string>
     <string name="permission_overlay_title">需要悬浮窗权限</string>
@@ -78,6 +80,6 @@
     <string name="decryption_window_position_update_delay_desc">在沉浸式解密下，密文弹窗位置更新的时间间隔，越短越实时，但可能导致卡顿</string>
     <string name="pick_color">选择颜色</string>
     <string name="send_btn_overlay_color">按钮遮罩颜色</string>
-    <string name="send_btn_overlay_color_desc">支持ARGB和RGB格式，用于设置盖在发送按钮上遮罩的颜色。</string>
+    <string name="send_btn_overlay_color_desc">支持ARGB和RGB格式，用于设置盖在发送按钮上遮罩的颜色。最后一个是纯透明</string>
 
 </resources>
