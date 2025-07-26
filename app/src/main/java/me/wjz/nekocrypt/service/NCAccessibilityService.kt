@@ -83,10 +83,15 @@ class NCAccessibilityService : AccessibilityService() {
     val decryptionWindowUpdateInterval: Long by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.DECRYPTION_WINDOW_POSITION_UPDATE_DELAY, 250)
     }, initialValue = 250)
+
     // 盖在发送按钮上的遮罩颜色。
-    val sendBtnOverlayColor:String by serviceScope.observeAsState(flowProvider = {
+    val sendBtnOverlayColor: String by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.SEND_BTN_OVERLAY_COLOR, "#5066ccff")
     }, initialValue = "#5066ccff")
+    // 控制弹出图片&文件的弹窗触发用的双击时间间隔
+    val doubleClickThreshold:Long by serviceScope.observeAsState(flowProvider = {
+        dataStoreManager.getSettingFlow(SettingKeys.DOUBLE_CLICK_THRESHOLD, 250)
+    }, initialValue = 250)
 
     // —————————————————————————— override ——————————————————————————
 
@@ -154,6 +159,14 @@ class NCAccessibilityService : AccessibilityService() {
 //        if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {//点击了屏幕
 //            Log.d(tag, "检测到点击事件，开始调试节点...")
 //            debugNodeTree(event.source)
+//        }
+
+        // 打印事件名
+//        if (event.packageName == PACKAGE_NAME_QQ) {
+//            Log.d(
+//                tag,
+//                "QQ事件类型: ${AccessibilityEvent.eventTypeToString(event.eventType)} | 类名: ${event.className} | 文本: ${event.text} | 描述: ${event.contentDescription}"
+//            )
 //        }
     }
 

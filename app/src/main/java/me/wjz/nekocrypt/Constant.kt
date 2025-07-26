@@ -32,6 +32,8 @@ object SettingKeys {
     val DECRYPTION_WINDOW_POSITION_UPDATE_DELAY = longPreferencesKey("decryption_window_position_update_delay")
     // 按钮遮罩的颜色
     val SEND_BTN_OVERLAY_COLOR = stringPreferencesKey("send_btn_overlay_color")
+    // 控制弹出发送图片or文件视图的双击最大间隔时间
+    val DOUBLE_CLICK_THRESHOLD = longPreferencesKey("double_click_threshold")
 }
 
 object CommonKeys {

@@ -115,8 +115,24 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 color = DividerDefaults.color
             )
         }
-        // ————————————————————————————————
-
+        item {
+            SliderSettingItem(  //  控制拉起图片&文件发送窗口的时间间隔。
+                key = SettingKeys.ENCRYPTION_LONG_PRESS_DELAY,
+                defaultValue = 250L,
+                icon = { Icon(Icons.Outlined.Timer, contentDescription = "Long Press Delay") },
+                title = stringResource(R.string.double_click_threshold),
+                subtitle = stringResource(R.string.double_click_threshold_desc),
+                valueRange = 250L..1000L, // 允许用户在 200ms 到 1500ms 之间选择
+                step = 250L //每50ms一个挡位
+            )
+        }
+        item {
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                thickness = DividerDefaults.Thickness,
+                color = DividerDefaults.color
+            )
+        }
 
 
         item {

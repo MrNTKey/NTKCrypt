@@ -36,7 +36,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
     // 处理器内部状态
     private var service: NCAccessibilityService? = null
-    private var windowManager: WindowManager? = null
+    // 按钮遮罩的管理器
+    private var overlayWindowManager: WindowManager? = null
     private var overlayView: View? = null
     private var overlayManagementJob: Job? = null
 
@@ -53,6 +54,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     // Key: 一个消息气泡的唯一标识符 (位置 + 文本哈希)
     // Value: 管理这个气泡弹窗的 WindowPopupManager 实例
     private val immersiveDecryptionCache = mutableMapOf<String, WindowPopupManager>()
+    // 拿来判断是否拉起图片、视频弹窗。
+    private var lastInputClickTime:Long = 0L
 
     /**
      * 根据发送按钮的矩形区域，基于每个APP定向创建加密悬浮窗的布局参数。
@@ -108,12 +111,16 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             }
         }
 
+        // 监听点击事件，用来拉起图片视频文件发送弹窗
+        if(event.eventType ==AccessibilityEvent.TYPE_VIEW_CLICKED){
+            handleInputDoubleClick(event.source)
+        }
     }
 
     // 启动服务
     override fun onHandlerActivated(service: NCAccessibilityService) {
         this.service = service
-        this.windowManager = service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        this.overlayWindowManager = service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
         Log.d(tag, "激活$packageName 处理器。")
     }
 
@@ -133,7 +140,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         removeOverlayView {
             // 在视图置空后，其他引用量也要置为空，方便gc回收
             this.service = null
-            this.windowManager = null
+            this.overlayWindowManager = null
             Log.d(tag, "取消$packageName 处理器。")
         }
     }
@@ -450,9 +457,9 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                         }
                     }
                 }
-                windowManager?.addView(overlayView, params)
+                overlayWindowManager?.addView(overlayView, params)
             } else {
-                windowManager?.updateViewLayout(overlayView, params)
+                overlayWindowManager?.updateViewLayout(overlayView, params)
             }
         }
     }
@@ -460,8 +467,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     // 移除悬浮窗
     protected fun removeOverlayView(onComplete: (() -> Unit)? = null) {
         service?.serviceScope?.launch(Dispatchers.Main) {
-            if (overlayView != null && windowManager != null) {
-                windowManager?.removeView(overlayView)
+            if (overlayView != null && overlayWindowManager != null) {
+                overlayWindowManager?.removeView(overlayView)
                 overlayView = null
 
                 onComplete?.invoke()
@@ -503,7 +510,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                     sendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
                 }
             else {
-                // 设置密文失败了，弹出toast同志用户
+                // 设置密文失败了，弹出toast通知用户
                 service?.serviceScope?.launch(Dispatchers.Main) {
                     Toast.makeText(
                         service,
@@ -574,5 +581,30 @@ abstract class BaseChatAppHandler : ChatAppHandler {
      */
     private fun isNodeValid(node: AccessibilityNodeInfo?): Boolean {
         return node?.refresh() ?: false
+    }
+
+    /**
+     * 处理输入框双击事件逻辑
+     */
+    private fun handleInputDoubleClick(sourceNode: AccessibilityNodeInfo?){
+        val node = sourceNode ?: return
+        val currentService = service ?: return
+        // 1. 检查被点击的节点是不是我们关心的那个输入框
+        //    我们通过比较节点的 viewIdResourceName 来确认它的身份
+        if (node.viewIdResourceName == inputId) {
+            val currentTime = System.currentTimeMillis()
+
+            // 2. 检查距离上次点击的时间，是否在我们的“双击”阈值之内
+            if (currentTime - lastInputClickTime < currentService.doubleClickThreshold) {
+                Log.d(tag, "检测到输入框双击事件,准备拉起弹窗")
+                //showToast(R.string.double_click_to_send_image)
+
+                // 3. 重置计时器，防止第三次点击也被误判
+                lastInputClickTime = 0L
+            } else {
+                // 如果是第一次点击，或者距离上次点击太久，就只更新时间戳
+                lastInputClickTime = currentTime
+            }
+        }
     }
 }
