@@ -74,6 +74,31 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 color = DividerDefaults.color
             )
         }
+        // ————————————————————————————————
+
+        // 第二个分组，界面相关设置
+        item {
+            SettingsHeader(stringResource(R.string.crypto_ui_settings))
+        }
+        item {
+            SliderSettingItem( //   沉浸式下，密文位置更新间隔
+                key = SettingKeys.DECRYPTION_WINDOW_POSITION_UPDATE_DELAY,
+                defaultValue = 250L, // 默认 250
+                icon = { Icon(Icons.Outlined.Timer, contentDescription = "position update delay") },
+                title = stringResource(R.string.decryption_window_position_update_delay),
+                subtitle = stringResource(R.string.decryption_window_position_update_delay_desc),
+                valueRange = 0L..1000L,
+                step = 50L // 单步步长
+            )
+        }
+        item {
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                thickness = DividerDefaults.Thickness,
+                color = DividerDefaults.color
+            )
+        }
+        // ————————————————————————————————
         item {
             SwitchSettingItem(
                 key = SettingKeys.IS_GLOBAL_ENCRYPTION_MODE,

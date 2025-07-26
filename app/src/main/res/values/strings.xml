@@ -4,7 +4,7 @@
     <!--    闲杂信息-->
     <string name="ok">原来是这样，现在我完全搞懂了</string>
     <string name="cancel">关 闭 你</string>
-
+    <string name="accept">就这个</string>
     <!--    bottomBar的label-->
     <string name="home">主页</string>
     <string name="crypto">加密</string>
@@ -65,11 +65,16 @@
     <!--    下面这两条暂时用不着-->
     <string name="permission_accessibility_title">需要无障碍服务</string>
     <string name="permission_accessibility_text">为了实现自动加解密和读取聊天内容，请在设置列表中找到“NekoCrypt”并开启它的无障碍服务。</string>
-    <!--    设置界面相关信息-->
+    <!--    设置-->
     <string name="crypto_settings">加解密设置</string>
     <string name="decryption_long_press_delay">长按解密延时</string>
     <string name="decryption_long_press_delay_desc">设置触发长按加密所需的时间</string>
     <string name="decryption_window_show_time">解密密文展示时长</string>
     <string name="decryption_window_show_time_desc">设置解密密文悬浮窗的显示时间</string>
     <string name="about">关于</string>
+    <!--    设置：界面相关-->
+    <string name="crypto_ui_settings">功能界面设置</string>
+    <string name="decryption_window_position_update_delay">弹窗位置更新延时</string>
+    <string name="decryption_window_position_update_delay_desc">在沉浸式解密下，密文弹窗位置更新的时间间隔，越短越实时，但可能导致卡顿</string>
+    <string name="pick_color">选择颜色</string>
 </resources>

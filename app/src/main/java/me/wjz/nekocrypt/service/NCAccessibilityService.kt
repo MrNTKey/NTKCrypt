@@ -79,6 +79,11 @@ class NCAccessibilityService : AccessibilityService() {
         dataStoreManager.getSettingFlow(SettingKeys.DECRYPTION_WINDOW_SHOW_TIME, 1500)
     }, initialValue = 1500)
 
+    // 沉浸式解密下密文弹窗位置的更新间隔。
+    val decryptionWindowUpdateInterval: Long by serviceScope.observeAsState(flowProvider = {
+        dataStoreManager.getSettingFlow(SettingKeys.DECRYPTION_WINDOW_POSITION_UPDATE_DELAY, 250)
+    }, initialValue = 250)
+
     // —————————————————————————— override ——————————————————————————
 
     // handler工厂方法
@@ -170,7 +175,10 @@ class NCAccessibilityService : AccessibilityService() {
             // 我们要找的就是这个能滚动的列表！
             if (className.contains("RecyclerView") || className.contains("ListView")) {
                 listContainerNode = currentNode
-                Log.d(tag, "🎉 找到了列表容器! Class: $className ID: ${listContainerNode?.viewIdResourceName}")
+                Log.d(
+                    tag,
+                    "🎉 找到了列表容器! Class: $className ID: ${listContainerNode?.viewIdResourceName}"
+                )
                 break
             }
             currentNode = currentNode?.parent

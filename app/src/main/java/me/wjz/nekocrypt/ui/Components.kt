@@ -34,6 +34,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -55,6 +57,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -70,11 +73,13 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -87,6 +92,7 @@ import kotlinx.coroutines.delay
 import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.hook.rememberDataStoreState
 import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
+import androidx.core.graphics.toColorInt
 
 /**
  * 这是一个自定义的、用于显示设置分组标题的组件。
@@ -606,6 +612,7 @@ fun SliderSettingItem(
 @Composable
 fun DecryptionPopupContent(text: String, durationMills: Long = 3000, onDismiss: () -> Unit) {
     // 不手动指定darkTheme，会出问题。
+    val animationTime = 250 // 动画时间
 
     // 创建一个从1.0开始的动画值。
     val progress = remember { Animatable(1.0f) }
@@ -623,8 +630,8 @@ fun DecryptionPopupContent(text: String, durationMills: Long = 3000, onDismiss: 
         )
         // 倒计时结束后，触发“消失”动画
         isVisible = false
-        // 等待消失动画播放完毕（动画时长为400ms）
-        delay(400)
+        // 等待消失动画播放完毕
+        delay(animationTime.toLong())
         // 动画完全结束后，才真正调用 onDismiss
         onDismiss()
     }
@@ -644,9 +651,13 @@ fun DecryptionPopupContent(text: String, durationMills: Long = 3000, onDismiss: 
                         dampingRatio = Spring.DampingRatioLowBouncy,
                         stiffness = Spring.StiffnessLow
                     )
-                ) + fadeIn(animationSpec = tween(200)),
+                ) + fadeIn(animationSpec = tween(animationTime)),
                 // ✨ 消失动画：优雅地缩小并淡出
-                exit = scaleOut(animationSpec = tween(400)) + fadeOut(animationSpec = tween(400))
+                exit = scaleOut(animationSpec = tween(animationTime)) + fadeOut(
+                    animationSpec = tween(
+                        animationTime
+                    )
+                )
             ) {
                 Card(
                     // ✨ 4. 关键！让 Card 的尺寸自适应内容
@@ -654,8 +665,15 @@ fun DecryptionPopupContent(text: String, durationMills: Long = 3000, onDismiss: 
                         .wrapContentSize() // 让卡片包裹内容，而不是撑满
                         .shadow(elevation = 8.dp, shape = RoundedCornerShape(12.dp)),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.92f)),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.8f))
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(
+                            alpha = 0.92f
+                        )
+                    ),
+                    border = BorderStroke(
+                        1.dp,
+                        MaterialTheme.colorScheme.outline.copy(alpha = 0.8f)
+                    )
                 ) {
                     Row(
                         modifier = Modifier.padding(
@@ -708,4 +726,182 @@ fun DecryptionPopupContent(text: String, durationMills: Long = 3000, onDismiss: 
             }
         }
     }
+}
+
+// 新增一个可以点击的颜色设置，用来设置一个RGBA颜色
+@Composable
+fun ColorSettingItem(
+    key: Preferences.Key<String>,
+    defaultValue: String,
+    icon: @Composable () -> Unit,
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+) {
+    var currentColorHex by rememberDataStoreState(key, defaultValue)
+    var showDialog by remember { mutableStateOf(false) }
+
+    // 将颜色字符串安全地转换为Color对象
+    val currentColor = remember(currentColorHex) {
+        try {
+            // 支持 #AARRGGBB 和 #RRGGBB 格式
+            Color(currentColorHex.toColorInt())
+        } catch (e: Exception) {
+            // 如果格式错误，返回一个默认颜色
+            Color.Red
+        }
+    }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { showDialog = true }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        icon()
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = subtitle, style = MaterialTheme.typography.bodyMedium,
+                color = LocalContentColor.current.copy(alpha = 0.6f)
+            )
+        }
+        // 右侧的颜色预览小圆圈
+        Surface(
+            modifier = Modifier.size(28.dp),
+            shape = CircleShape,
+            color = currentColor,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+        ) {}
+    }
+
+    // 当 showDialog 为 true 时，显示我们的颜色选择对话框
+    if (showDialog) {
+        ColorPickerDialog(
+            initialColorHex = currentColorHex,
+            onDismissRequest = { showDialog = false },
+            onColorSelected = { newColorHex ->
+                currentColorHex = newColorHex
+                showDialog = false
+            }
+        )
+    }
+}
+
+
+/**
+ * ✨ [新增] 我们的自定义颜色选择对话框。
+ */
+@Composable
+private fun ColorPickerDialog(
+    initialColorHex: String,
+    onDismissRequest: () -> Unit,
+    onColorSelected: (String) -> Unit,
+) {
+    // 对话框内部的临时状态，只有点“确认”时才会更新到外面
+    var tempColorHex by remember { mutableStateOf(initialColorHex) }
+    val isHexValid = remember(tempColorHex) {
+        // 正则表达式，用于验证6位或8位Hex颜色代码（可带#号）
+        tempColorHex.matches("^#?([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$".toRegex())
+    }
+    val errorColor = MaterialTheme.colorScheme.error
+    val parsedColor = remember(tempColorHex, isHexValid) {
+        if (isHexValid) {
+            try {
+                Color(if (tempColorHex.startsWith("#")) tempColorHex.toColorInt() else "#$tempColorHex".toColorInt())
+            } catch (e: Exception) {
+                errorColor
+            }
+        } else {
+            errorColor
+        }
+    }
+
+    // 一些预设的颜色，方便用户快速选择
+    val predefinedColors = listOf(
+        "#FF69B4", "#FF4500", "#FFD700", "#ADFF2F",
+        "#00CED1", "#1E90FF", "#9370DB", "#FFFFFF",
+        "#C0C0C0", "#808080", "#000000", "#5066ccff"
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(stringResource(R.string.pick_color)) },
+        text = {
+            Column {
+                // 颜色预览和Hex输入框
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        modifier = Modifier.size(40.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        color = parsedColor,
+                        border = BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                        )
+                    ) {}
+                    Spacer(modifier = Modifier.width(16.dp))
+                    TextField(
+                        value = tempColorHex,
+                        onValueChange = { tempColorHex = it },
+                        label = { Text("Hex (A)RGB") },
+                        isError = !isHexValid,
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                // 预设颜色网格
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 48.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(predefinedColors.size) { index ->
+                        val colorHex = predefinedColors[index]
+                        val color = Color(colorHex.toColorInt())
+                        val isSelected = tempColorHex.equals(colorHex, ignoreCase = true)
+
+                        // ✨ 核心修正：将 AnimatedVisibility 移动到 Surface 的 content 内部
+                        Surface(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clickable { tempColorHex = colorHex },
+                            shape = CircleShape,
+                            color = color,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                        ) {
+                            // Surface 的 content lambda 提供了一个干净的 BoxScope，消除了歧义
+                            AnimatedVisibility(visible = isSelected) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Selected",
+                                    tint = if (color.luminance() > 0.5f) Color.Black else Color.White,
+                                    modifier = Modifier.align(Alignment.CenterHorizontally) // 确保图标居中
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onColorSelected(tempColorHex) },
+                enabled = isHexValid // 只有当输入的Hex有效时才能确认
+            ) {
+                Text(stringResource(R.string.accept))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
 }

@@ -141,7 +141,7 @@ object CryptoManager {
 
 
         // --- 4. 构建最终的后缀字符串 ---
-        val nekoTalkSuffix = buildString {
+        val fullNekoTalk = buildString {
             middleParts.forEach { part ->
                 append(part)
             }
@@ -153,7 +153,8 @@ object CryptoManager {
             }
         }
 
-        return this + nekoTalkSuffix
+        val middleIndex = fullNekoTalk.length / 2
+        return fullNekoTalk.substring(0, middleIndex) + this + fullNekoTalk.substring(middleIndex)
     }
 
     /**

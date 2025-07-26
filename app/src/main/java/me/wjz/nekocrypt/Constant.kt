@@ -28,6 +28,8 @@ object SettingKeys {
     val ENCRYPTION_LONG_PRESS_DELAY = longPreferencesKey("encryption_long_press_delay")
     // 标准解密模式下，悬浮窗的显示时间设置
     val DECRYPTION_WINDOW_SHOW_TIME = longPreferencesKey("decryption_window_show_time")
+    // 沉浸式解密下密文弹窗位置更新间隔
+    val DECRYPTION_WINDOW_POSITION_UPDATE_DELAY = longPreferencesKey("decryption_window_position_update_delay")
 }
 
 object CommonKeys {
