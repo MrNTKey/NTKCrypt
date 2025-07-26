@@ -52,8 +52,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     // Value: 管理这个气泡弹窗的 WindowPopupManager 实例
     private val immersiveDecryptionCache = mutableMapOf<String, WindowPopupManager>()
 
-    private val colorInt = "#5066ccff".toColorInt() //debug的时候调成可见色，正式环境应该是纯透明
-
     /**
      * 根据发送按钮的矩形区域，基于每个APP定向创建加密悬浮窗的布局参数。
      *
@@ -397,7 +395,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         currentService.serviceScope.launch(Dispatchers.Main) {
             if (overlayView == null) {
                 overlayView = View(currentService).apply {
-                    setBackgroundColor(colorInt)
+                    setBackgroundColor(currentService.sendBtnOverlayColor.toColorInt())
 
                     // ✨ 1. 首先，为视图定义一个标准的“单击”行为
                     // 这就是我们的“标准门铃按钮”。

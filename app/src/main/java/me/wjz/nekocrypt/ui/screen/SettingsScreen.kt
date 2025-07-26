@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.SettingKeys
 import me.wjz.nekocrypt.ui.ClickableSettingItem
+import me.wjz.nekocrypt.ui.ColorSettingItem
 import me.wjz.nekocrypt.ui.SettingsHeader
 import me.wjz.nekocrypt.ui.SliderSettingItem
 import me.wjz.nekocrypt.ui.SwitchSettingItem
@@ -99,6 +100,21 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             )
         }
         // ————————————————————————————————
+        item {
+            ColorSettingItem(
+                key = SettingKeys.SEND_BTN_OVERLAY_COLOR,
+                defaultValue = "#5066ccff",
+                // 3. 给它一个你喜欢的图标
+                icon = { Icon(Icons.Default.Info, contentDescription = "send btn overlay color") },
+                // 4. 设置标题和副标题
+                title = stringResource(R.string.send_btn_overlay_color),
+                subtitle = stringResource(R.string.send_btn_overlay_color_desc)
+            )
+        }
+
+
+
+
         item {
             SwitchSettingItem(
                 key = SettingKeys.IS_GLOBAL_ENCRYPTION_MODE,

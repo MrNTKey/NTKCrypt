@@ -30,6 +30,8 @@ object SettingKeys {
     val DECRYPTION_WINDOW_SHOW_TIME = longPreferencesKey("decryption_window_show_time")
     // 沉浸式解密下密文弹窗位置更新间隔
     val DECRYPTION_WINDOW_POSITION_UPDATE_DELAY = longPreferencesKey("decryption_window_position_update_delay")
+    // 按钮遮罩的颜色
+    val SEND_BTN_OVERLAY_COLOR = stringPreferencesKey("send_btn_overlay_color")
 }
 
 object CommonKeys {

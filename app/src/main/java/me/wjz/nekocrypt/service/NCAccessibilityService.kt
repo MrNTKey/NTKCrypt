@@ -83,6 +83,10 @@ class NCAccessibilityService : AccessibilityService() {
     val decryptionWindowUpdateInterval: Long by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.DECRYPTION_WINDOW_POSITION_UPDATE_DELAY, 250)
     }, initialValue = 250)
+    // 盖在发送按钮上的遮罩颜色。
+    val sendBtnOverlayColor:String by serviceScope.observeAsState(flowProvider = {
+        dataStoreManager.getSettingFlow(SettingKeys.SEND_BTN_OVERLAY_COLOR, "#5066ccff")
+    }, initialValue = "#5066ccff")
 
     // —————————————————————————— override ——————————————————————————
 

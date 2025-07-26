@@ -77,4 +77,7 @@
     <string name="decryption_window_position_update_delay">弹窗位置更新延时</string>
     <string name="decryption_window_position_update_delay_desc">在沉浸式解密下，密文弹窗位置更新的时间间隔，越短越实时，但可能导致卡顿</string>
     <string name="pick_color">选择颜色</string>
+    <string name="send_btn_overlay_color">按钮遮罩颜色</string>
+    <string name="send_btn_overlay_color_desc">支持ARGB和RGB格式，用于设置盖在发送按钮上遮罩的颜色。</string>
+
 </resources>

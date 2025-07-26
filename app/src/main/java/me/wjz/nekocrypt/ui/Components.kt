@@ -39,6 +39,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
@@ -738,18 +739,24 @@ fun ColorSettingItem(
     subtitle: String,
     modifier: Modifier = Modifier,
 ) {
-    var currentColorHex by rememberDataStoreState(key, defaultValue)
+    // ✨ 核心修正 1：我们现在需要两个状态
+    // `storedColorHex` 是我们与DataStore同步的“仓库”状态
+    var storedColorHex by rememberDataStoreState(key, defaultValue)
+    // `displayedColorHex` 是我们UI上立即显示的“公告板”状态
+    var displayedColorHex by remember { mutableStateOf(defaultValue) }
     var showDialog by remember { mutableStateOf(false) }
 
-    // 将颜色字符串安全地转换为Color对象
-    val currentColor = remember(currentColorHex) {
-        try {
-            // 支持 #AARRGGBB 和 #RRGGBB 格式
-            Color(currentColorHex.toColorInt())
-        } catch (e: Exception) {
-            // 如果格式错误，返回一个默认颜色
-            Color.Red
-        }
+    // ✨ 核心修正 2：用 LaunchedEffect 来保持“公告板”和“仓库”同步
+    // 当 `storedColorHex` (仓库) 因任何原因改变时，立刻更新 `displayedColorHex` (公告板)
+    LaunchedEffect(storedColorHex) {
+        displayedColorHex = storedColorHex
+    }
+
+    // ✨ 核心修正 3：UI现在完全信任“公告板”上的颜色
+    val currentColor = try {
+        Color(displayedColorHex.toColorInt())
+    } catch (e: Exception) {
+        Color.Red
     }
 
     Row(
@@ -768,10 +775,10 @@ fun ColorSettingItem(
                 color = LocalContentColor.current.copy(alpha = 0.6f)
             )
         }
-        // 右侧的颜色预览小圆圈
+        // 右侧的颜色预览
         Surface(
-            modifier = Modifier.size(28.dp),
-            shape = CircleShape,
+            modifier = Modifier.size(width = 50.dp, height = 30.dp),
+            shape = RoundedCornerShape(8.dp), // 使用圆角矩形
             color = currentColor,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
         ) {}
@@ -780,10 +787,15 @@ fun ColorSettingItem(
     // 当 showDialog 为 true 时，显示我们的颜色选择对话框
     if (showDialog) {
         ColorPickerDialog(
-            initialColorHex = currentColorHex,
+            initialColorHex = displayedColorHex,
             onDismissRequest = { showDialog = false },
             onColorSelected = { newColorHex ->
-                currentColorHex = newColorHex
+                // ✨ 核心修正 5：当用户选择新颜色时...
+                // 1. 立刻更新“公告板”，UI瞬间响应！
+                displayedColorHex = newColorHex
+                // 2. 同时派出“慢性子信使”去更新“仓库”
+                storedColorHex = newColorHex
+                // 3. 关闭对话框
                 showDialog = false
             }
         )
@@ -821,9 +833,10 @@ private fun ColorPickerDialog(
 
     // 一些预设的颜色，方便用户快速选择
     val predefinedColors = listOf(
-        "#FF69B4", "#FF4500", "#FFD700", "#ADFF2F",
-        "#00CED1", "#1E90FF", "#9370DB", "#FFFFFF",
-        "#C0C0C0", "#808080", "#000000", "#5066ccff"
+        "#80FF69B4", "#80FF4500", "#80FFD700", "#80ADFF2F",
+        "#8000CED1", "#801E90FF", "#809370DB", "#FFFFFFFF", // 白色全不透明
+        "#FFC0C0C0", "#FF808080", "#FF000000", "#5066ccff",  // 灰色黑色全不透明，最后一个保持原样
+        "#00000000" //纯透明
     )
 
     AlertDialog(
@@ -836,7 +849,7 @@ private fun ColorPickerDialog(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Surface(
+                    Surface(    //左侧的颜色预览
                         modifier = Modifier.size(40.dp),
                         shape = RoundedCornerShape(8.dp),
                         color = parsedColor,
@@ -867,19 +880,31 @@ private fun ColorPickerDialog(
                         val color = Color(colorHex.toColorInt())
                         val isSelected = tempColorHex.equals(colorHex, ignoreCase = true)
 
-                        // ✨ 核心修正：将 AnimatedVisibility 移动到 Surface 的 content 内部
                         Surface(
                             modifier = Modifier
                                 .size(40.dp)
+                                .clip(RoundedCornerShape(8.dp))
                                 .clickable { tempColorHex = colorHex },
-                            shape = CircleShape,
+                            shape = RoundedCornerShape(8.dp),
                             color = color,
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                            border = BorderStroke(
+                                1.dp,
+                                MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                            ),
                         ) {
                             // Surface 的 content lambda 提供了一个干净的 BoxScope，消除了歧义
-                            AnimatedVisibility(visible = isSelected) {
+                            AnimatedVisibility(
+                                visible = isSelected,
+                                enter = scaleIn(
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioLowBouncy,
+                                        stiffness = Spring.StiffnessLow
+                                    )
+                                ) + fadeIn(animationSpec = tween(250)),
+                                exit = scaleOut() + fadeOut()
+                            ) {
                                 Icon(
-                                    Icons.Default.Close,
+                                    Icons.Default.Check,
                                     contentDescription = "Selected",
                                     tint = if (color.luminance() > 0.5f) Color.Black else Color.White,
                                     modifier = Modifier.align(Alignment.CenterHorizontally) // 确保图标居中
