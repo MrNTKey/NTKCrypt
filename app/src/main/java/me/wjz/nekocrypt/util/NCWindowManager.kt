@@ -24,10 +24,10 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
  * @param onDismissRequest 当弹窗被请求关闭时（例如，通过代码调用dismiss）的回调。
  * @param content 要在弹窗中显示的 Composable 内容。
  */
-class WindowPopupManager(
+class NCWindowManager(
     private val context: Context,
     private val onDismissRequest: () -> Unit = {},
-    private val anchorRect: Rect?,
+    private val anchorRect: Rect? = null,
     private val content: @Composable () -> Unit,
 ) {
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -95,24 +95,19 @@ class WindowPopupManager(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             layoutFlag,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            // ✨ 核心修正：加上 FLAG_LAYOUT_IN_SCREEN 这句关键的“咒语”！
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,// 这句是关键
             PixelFormat.TRANSLUCENT
         )
 
-        // ✨ --- 关键的“开光”仪式在这里！ --- ✨
-        // 只有 Android 12 (API 31) 及以上版本支持
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // 设置模糊的半径（单位是 px），这个值越大，模糊效果越明显
             params.blurBehindRadius = 30
         }
 
-        // 如果提供了锚点，就根据锚点定位；否则居中。
         if (anchorRect != null) {
             params.gravity = Gravity.TOP or Gravity.START
             params.x = anchorRect.left
             params.y = anchorRect.top
-        } else {
-            params.gravity = Gravity.CENTER
         }
         return params
     }
@@ -133,7 +128,7 @@ class WindowPopupManager(
         // 如果位置没有变化，就没必要执行动画
         if (startX == endX && startY == endY) return
 
-        positionAnimator= ValueAnimator.ofFloat(0f,1f).apply {
+        positionAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
             duration = 250 //动画时长
             interpolator = DecelerateInterpolator() // 减速插值器，动画效果更自然
             // 根据动画进度计算当前帧的x,y坐标

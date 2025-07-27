@@ -1,12 +1,17 @@
 package me.wjz.nekocrypt.service.handler
 
 import android.content.Context
+import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.os.Bundle
 import android.util.Log
+import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+import android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+import android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Toast
@@ -20,9 +25,10 @@ import me.wjz.nekocrypt.CryptoMode
 import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.service.NCAccessibilityService
 import me.wjz.nekocrypt.ui.DecryptionPopupContent
+import me.wjz.nekocrypt.ui.dialog.SendAttachmentDialog
 import me.wjz.nekocrypt.util.CryptoManager
 import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
-import me.wjz.nekocrypt.util.WindowPopupManager
+import me.wjz.nekocrypt.util.NCWindowManager
 import kotlin.system.measureTimeMillis
 
 abstract class BaseChatAppHandler : ChatAppHandler {
@@ -36,6 +42,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
     // 处理器内部状态
     private var service: NCAccessibilityService? = null
+
     // 按钮遮罩的管理器
     private var overlayWindowManager: WindowManager? = null
     private var overlayView: View? = null
@@ -53,23 +60,11 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
     // Key: 一个消息气泡的唯一标识符 (位置 + 文本哈希)
     // Value: 管理这个气泡弹窗的 WindowPopupManager 实例
-    private val immersiveDecryptionCache = mutableMapOf<String, WindowPopupManager>()
+    private val immersiveDecryptionCache = mutableMapOf<String, NCWindowManager>()
+
     // 拿来判断是否拉起图片、视频弹窗。
-    private var lastInputClickTime:Long = 0L
-
-    /**
-     * 根据发送按钮的矩形区域，基于每个APP定向创建加密悬浮窗的布局参数。
-     *
-     * @param anchorRect 发送按钮在屏幕上的位置和大小。
-     * @return 配置好的 WindowManager.LayoutParams 对象。
-     */
-    abstract fun getOverlayLayoutParams(
-        anchorRect: Rect,
-    ): WindowManager.LayoutParams
-
-    // 根据不同APP定向修改解密弹窗的window位置。
-    abstract fun modifyDecryptionWindowRect(rect: Rect): Rect
-
+    private var lastInputClickTime: Long = 0L
+    private var sendAttachmentManager: NCWindowManager? = null
 
     override fun onAccessibilityEvent(event: AccessibilityEvent, service: NCAccessibilityService) {
         // 悬浮窗管理逻辑
@@ -112,7 +107,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         }
 
         // 监听点击事件，用来拉起图片视频文件发送弹窗
-        if(event.eventType ==AccessibilityEvent.TYPE_VIEW_CLICKED){
+        if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {
             handleInputDoubleClick(event.source)
         }
     }
@@ -120,7 +115,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     // 启动服务
     override fun onHandlerActivated(service: NCAccessibilityService) {
         this.service = service
-        this.overlayWindowManager = service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        this.overlayWindowManager =
+            service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
         Log.d(tag, "激活$packageName 处理器。")
     }
 
@@ -217,7 +213,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 // 分成三类
                 val visibleCacheKeys = mutableSetOf<String>()   // 此轮可见的缓存key。
                 val creationTasks = mutableListOf<Triple<String, AccessibilityNodeInfo, String>>()
-                val updateTasks = mutableListOf<Pair<WindowPopupManager, Rect>>()
+                val updateTasks = mutableListOf<Pair<NCWindowManager, Rect>>()
 
                 for (node in messageNodes) {
                     val text = node.text?.toString()
@@ -232,8 +228,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
                     if (existingManager != null) {
                         // ✨ 如果弹窗已存在，则加入“更新位置”任务列表
-                        val targetPopupRect = modifyDecryptionWindowRect(nodeBounds)
-                        updateTasks.add(existingManager to targetPopupRect)
+                        updateTasks.add(existingManager to nodeBounds)
                     } else {
                         // ✨ 如果弹窗不存在，则加入“创建弹窗”任务列表
                         for (key in currentService.cryptoKeys) {
@@ -328,21 +323,21 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         anchorNode: AccessibilityNodeInfo,
         showTime: Long,
         onDismiss: (() -> Unit)? = null,
-    ): WindowPopupManager {
+    ): NCWindowManager {
         val currentService = service!!
 
         val anchorRect = Rect()
         anchorNode.getBoundsInScreen(anchorRect)
 
         // 每个弹窗都有自己的管理器实例。
-        var popupManager: WindowPopupManager? = null
+        var popupManager: NCWindowManager? = null
         // 创建并显示我们的弹窗
-        popupManager = WindowPopupManager(
+        popupManager = NCWindowManager(
             context = currentService, onDismissRequest = {
                 onDismiss?.invoke()
                 popupManager = null
             },// 关闭时清理引用
-            anchorRect = modifyDecryptionWindowRect(anchorRect)
+            anchorRect = anchorRect
         ) {
             // 把UI内容传进去
             DecryptionPopupContent(
@@ -547,7 +542,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     protected fun performSetText(nodeInfo: AccessibilityNodeInfo, text: String): Boolean {
         // 检查节点是否支持“设置文本”这个动作。
         if (nodeInfo.actionList.contains(AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_TEXT)) {
-            Log.d(tag,"准备设置加密文本到输入框")
+            Log.d(tag, "准备设置加密文本到输入框")
             // 1. 创建一个 Bundle (包裹)，用来存放我们要设置的文本。
             val arguments = Bundle()
             arguments.putCharSequence(
@@ -586,7 +581,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     /**
      * 处理输入框双击事件逻辑
      */
-    private fun handleInputDoubleClick(sourceNode: AccessibilityNodeInfo?){
+    private fun handleInputDoubleClick(sourceNode: AccessibilityNodeInfo?) {
         val node = sourceNode ?: return
         val currentService = service ?: return
         // 1. 检查被点击的节点是不是我们关心的那个输入框
@@ -597,14 +592,67 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             // 2. 检查距离上次点击的时间，是否在我们的“双击”阈值之内
             if (currentTime - lastInputClickTime < currentService.doubleClickThreshold) {
                 Log.d(tag, "检测到输入框双击事件,准备拉起弹窗")
-                //showToast(R.string.double_click_to_send_image)
-
-                // 3. 重置计时器，防止第三次点击也被误判
+                addAttachmentDialog()
                 lastInputClickTime = 0L
             } else {
                 // 如果是第一次点击，或者距离上次点击太久，就只更新时间戳
                 lastInputClickTime = currentTime
             }
         }
+    }
+
+    fun getOverlayLayoutParams(anchorRect: Rect): WindowManager.LayoutParams {
+        val layoutFlag = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+
+        return WindowManager.LayoutParams(
+            anchorRect.width(),
+            anchorRect.height(),
+            anchorRect.left,
+            anchorRect.top,
+            layoutFlag,
+            FLAG_NOT_FOCUSABLE or FLAG_NOT_TOUCH_MODAL or FLAG_LAYOUT_IN_SCREEN,// 这句FLAG_LAYOUT_IN_SCREEN是关键
+            PixelFormat.TRANSLUCENT
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+        }
+    }
+
+    /**
+     * 添加我们的Attachment弹窗
+     */
+    private fun addAttachmentDialog() {
+        val currentService = service ?: return
+
+        sendAttachmentManager = NCWindowManager(
+            currentService,
+            onDismissRequest = { sendAttachmentManager = null },
+        ) {
+            SendAttachmentDialog(
+                onDismissRequest = { sendAttachmentManager?.dismiss() },
+                onSendRequest = { url ->
+                    Log.d(tag, "准备发送URL: $url")
+                    currentService.serviceScope.launch {
+                        if (isNodeValid(cachedInputNode) && isNodeValid(cachedSendBtnNode)) {
+                            val success = performSetText(cachedInputNode!!, url)
+                            if (success) {
+                                delay(50)
+                                cachedSendBtnNode!!.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                            } else {
+                                // 复用你已经写好的Toast逻辑
+                                Toast.makeText(
+                                    service,
+                                    service?.getString(R.string.set_text_failed, url.length),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                Log.d(tag, "url发送失败")
+                            }
+                        }
+                    }
+                    sendAttachmentManager?.dismiss()
+                }
+            )
+        }
+        // 显示弹窗
+        sendAttachmentManager?.show()
     }
 }
