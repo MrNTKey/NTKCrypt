@@ -93,7 +93,7 @@ fun SendAttachmentDialog(
             visible = isVisible,
             enter = fadeIn(animationSpec = tween(200)) + scaleIn(
                 animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    dampingRatio = Spring.DampingRatioLowBouncy,
                     stiffness = Spring.StiffnessLow
                 )
             ),

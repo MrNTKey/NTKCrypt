@@ -632,6 +632,11 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 onSendRequest = { url ->
                     Log.d(tag, "准备发送URL: $url")
                     currentService.serviceScope.launch {
+                        if (!isNodeValid(cachedInputNode))
+                            cachedInputNode = findNodeById(service!!.rootInActiveWindow, inputId)
+                        if (!isNodeValid(cachedSendBtnNode))
+                            cachedSendBtnNode = findNodeById(service!!.rootInActiveWindow, sendBtnId)
+
                         if (isNodeValid(cachedInputNode) && isNodeValid(cachedSendBtnNode)) {
                             val success = performSetText(cachedInputNode!!, url)
                             if (success) {
@@ -646,6 +651,9 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                                 ).show()
                                 Log.d(tag, "url发送失败")
                             }
+                        }
+                        else{
+                            Log.d(tag,"未能找到节点，发送失败")
                         }
                     }
                     sendAttachmentManager?.dismiss()

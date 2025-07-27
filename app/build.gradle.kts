@@ -65,6 +65,7 @@ dependencies {
     implementation("androidx.savedstate:savedstate-ktx:1.2.0") // 包含 ViewTreeSavedStateRegistryOwner
 
     implementation("com.alibaba.fastjson2:fastjson2:2.0.57") //json解析
+    implementation("com.squareup.okhttp3:okhttp:5.1.0") //http
     implementation(libs.androidx.compiler)//安装preferences datastore 插件
 
     implementation("androidx.navigation:navigation-compose:2.9.1") // 导航
