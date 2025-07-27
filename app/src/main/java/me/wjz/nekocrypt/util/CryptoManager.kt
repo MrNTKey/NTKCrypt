@@ -83,16 +83,6 @@ object CryptoManager {
     )
 
     /**
-     * 将所有类型的猫语列表聚合到一个主列表中，方便随机选择类型。
-     */
-    private val ALL_NEKO_PHRASE_TYPES = listOf(
-        NEKO_INNER_THOUGHTS,
-        NEKO_KAOMOJI,
-        NEKO_SOUNDS
-    )
-
-
-    /**
      * 生成一个符合 AES-256 要求的随机密钥。
      *
      * @return 一个 SecretKey 对象，包含了256位的密钥数据。
@@ -161,27 +151,46 @@ object CryptoManager {
      * 加密一个消息，使用给定的密钥，返回的直接是隐写字符串
      */
     fun encrypt(message: String, key: String): String {
-        //先把明文字符串转成字节数组
-        val plaintextBytes = message.toByteArray()
-        //生成随机的iv
-        val iv = ByteArray(IV_LENGTH_BYTES)
-        SecureRandom().nextBytes(iv)
-        //创建加密器
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        val parameterSpec = GCMParameterSpec(TAG_LENGTH_BITS, iv)//生成GCM所需数据
-        cipher.init(Cipher.ENCRYPT_MODE, deriveKeyFromString(key), parameterSpec)
-        val ciphertextBytes = cipher.doFinal(plaintextBytes)
-        //拼接iv和密文
-        val combinedBytes = iv + ciphertextBytes
-        return baseNEncode(combinedBytes)
+        val plaintextBytes = message.toByteArray(Charsets.UTF_8)
+        val encryptedBytes = encryptBytes(plaintextBytes, key)
+        return baseNEncode(encryptedBytes)
+    }
+    // 提供一个重载
+    fun encrypt(data: ByteArray, key: String): ByteArray {
+        return encryptBytes(data, key)
     }
 
     //消息解密，智能地从含密文的混合字符串中解密
-    fun decrypt(stealthCiphertext: String, key: String): String? { // 返回值改为可空的 String?
+    fun decrypt(stealthCiphertext: String, key: String): String? {
+        val combinedBytes = baseNDecode(stealthCiphertext)
+        val decryptedBytes = decryptBytes(combinedBytes, key)
+        return decryptedBytes?.toString(Charsets.UTF_8)
+    }
+
+    fun decrypt(data: ByteArray, key: String): ByteArray? {
+        return decryptBytes(data, key)
+    }
+
+    /**
+     * ✨ [私有核心] 真正执行加密操作的函数
+     */
+    private fun encryptBytes(plaintextBytes: ByteArray, key: String): ByteArray {
+        val iv = ByteArray(IV_LENGTH_BYTES)
+        SecureRandom().nextBytes(iv)    //填充随机内容
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        val parameterSpec = GCMParameterSpec(TAG_LENGTH_BITS, iv)
+        cipher.init(Cipher.ENCRYPT_MODE, deriveKeyFromString(key), parameterSpec)
+        val ciphertextBytes = cipher.doFinal(plaintextBytes)
+        // 返回拼接了IV和密文的完整数据
+        return iv + ciphertextBytes
+    }
+
+    /**
+     * ✨ [私有核心] 真正执行解密操作的函数
+     */
+    private fun decryptBytes(combinedBytes: ByteArray, key: String): ByteArray? {
         try {
-            // 直接将隐写字符串进行 BaseN 解码
-            val combinedBytes = baseNDecode(stealthCiphertext)
-            if (combinedBytes.isEmpty() || combinedBytes.size < IV_LENGTH_BYTES) return null
+            if (combinedBytes.size < IV_LENGTH_BYTES) return null
 
             val iv = combinedBytes.copyOfRange(0, IV_LENGTH_BYTES)
             val ciphertextBytes = combinedBytes.copyOfRange(IV_LENGTH_BYTES, combinedBytes.size)
@@ -189,19 +198,11 @@ object CryptoManager {
             val parameterSpec = GCMParameterSpec(TAG_LENGTH_BITS, iv)
             cipher.init(Cipher.DECRYPT_MODE, deriveKeyFromString(key), parameterSpec)
 
-            // 认证校验在这里隐式发生！
-            // 如果密文或IV被篡改，或者密钥错误，doFinal会抛出 AEADBadTagException。
-            // 这就是GCM模式的认证功能。
-            val decryptedBytes = cipher.doFinal(ciphertextBytes)
-            return String(decryptedBytes)
+            return cipher.doFinal(ciphertextBytes)
         } catch (e: AEADBadTagException) {
-            // 明确捕获认证标签错误的异常。
-            // 这意味着数据100%被篡改过，或者使用的密钥是错误的。
-            // 在这种情况下，我们不应该让程序崩溃，而是应该返回一个null来表示解密失败。
             println("解密失败：数据认证失败，可能已被篡改或密钥错误。\n" + e.message)
             return null
         } catch (e: Exception) {
-            // 捕获其他可能的异常，例如格式错误等。
             println("解密时发生未知错误: ${e.message}")
             return null
         }
