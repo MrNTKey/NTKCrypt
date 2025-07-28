@@ -10,7 +10,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
 
 /**
  * ✨ [最终精致版] 发送附件的对话框UI内容
@@ -88,45 +91,45 @@ fun SendAttachmentDialog(
         }
     }
 
-    Box(modifier = Modifier.padding(16.dp)) {
-        AnimatedVisibility(
-            visible = isVisible,
-            enter = fadeIn(animationSpec = tween(200)) + scaleIn(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioLowBouncy,
-                    stiffness = Spring.StiffnessLow
-                )
-            ),
-            exit = fadeOut(animationSpec = tween(300)) + scaleOut(animationSpec = tween(300))
-        ) {
-            Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "发送加密内容",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+    NekoCryptTheme(darkTheme = false) {
+        Box(modifier = Modifier.padding(16.dp)) {
+            AnimatedVisibility(
+                visible = isVisible,
+                enter = fadeIn(animationSpec = tween(200)) + scaleIn(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessLow
                     )
-                    Spacer(modifier = Modifier.height(24.dp))
+                ),
+                exit = fadeOut(animationSpec = tween(300)) + scaleOut(animationSpec = tween(300))
+            ) {
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "发送加密内容",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
 
-                    Box(contentAlignment = Alignment.Center) {
-                        Column {
-                            Row(modifier = Modifier.fillMaxWidth()) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
                                 SendOptionItem(
                                     icon = Icons.Outlined.Collections,
                                     label = "图片或视频",
                                     enabled = !isUploading,
                                     onClick = { startMockUpload("https://neko.crypt/media_mock.png") }
                                 )
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Row(modifier = Modifier.fillMaxWidth()) {
                                 SendOptionItem(
                                     icon = Icons.Outlined.AttachFile,
                                     label = "文件",
@@ -134,64 +137,67 @@ fun SendAttachmentDialog(
                                     onClick = { startMockUpload("https://neko.crypt/file_mock.zip") }
                                 )
                             }
-                        }
 
-                        Row(horizontalArrangement = Arrangement.Center) {
-                            AnimatedVisibility(
-                                visible = isUploading,
-                                enter = fadeIn(animationSpec = tween(300)),
-                                exit = fadeOut(animationSpec = tween(200)) + scaleOut(
-                                    animationSpec = tween(
-                                        200
+                            Row(horizontalArrangement = Arrangement.Center) {
+                                AnimatedVisibility(
+                                    visible = isUploading,
+                                    enter = fadeIn(animationSpec = tween(300)),
+                                    exit = fadeOut(animationSpec = tween(200)) + scaleOut(
+                                        animationSpec = tween(
+                                            200
+                                        )
                                     )
-                                )
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    CircularProgressIndicator(
-                                        progress = { uploadProgress ?: 0f }
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = "正在加密上传...",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        CircularProgressIndicator(
+                                            progress = { uploadProgress ?: 0f }
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = "正在加密上传...",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
 
-                    AnimatedVisibility(
-                        visible = selectedUrl.isNotEmpty(),
-                        enter = fadeIn(animationSpec = tween(300)),
-                        exit = fadeOut(animationSpec = tween(300))
-                    ) {
-                        OutlinedTextField(
-                            value = selectedUrl,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("内容链接") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        TextButton(onClick = { dismissWithAnimation() }, enabled = !isUploading) {
-                            Text("取消")
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Button(
-                            onClick = { onSendRequest(selectedUrl) },
-                            enabled = selectedUrl.isNotEmpty() && !isUploading
+                        AnimatedVisibility(
+                            visible = selectedUrl.isNotEmpty(),
+                            enter = fadeIn(animationSpec = tween(300)),
+                            exit = fadeOut(animationSpec = tween(300))
                         ) {
-                            Text("发送")
+                            OutlinedTextField(
+                                value = selectedUrl,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("内容链接") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(
+                                onClick = { dismissWithAnimation() },
+                                enabled = !isUploading
+                            ) {
+                                Text("取消")
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Button(
+                                onClick = { onSendRequest(selectedUrl) },
+                                enabled = selectedUrl.isNotEmpty() && !isUploading
+                            ) {
+                                Text("发送")
+                            }
                         }
                     }
                 }
@@ -217,7 +223,12 @@ private fun RowScope.SendOptionItem(
         modifier = modifier
             .weight(1f)
             .clip(shape)
-            .clickable(onClick = onClick, enabled = enabled),
+            .clickable(
+                onClick = onClick,
+                enabled = enabled,
+                indication = LocalIndication.current,
+                interactionSource = remember { MutableInteractionSource() }
+            ),
         shape = shape,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f * alpha),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f * alpha))
