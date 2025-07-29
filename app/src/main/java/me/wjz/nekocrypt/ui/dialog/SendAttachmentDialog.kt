@@ -1,5 +1,9 @@
 package me.wjz.nekocrypt.ui.dialog
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -10,9 +14,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,10 +51,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
 
 /**
@@ -81,6 +85,12 @@ fun SendAttachmentDialog(
         }
     }
 
+    fun handleSelection(uri: Uri?) {
+        if (uri == null) return
+        // 统一处理选择结果
+        startMockUpload("${uri.lastPathSegment}")
+    }
+
     var isVisible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { isVisible = true }
     fun dismissWithAnimation() {
@@ -92,7 +102,7 @@ fun SendAttachmentDialog(
     }
 
     NekoCryptTheme(darkTheme = false) {
-        Box(modifier = Modifier.padding(16.dp)) {
+        Box(modifier = Modifier.padding(8.dp)) {
             AnimatedVisibility(
                 visible = isVisible,
                 enter = fadeIn(animationSpec = tween(200)) + scaleIn(
@@ -112,31 +122,20 @@ fun SendAttachmentDialog(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "发送加密内容",
+                            text = stringResource(R.string.crypto_attachment_title),
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.height(24.dp))
 
                         Box(contentAlignment = Alignment.Center) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                SendOptionItem(
-                                    icon = Icons.Outlined.Collections,
-                                    label = "图片或视频",
-                                    enabled = !isUploading,
-                                    onClick = { startMockUpload("https://neko.crypt/media_mock.png") }
-                                )
-                                SendOptionItem(
-                                    icon = Icons.Outlined.AttachFile,
-                                    label = "文件",
-                                    enabled = !isUploading,
-                                    onClick = { startMockUpload("https://neko.crypt/file_mock.zip") }
-                                )
-                            }
+                            // 封装好的组件
+                            AttachmentOptions(
+                                isUploading = isUploading,
+                                onMediaSelected = { handleSelection(it) },
+                                onFileSelected = { handleSelection(it) }
+                            )
 
                             Row(horizontalArrangement = Arrangement.Center) {
                                 AnimatedVisibility(
@@ -206,6 +205,76 @@ fun SendAttachmentDialog(
     }
 }
 
+@Composable
+private fun AttachmentOptions(
+    isUploading: Boolean,
+    onMediaSelected: (Uri?) -> Unit,
+    onFileSelected: (Uri?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // ✨ 请来“相册采购专家”
+        MediaOptionItem(
+            enabled = !isUploading,
+            onMediaSelected = onMediaSelected
+        )
+        // ✨ 请来“仓库采购专家”
+        FileOptionItem(
+            enabled = !isUploading,
+            onFileSelected = onFileSelected
+        )
+    }
+}
+
+// 点击拉起系统相册的组件
+@Composable
+private fun RowScope.MediaOptionItem(
+    enabled: Boolean,
+    onMediaSelected: (Uri?) -> Unit
+){
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = onMediaSelected //回来时直接调用外部回调
+    )
+
+    SendOptionItem(
+        icon = Icons.Outlined.Collections,
+        label = stringResource(R.string.crypto_attachment_media),
+        enabled = enabled,
+        onClick = {
+            // 点击时，派出信使
+            photoPickerLauncher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
+            )
+        }
+    )
+}
+
+
+// 点击拉起文件管理器的组件
+@Composable
+private fun RowScope.FileOptionItem(
+    enabled: Boolean,
+    onFileSelected: (Uri?) -> Unit
+) {
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = onFileSelected
+    )
+
+    SendOptionItem(
+        icon = Icons.Outlined.AttachFile,
+        label = stringResource(R.string.crypto_attachment_file),
+        enabled = enabled,
+        onClick = {
+            filePickerLauncher.launch("*/*")
+        }
+    )
+}
+
 /**
  * 对话框里可点击的选项按钮的UI封装
  */
@@ -226,8 +295,6 @@ private fun RowScope.SendOptionItem(
             .clickable(
                 onClick = onClick,
                 enabled = enabled,
-                indication = LocalIndication.current,
-                interactionSource = remember { MutableInteractionSource() }
             ),
         shape = shape,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f * alpha),

@@ -83,4 +83,8 @@
     <string name="send_btn_overlay_color_desc">支持ARGB和RGB格式，用于设置盖在发送按钮上遮罩的颜色。最后一个是纯透明</string>
     <string name="double_click_threshold">拉起多媒体弹窗的双击间隔</string>
     <string name="double_click_threshold_desc">在间隔时间内双击输入框，会拉起发送多媒体消息的弹窗</string>
+    <!--    附件发送页面-->
+    <string name="crypto_attachment_title">发送加密附件</string>
+    <string name="crypto_attachment_media">相册</string>
+    <string name="crypto_attachment_file">文件</string>
 </resources>

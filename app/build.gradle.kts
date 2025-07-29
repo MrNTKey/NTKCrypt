@@ -69,6 +69,8 @@ dependencies {
     implementation(libs.androidx.compiler)//安装preferences datastore 插件
 
     implementation("androidx.navigation:navigation-compose:2.9.1") // 导航
+    implementation("androidx.activity:activity-compose:1.9.0")  // 拉起系统相册要用
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
