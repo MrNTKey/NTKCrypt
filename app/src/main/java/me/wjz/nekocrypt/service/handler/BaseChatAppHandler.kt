@@ -1,6 +1,7 @@
 package me.wjz.nekocrypt.service.handler
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.os.Bundle
@@ -19,6 +20,7 @@ import androidx.core.graphics.toColorInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.CryptoMode
@@ -28,7 +30,9 @@ import me.wjz.nekocrypt.ui.DecryptionPopupContent
 import me.wjz.nekocrypt.ui.dialog.SendAttachmentDialog
 import me.wjz.nekocrypt.util.CryptoManager
 import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
+import me.wjz.nekocrypt.util.FilePickerActivity
 import me.wjz.nekocrypt.util.NCWindowManager
+import me.wjz.nekocrypt.util.ResultRelay
 import kotlin.system.measureTimeMillis
 
 abstract class BaseChatAppHandler : ChatAppHandler {
@@ -62,9 +66,12 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     // Value: 管理这个气泡弹窗的 WindowPopupManager 实例
     private val immersiveDecryptionCache = mutableMapOf<String, NCWindowManager>()
 
+    // ———————— 附件发送弹窗相关属性 ————————
+
     // 拿来判断是否拉起图片、视频弹窗。
     private var lastInputClickTime: Long = 0L
     private var sendAttachmentManager: NCWindowManager? = null
+    private var filePickerJob: Job? = null // ✨ 新增一个Job来监听结果
 
     override fun onAccessibilityEvent(event: AccessibilityEvent, service: NCAccessibilityService) {
         // 悬浮窗管理逻辑
@@ -117,6 +124,20 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         this.service = service
         this.overlayWindowManager =
             service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+
+        filePickerJob = service.serviceScope.launch {
+            ResultRelay.flow.collectLatest { uri ->
+                // 当收到“代办”发回的URI时
+                Log.d(tag, "收到文件URI: $uri")
+                // TODO: 在这里处理URI，比如读取文件内容、上传、然后把URL设置到对话框里
+                // 为了演示，我们先用一个Toast
+                Toast.makeText(service, "已选择: ${uri.path}", Toast.LENGTH_SHORT).show()
+
+                // 拿到URI后，可以触发真实的上传逻辑，并更新SendAttachmentDialog的状态
+                // (这部分逻辑需要将SendAttachmentDialog的状态也提升到Handler中管理)
+            }
+        }
+
         Log.d(tag, "激活$packageName 处理器。")
     }
 
@@ -124,6 +145,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     override fun onHandlerDeactivated() {
         overlayManagementJob?.cancel()
         immersiveDecryptionJob?.cancel()
+        filePickerJob?.cancel()
         // 用一个副本做遍历避免删除时下标异常
         val managersToDismiss = immersiveDecryptionCache.values.toList()
         // 依次关闭所有弹窗
@@ -629,38 +651,53 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         ) {
             SendAttachmentDialog(
                 onDismissRequest = { sendAttachmentManager?.dismiss() },
-                onSendRequest = { url ->
-                    Log.d(tag, "准备发送URL: $url")
-                    currentService.serviceScope.launch {
-                        if (!isNodeValid(cachedInputNode))
-                            cachedInputNode = findNodeById(service!!.rootInActiveWindow, inputId)
-                        if (!isNodeValid(cachedSendBtnNode))
-                            cachedSendBtnNode = findNodeById(service!!.rootInActiveWindow, sendBtnId)
-
-                        if (isNodeValid(cachedInputNode) && isNodeValid(cachedSendBtnNode)) {
-                            val success = performSetText(cachedInputNode!!, url)
-                            if (success) {
-                                delay(50)
-                                cachedSendBtnNode!!.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                            } else {
-                                // 复用你已经写好的Toast逻辑
-                                Toast.makeText(
-                                    service,
-                                    service?.getString(R.string.set_text_failed, url.length),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                Log.d(tag, "url发送失败")
-                            }
-                        }
-                        else{
-                            Log.d(tag,"未能找到节点，发送失败")
-                        }
-                    }
-                    sendAttachmentManager?.dismiss()
-                }
+                onSendRequest = { url -> onSendRequest(url) },
+                onPickMedia = { pickContent(FilePickerActivity.TYPE_MEDIA) },
+                onPickFile = { pickContent(FilePickerActivity.TYPE_FILE) }
             )
         }
         // 显示弹窗
         sendAttachmentManager?.show()
     }
+
+    // 附件弹窗，点击发送的回调逻辑
+    private fun onSendRequest(url: String) {
+        Log.d(tag, "准备发送URL: $url")
+        service?.serviceScope?.launch {
+            if (!isNodeValid(cachedInputNode))
+                cachedInputNode = findNodeById(service!!.rootInActiveWindow, inputId)
+            if (!isNodeValid(cachedSendBtnNode))
+                cachedSendBtnNode =
+                    findNodeById(service!!.rootInActiveWindow, sendBtnId)
+
+            if (isNodeValid(cachedInputNode) && isNodeValid(cachedSendBtnNode)) {
+                val success = performSetText(cachedInputNode!!, url)
+                if (success) {
+                    delay(50)
+                    cachedSendBtnNode!!.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                } else {
+                    // 复用你已经写好的Toast逻辑
+                    Toast.makeText(
+                        service,
+                        service!!.getString(R.string.set_text_failed, url.length),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    Log.d(tag, "url发送失败")
+                }
+            } else {
+                Log.d(tag, "未能找到节点，发送失败")
+            }
+        }
+        sendAttachmentManager?.dismiss()
+    }
+
+    private fun pickContent(contentType: String) {
+        val currentService = service ?: return
+        val intent = Intent(currentService, FilePickerActivity::class.java).apply {
+            putExtra(FilePickerActivity.KEY_PICK_TYPE, contentType)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        currentService.startActivity(intent)
+    }
+
 }

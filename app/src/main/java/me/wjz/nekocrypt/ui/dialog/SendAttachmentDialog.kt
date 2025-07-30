@@ -1,9 +1,5 @@
 package me.wjz.nekocrypt.ui.dialog
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -67,6 +63,8 @@ import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
 fun SendAttachmentDialog(
     onDismissRequest: () -> Unit,
     onSendRequest: (String) -> Unit,
+    onPickMedia: () -> Unit,
+    onPickFile: () -> Unit,
 ) {
     var selectedUrl by remember { mutableStateOf("") }
     var uploadProgress by remember { mutableStateOf<Float?>(null) }
@@ -83,12 +81,6 @@ fun SendAttachmentDialog(
             selectedUrl = resultUrl
             uploadProgress = null
         }
-    }
-
-    fun handleSelection(uri: Uri?) {
-        if (uri == null) return
-        // 统一处理选择结果
-        startMockUpload("${uri.lastPathSegment}")
     }
 
     var isVisible by remember { mutableStateOf(false) }
@@ -133,8 +125,8 @@ fun SendAttachmentDialog(
                             // 封装好的组件
                             AttachmentOptions(
                                 isUploading = isUploading,
-                                onMediaSelected = { handleSelection(it) },
-                                onFileSelected = { handleSelection(it) }
+                                onMediaClick = onPickMedia,
+                                onFileClick = onPickFile,
                             )
 
                             Row(horizontalArrangement = Arrangement.Center) {
@@ -208,71 +200,27 @@ fun SendAttachmentDialog(
 @Composable
 private fun AttachmentOptions(
     isUploading: Boolean,
-    onMediaSelected: (Uri?) -> Unit,
-    onFileSelected: (Uri?) -> Unit,
-    modifier: Modifier = Modifier
+    onMediaClick: () -> Unit,
+    onFileClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // ✨ 请来“相册采购专家”
-        MediaOptionItem(
+        SendOptionItem(
+            icon = Icons.Outlined.Collections,
+            label = stringResource(R.string.crypto_attachment_media),
             enabled = !isUploading,
-            onMediaSelected = onMediaSelected
+            onClick = onMediaClick
         )
-        // ✨ 请来“仓库采购专家”
-        FileOptionItem(
+        SendOptionItem(
+            icon = Icons.Outlined.AttachFile,
+            label = stringResource(R.string.crypto_attachment_file),
             enabled = !isUploading,
-            onFileSelected = onFileSelected
+            onClick = onFileClick
         )
     }
-}
-
-// 点击拉起系统相册的组件
-@Composable
-private fun RowScope.MediaOptionItem(
-    enabled: Boolean,
-    onMediaSelected: (Uri?) -> Unit
-){
-    val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = onMediaSelected //回来时直接调用外部回调
-    )
-
-    SendOptionItem(
-        icon = Icons.Outlined.Collections,
-        label = stringResource(R.string.crypto_attachment_media),
-        enabled = enabled,
-        onClick = {
-            // 点击时，派出信使
-            photoPickerLauncher.launch(
-                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
-            )
-        }
-    )
-}
-
-
-// 点击拉起文件管理器的组件
-@Composable
-private fun RowScope.FileOptionItem(
-    enabled: Boolean,
-    onFileSelected: (Uri?) -> Unit
-) {
-    val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
-        onResult = onFileSelected
-    )
-
-    SendOptionItem(
-        icon = Icons.Outlined.AttachFile,
-        label = stringResource(R.string.crypto_attachment_file),
-        enabled = enabled,
-        onClick = {
-            filePickerLauncher.launch("*/*")
-        }
-    )
 }
 
 /**
