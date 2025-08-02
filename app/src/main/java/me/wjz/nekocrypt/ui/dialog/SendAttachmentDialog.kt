@@ -71,18 +71,6 @@ fun SendAttachmentDialog(
     val isUploading = uploadProgress != null
     val coroutineScope = rememberCoroutineScope()
 
-    fun startMockUpload(resultUrl: String) {
-        coroutineScope.launch {
-            uploadProgress = 0f
-            while ((uploadProgress ?: 0f) < 1f) {
-                delay(100)
-                uploadProgress = ((uploadProgress ?: 0f) + 0.1f).coerceAtMost(1.0f)
-            }
-            selectedUrl = resultUrl
-            uploadProgress = null
-        }
-    }
-
     var isVisible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { isVisible = true }
     fun dismissWithAnimation() {

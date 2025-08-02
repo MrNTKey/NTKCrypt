@@ -9,8 +9,11 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.ui.dialog.SendAttachmentDialog
 import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
+import me.wjz.nekocrypt.util.ResultRelay
 
 class AttachmentDialogActivity: ComponentActivity() {
     companion object {
@@ -75,6 +78,10 @@ class AttachmentDialogActivity: ComponentActivity() {
             putExtra(EXTRA_RESULT_URL, url)
         }
         setResult(RESULT_OK, resultIntent)
+        lifecycleScope.launch {
+            ResultRelay.send(url)
+        }
+
         finish()
     }
 }

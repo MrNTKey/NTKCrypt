@@ -124,14 +124,12 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
         filePickerJob = service.serviceScope.launch {
-            ResultRelay.flow.collectLatest { uri ->
+            ResultRelay.flow.collectLatest { url ->
                 // 当收到“代办”发回的URI时
-                Log.d(tag, "收到文件URI: $uri")
-                // TODO: 在这里处理URI，比如读取文件内容、上传，然后调用onSendRequest
+                Log.d(tag, "收到网页链接url: $url")
                 // 为了演示，我们先用一个Toast，并直接调用onSendRequest
-                val mockUrl = "https://neko.crypt/uploaded_${uri.lastPathSegment}"
-                Toast.makeText(service, "已选择: ${uri.path}", Toast.LENGTH_SHORT).show()
-                onSendRequest(mockUrl)
+                Toast.makeText(service, "已选择: $url", Toast.LENGTH_SHORT).show()
+                onSendRequest(url)
             }
         }
 
@@ -637,7 +635,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     }
 
     /**
-     * ✨ [核心] 启动透明的、承载对话框的Activity
+     * 启动我们的附件发送activity
      */
     private fun launchAttachmentActivity() {
         val currentService = service ?: return
