@@ -25,12 +25,11 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.CryptoMode
 import me.wjz.nekocrypt.R
+import me.wjz.nekocrypt.activity.AttachmentDialogActivity
 import me.wjz.nekocrypt.service.NCAccessibilityService
 import me.wjz.nekocrypt.ui.DecryptionPopupContent
-import me.wjz.nekocrypt.ui.dialog.SendAttachmentDialog
 import me.wjz.nekocrypt.util.CryptoManager
 import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
-import me.wjz.nekocrypt.util.FilePickerActivity
 import me.wjz.nekocrypt.util.NCWindowManager
 import me.wjz.nekocrypt.util.ResultRelay
 import kotlin.system.measureTimeMillis
@@ -70,7 +69,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
     // 拿来判断是否拉起图片、视频弹窗。
     private var lastInputClickTime: Long = 0L
-    private var sendAttachmentManager: NCWindowManager? = null
     private var filePickerJob: Job? = null // ✨ 新增一个Job来监听结果
 
     override fun onAccessibilityEvent(event: AccessibilityEvent, service: NCAccessibilityService) {
@@ -129,12 +127,11 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             ResultRelay.flow.collectLatest { uri ->
                 // 当收到“代办”发回的URI时
                 Log.d(tag, "收到文件URI: $uri")
-                // TODO: 在这里处理URI，比如读取文件内容、上传、然后把URL设置到对话框里
-                // 为了演示，我们先用一个Toast
+                // TODO: 在这里处理URI，比如读取文件内容、上传，然后调用onSendRequest
+                // 为了演示，我们先用一个Toast，并直接调用onSendRequest
+                val mockUrl = "https://neko.crypt/uploaded_${uri.lastPathSegment}"
                 Toast.makeText(service, "已选择: ${uri.path}", Toast.LENGTH_SHORT).show()
-
-                // 拿到URI后，可以触发真实的上传逻辑，并更新SendAttachmentDialog的状态
-                // (这部分逻辑需要将SendAttachmentDialog的状态也提升到Handler中管理)
+                onSendRequest(mockUrl)
             }
         }
 
@@ -613,8 +610,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
             // 2. 检查距离上次点击的时间，是否在我们的“双击”阈值之内
             if (currentTime - lastInputClickTime < currentService.doubleClickThreshold) {
-                Log.d(tag, "检测到输入框双击事件,准备拉起弹窗")
-                addAttachmentDialog()
+                Log.d(tag, "检测到输入框双击事件, 准备启动发送附件Activity")
+                launchAttachmentActivity()
                 lastInputClickTime = 0L
             } else {
                 // 如果是第一次点击，或者距离上次点击太久，就只更新时间戳
@@ -640,64 +637,43 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     }
 
     /**
-     * 添加我们的Attachment弹窗
+     * ✨ [核心] 启动透明的、承载对话框的Activity
      */
-    private fun addAttachmentDialog() {
+    private fun launchAttachmentActivity() {
         val currentService = service ?: return
-
-        sendAttachmentManager = NCWindowManager(
-            currentService,
-            onDismissRequest = { sendAttachmentManager = null },
-        ) {
-            SendAttachmentDialog(
-                onDismissRequest = { sendAttachmentManager?.dismiss() },
-                onSendRequest = { url -> onSendRequest(url) },
-                onPickMedia = { pickContent(FilePickerActivity.TYPE_MEDIA) },
-                onPickFile = { pickContent(FilePickerActivity.TYPE_FILE) }
-            )
+        val intent = Intent(currentService, AttachmentDialogActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        // 显示弹窗
-        sendAttachmentManager?.show()
+        currentService.startActivity(intent)
     }
 
-    // 附件弹窗，点击发送的回调逻辑
-    private fun onSendRequest(url: String) {
+    /**
+     * ✨ [核心] 发送逻辑现在是一个独立的函数，等待被调用
+     */
+    private fun onSendRequest(url: String){
         Log.d(tag, "准备发送URL: $url")
         service?.serviceScope?.launch {
-            if (!isNodeValid(cachedInputNode))
-                cachedInputNode = findNodeById(service!!.rootInActiveWindow, inputId)
-            if (!isNodeValid(cachedSendBtnNode))
-                cachedSendBtnNode =
-                    findNodeById(service!!.rootInActiveWindow, sendBtnId)
+            // 在执行操作前，总是重新获取最新的节点，因为之前的可能已失效
+            val latestInputNode = findNodeById(service!!.rootInActiveWindow, inputId)
+            val latestSendBtnNode = findNodeById(service!!.rootInActiveWindow, sendBtnId)
 
-            if (isNodeValid(cachedInputNode) && isNodeValid(cachedSendBtnNode)) {
-                val success = performSetText(cachedInputNode!!, url)
+            if (latestInputNode != null && latestSendBtnNode != null) {
+                val success = performSetText(latestInputNode, url)
                 if (success) {
                     delay(50)
-                    cachedSendBtnNode!!.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                    latestSendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
                 } else {
-                    // 复用你已经写好的Toast逻辑
                     Toast.makeText(
                         service,
                         service!!.getString(R.string.set_text_failed, url.length),
                         Toast.LENGTH_SHORT
                     ).show()
-                    Log.d(tag, "url发送失败")
                 }
             } else {
-                Log.d(tag, "未能找到节点，发送失败")
+                Log.e(tag, "发送失败：未能找到输入框或发送按钮节点！")
+                Toast.makeText(service, "发送失败：节点已失效", Toast.LENGTH_SHORT).show()
             }
         }
-        sendAttachmentManager?.dismiss()
-    }
-
-    private fun pickContent(contentType: String) {
-        val currentService = service ?: return
-        val intent = Intent(currentService, FilePickerActivity::class.java).apply {
-            putExtra(FilePickerActivity.KEY_PICK_TYPE, contentType)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        currentService.startActivity(intent)
     }
 
 }
