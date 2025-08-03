@@ -3,6 +3,7 @@ package me.wjz.nekocrypt.service.handler
 import android.content.Context
 import android.graphics.PixelFormat
 import android.graphics.Rect
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
@@ -15,6 +16,9 @@ import android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Toast
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.graphics.toColorInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -71,6 +75,11 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     private var filePickerJob: Job? = null // ✨ 新增一个Job来监听结果
     private var sendAttachmentDialogManager: NCWindowManager? = null
 
+    // --- ✨ 附件发送弹窗相关的新增状态 ---
+    // 使用 Compose 的 State Delegate，这样当它们的值改变时，UI会自动更新
+    private var attachmentUploadProgress by mutableStateOf<Float?>(null)
+    private var attachmentResultUrl by mutableStateOf("")
+
     override fun onAccessibilityEvent(event: AccessibilityEvent, service: NCAccessibilityService) {
         // 悬浮窗管理逻辑
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED || event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
@@ -120,8 +129,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     // 启动服务
     override fun onHandlerActivated(service: NCAccessibilityService) {
         this.service = service
-        this.overlayWindowManager =
-            service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        this.overlayWindowManager = service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
         filePickerJob = service.serviceScope.launch {
             ResultRelay.flow.collectLatest { uri ->
@@ -637,6 +645,36 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     }
 
     /**
+     * ✨ [新增] 模拟文件上传的函数
+     * 这个函数现在是业务逻辑的真正执行者。
+     */
+    private fun startMockFileUpload(uri: Uri) {
+        service?.serviceScope?.launch {
+            // 1. 重置状态，准备开始上传
+            attachmentUploadProgress = 0f
+            attachmentResultUrl = ""
+
+            // 2. 模拟上传过程，不断更新进度状态
+            while ((attachmentUploadProgress ?: 0f) < 1f) {
+                delay(150) // 模拟网络延迟
+                // coerceAtMost确保值不会超过1.0
+                attachmentUploadProgress = ((attachmentUploadProgress ?: 0f) + 0.1f).coerceAtMost(1.0f)
+                Log.d(tag, "上传进度: $attachmentUploadProgress")
+            }
+
+            // 3. 上传完成，更新最终结果URL，并清空进度
+            attachmentResultUrl = "https://neko.crypt/uploaded_${uri.lastPathSegment}"
+            attachmentUploadProgress = null // 设为null来隐藏进度条
+            Log.d(tag, "上传完成，URL: $attachmentResultUrl")
+
+            // 4. (可选) 上传成功后自动发送
+            // delay(500) // 给用户一点反应时间
+            // onSendRequest(attachmentResultUrl)
+            // sendAttachmentDialogManager?.dismiss() // 发送后自动关闭对话框
+        }
+    }
+
+    /**
      * 创建并显示“发送附件”对话框
      */
     private fun showSendAttachmentDialog() {
@@ -650,8 +688,13 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         ) {
             SendAttachmentDialog(
                 onDismissRequest = { sendAttachmentDialogManager?.dismiss() },
-                onSendRequest = ::onSendRequest,
-                // ✨ 核心修改：将拉起系统选择器的逻辑直接放在这里
+                onSendRequest = { url ->
+                    // 发送成功后，也关闭对话框
+                    onSendRequest(url)
+                    sendAttachmentDialogManager?.dismiss()
+                },
+                uploadProgress = attachmentUploadProgress, // 传递进度
+                resultUrl = attachmentResultUrl           // 传递结果URL
             )
         }
         sendAttachmentDialogManager?.show()
