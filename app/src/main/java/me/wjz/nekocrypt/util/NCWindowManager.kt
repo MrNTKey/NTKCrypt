@@ -85,7 +85,8 @@ class NCWindowManager(
     }
 
     private fun createLayoutParams(anchorRect: Rect?): WindowManager.LayoutParams {
-        val layoutFlag = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        // 这个accessibility不需要用户授权，比application的好
+        val layoutFlag = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
 
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,

@@ -32,7 +32,7 @@
         </activity>
         <!--        创建一个activity用来拉起系统页面-->
         <activity
-            android:name=".activity.AttachmentDialogActivity"
+            android:name=".util.FilePickerActivity"
             android:exported="false"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <!--        申请无障碍权限-->

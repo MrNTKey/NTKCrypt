@@ -25,9 +25,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.CryptoMode
 import me.wjz.nekocrypt.R
-import me.wjz.nekocrypt.activity.AttachmentDialogActivity
 import me.wjz.nekocrypt.service.NCAccessibilityService
 import me.wjz.nekocrypt.ui.DecryptionPopupContent
+import me.wjz.nekocrypt.ui.dialog.SendAttachmentDialog
 import me.wjz.nekocrypt.util.CryptoManager
 import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
 import me.wjz.nekocrypt.util.NCWindowManager
@@ -70,6 +70,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     // 拿来判断是否拉起图片、视频弹窗。
     private var lastInputClickTime: Long = 0L
     private var filePickerJob: Job? = null // ✨ 新增一个Job来监听结果
+    private var sendAttachmentDialogManager: NCWindowManager? = null
 
     override fun onAccessibilityEvent(event: AccessibilityEvent, service: NCAccessibilityService) {
         // 悬浮窗管理逻辑
@@ -124,12 +125,14 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
         filePickerJob = service.serviceScope.launch {
-            ResultRelay.flow.collectLatest { url ->
+            ResultRelay.flow.collectLatest { uri ->
                 // 当收到“代办”发回的URI时
-                Log.d(tag, "收到网页链接url: $url")
+                Log.d(tag, "收到文件URI: $uri")
+                // TODO: 在这里处理URI，从uri读取文件并上传
                 // 为了演示，我们先用一个Toast，并直接调用onSendRequest
-                Toast.makeText(service, "已选择: $url", Toast.LENGTH_SHORT).show()
-                onSendRequest(url)
+                val mockUrl = "https://neko.crypt/uploaded_${uri.lastPathSegment}"
+                Toast.makeText(service, "已选择: ${uri.path}", Toast.LENGTH_SHORT).show()
+                onSendRequest(mockUrl)
             }
         }
 
@@ -609,7 +612,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             // 2. 检查距离上次点击的时间，是否在我们的“双击”阈值之内
             if (currentTime - lastInputClickTime < currentService.doubleClickThreshold) {
                 Log.d(tag, "检测到输入框双击事件, 准备启动发送附件Activity")
-                launchAttachmentActivity()
+                showSendAttachmentDialog()
                 lastInputClickTime = 0L
             } else {
                 // 如果是第一次点击，或者距离上次点击太久，就只更新时间戳
@@ -635,20 +638,36 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     }
 
     /**
-     * 启动我们的附件发送activity
+     * 创建并显示“发送附件”对话框
      */
-    private fun launchAttachmentActivity() {
+    private fun showSendAttachmentDialog() {
         val currentService = service ?: return
-        val intent = Intent(currentService, AttachmentDialogActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (sendAttachmentDialogManager != null) return
+
+        sendAttachmentDialogManager = NCWindowManager(
+            context = currentService,
+            onDismissRequest = { sendAttachmentDialogManager = null },
+            anchorRect = null
+        ) {
+            SendAttachmentDialog(
+                onDismissRequest = { sendAttachmentDialogManager?.dismiss() },
+                onSendRequest = ::onSendRequest,
+                // ✨ 核心修改：将拉起系统选择器的逻辑直接放在这里
+                onPickMedia = {
+
+                },
+                onPickFile = {
+
+                }
+            )
         }
-        currentService.startActivity(intent)
+        sendAttachmentDialogManager?.show()
     }
 
     /**
      * ✨ [核心] 发送逻辑现在是一个独立的函数，等待被调用
      */
-    private fun onSendRequest(url: String){
+    private fun onSendRequest(url: String) {
         Log.d(tag, "准备发送URL: $url")
         service?.serviceScope?.launch {
             // 在执行操作前，总是重新获取最新的节点，因为之前的可能已失效

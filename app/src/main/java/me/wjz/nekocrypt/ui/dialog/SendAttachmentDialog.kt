@@ -1,5 +1,6 @@
 package me.wjz.nekocrypt.ui.dialog
 
+import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -47,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -70,6 +72,18 @@ fun SendAttachmentDialog(
     var uploadProgress by remember { mutableStateOf<Float?>(null) }
     val isUploading = uploadProgress != null
     val coroutineScope = rememberCoroutineScope()
+
+    fun startMockUpload(resultUrl: String) {
+        coroutineScope.launch {
+            uploadProgress = 0f
+            while ((uploadProgress ?: 0f) < 1f) {
+                delay(100)
+                uploadProgress = ((uploadProgress ?: 0f) + 0.1f).coerceAtMost(1.0f)
+            }
+            selectedUrl = resultUrl
+            uploadProgress = null
+        }
+    }
 
     var isVisible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { isVisible = true }
@@ -192,6 +206,8 @@ private fun AttachmentOptions(
     onFileClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -200,13 +216,25 @@ private fun AttachmentOptions(
             icon = Icons.Outlined.Collections,
             label = stringResource(R.string.crypto_attachment_media),
             enabled = !isUploading,
-            onClick = onMediaClick
+            onClick = {
+                val intent = Intent(Intent.ACTION_PICK).apply {
+                    type = "image/* video/*" // 同时选择图片和视频
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            }
         )
         SendOptionItem(
             icon = Icons.Outlined.AttachFile,
             label = stringResource(R.string.crypto_attachment_file),
             enabled = !isUploading,
-            onClick = onFileClick
+            onClick = {
+                val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                    type = "*/*" // 选择所有类型的文件
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            }
         )
     }
 }
