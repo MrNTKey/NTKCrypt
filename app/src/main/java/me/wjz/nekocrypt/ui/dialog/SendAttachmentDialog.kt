@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.R
+import me.wjz.nekocrypt.ui.activity.AttachmentPickerActivity
 import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
 
 /**
@@ -65,8 +66,6 @@ import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
 fun SendAttachmentDialog(
     onDismissRequest: () -> Unit,
     onSendRequest: (String) -> Unit,
-    onPickMedia: () -> Unit,
-    onPickFile: () -> Unit,
 ) {
     var selectedUrl by remember { mutableStateOf("") }
     var uploadProgress by remember { mutableStateOf<Float?>(null) }
@@ -127,8 +126,6 @@ fun SendAttachmentDialog(
                             // 封装好的组件
                             AttachmentOptions(
                                 isUploading = isUploading,
-                                onMediaClick = onPickMedia,
-                                onFileClick = onPickFile,
                             )
 
                             Row(horizontalArrangement = Arrangement.Center) {
@@ -202,8 +199,6 @@ fun SendAttachmentDialog(
 @Composable
 private fun AttachmentOptions(
     isUploading: Boolean,
-    onMediaClick: () -> Unit,
-    onFileClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -217,8 +212,18 @@ private fun AttachmentOptions(
             label = stringResource(R.string.crypto_attachment_media),
             enabled = !isUploading,
             onClick = {
-                val intent = Intent(Intent.ACTION_PICK).apply {
-                    type = "image/* video/*" // 同时选择图片和视频
+//                val intent = Intent(Intent.ACTION_PICK).apply {
+//                    type = "image/* video/*" // 同时选择图片和视频
+//                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+//                }
+//                context.startActivity(intent)
+
+                // 这里体现了两种intent的创建方式，上面的是先弹出一个弹窗，让用户选择其一，再具体拉出对应弹窗，适合service上下文
+
+                // 下面我们这里指定一个activity，就方便很多。
+                val intent = Intent(context, AttachmentPickerActivity::class.java).apply {
+                    // 这里放个extra，activity内部就根据这个额外的kv判断具体拉起逻辑
+                    putExtra(AttachmentPickerActivity.EXTRA_PICK_TYPE, AttachmentPickerActivity.TYPE_MEDIA)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startActivity(intent)
@@ -229,8 +234,8 @@ private fun AttachmentOptions(
             label = stringResource(R.string.crypto_attachment_file),
             enabled = !isUploading,
             onClick = {
-                val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
-                    type = "*/*" // 选择所有类型的文件
+                val intent = Intent(context, AttachmentPickerActivity::class.java).apply {
+                    putExtra(AttachmentPickerActivity.EXTRA_PICK_TYPE, AttachmentPickerActivity.TYPE_FILE)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startActivity(intent)

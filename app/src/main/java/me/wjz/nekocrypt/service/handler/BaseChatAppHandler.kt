@@ -1,7 +1,6 @@
 package me.wjz.nekocrypt.service.handler
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.os.Bundle
@@ -653,12 +652,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 onDismissRequest = { sendAttachmentDialogManager?.dismiss() },
                 onSendRequest = ::onSendRequest,
                 // ✨ 核心修改：将拉起系统选择器的逻辑直接放在这里
-                onPickMedia = {
-
-                },
-                onPickFile = {
-
-                }
             )
         }
         sendAttachmentDialogManager?.show()
