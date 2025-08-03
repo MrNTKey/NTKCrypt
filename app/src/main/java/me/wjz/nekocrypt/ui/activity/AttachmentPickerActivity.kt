@@ -1,6 +1,7 @@
 package me.wjz.nekocrypt.ui.activity
 
 import android.os.Bundle
+import android.util.Log
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.result.PickVisualMediaRequest
@@ -10,6 +11,7 @@ import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.util.ResultRelay
 
 class AttachmentPickerActivity : ComponentActivity() {
+    private val tag ="AttachmentPickerActivity"
 
     companion object {
         const val EXTRA_PICK_TYPE = "pick_type"
@@ -20,7 +22,7 @@ class AttachmentPickerActivity : ComponentActivity() {
     private val mediaPicker = registerForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri ->
-        println("拿到了uri：$uri")
+        Log.d(tag,"拿到了uri：$uri")
         lifecycleScope.launch {
             uri?.let { ResultRelay.send(it) }
             finish()
@@ -30,7 +32,7 @@ class AttachmentPickerActivity : ComponentActivity() {
     private val filePicker = registerForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri ->
-        println("拿到了uri：$uri")
+        Log.d(tag,"拿到了uri：$uri")
         lifecycleScope.launch {
             uri?.let { ResultRelay.send(it) }
             finish()

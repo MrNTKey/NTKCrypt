@@ -136,10 +136,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 // 当收到“代办”发回的URI时
                 Log.d(tag, "收到文件URI: $uri")
                 // TODO: 在这里处理URI，从uri读取文件并上传
-                // 为了演示，我们先用一个Toast，并直接调用onSendRequest
-                val mockUrl = "https://neko.crypt/uploaded_${uri.lastPathSegment}"
                 Toast.makeText(service, "已选择: ${uri.path}", Toast.LENGTH_SHORT).show()
-                onSendRequest(mockUrl)
+                startMockFileUpload(uri)
             }
         }
 
