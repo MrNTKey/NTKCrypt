@@ -88,10 +88,18 @@ class NCAccessibilityService : AccessibilityService() {
     val sendBtnOverlayColor: String by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.SEND_BTN_OVERLAY_COLOR, "#5066ccff")
     }, initialValue = "#5066ccff")
+
     // 控制弹出图片&文件的弹窗触发用的双击时间间隔
-    val doubleClickThreshold:Long by serviceScope.observeAsState(flowProvider = {
+    val doubleClickThreshold: Long by serviceScope.observeAsState(flowProvider = {
         dataStoreManager.getSettingFlow(SettingKeys.DOUBLE_CLICK_THRESHOLD, 250)
     }, initialValue = 250)
+
+    // 新增：系统级白名单
+    private val SYSTEM_PREFIXES = setOf(
+        "com.android.",
+        "android.",
+        "com.google.android."
+    )
 
     // —————————————————————————— override ——————————————————————————
 
@@ -144,7 +152,9 @@ class NCAccessibilityService : AccessibilityService() {
 
             // 关键逻辑：只有当我们的处理器正在运行，并且当前活跃窗口已经不是它负责的应用时，才停用它
             val activeWindowPackage = rootInActiveWindow?.packageName?.toString()
-            if (currentHandler != null && currentHandler?.packageName != activeWindowPackage) {
+            if (currentHandler != null && currentHandler?.packageName != activeWindowPackage
+                && !isSystemApp(activeWindowPackage) // 这里判断是否是系统app，直接看开头是不是com.android.provider。
+            ) {
                 Log.d(
                     tag,
                     "检测到用户已离开 [${currentHandler?.packageName}]，当前窗口为 [${activeWindowPackage}]。停用处理器。"
@@ -279,6 +289,18 @@ class NCAccessibilityService : AccessibilityService() {
                 keepAliveOverlay = null
             }
         }
+    }
+
+    /**
+     * 检查给定的包名是否属于系统应用。
+     * @param packageName 需要检查的应用包名。
+     * @return 如果是系统应用或核心应用，则返回 true，否则返回 false。
+     */
+    private fun isSystemApp(packageName: String?): Boolean {
+        if (packageName.isNullOrBlank()) {
+            return false
+        }
+        return packageName.startsWith("com.android.providers")
     }
 }
 

@@ -1,6 +1,7 @@
 package me.wjz.nekocrypt.ui.activity
 
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,6 +20,7 @@ class AttachmentPickerActivity : ComponentActivity() {
     private val mediaPicker = registerForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri ->
+        println("拿到了uri：$uri")
         lifecycleScope.launch {
             uri?.let { ResultRelay.send(it) }
             finish()
@@ -28,6 +30,7 @@ class AttachmentPickerActivity : ComponentActivity() {
     private val filePicker = registerForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri ->
+        println("拿到了uri：$uri")
         lifecycleScope.launch {
             uri?.let { ResultRelay.send(it) }
             finish()
@@ -36,6 +39,8 @@ class AttachmentPickerActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 必须不能抢占焦点，否则handler检测到不是QQ界面就会杀掉自己
+        window.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
         when (intent.getStringExtra(EXTRA_PICK_TYPE)) {
             TYPE_MEDIA -> mediaPicker.launch(
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
