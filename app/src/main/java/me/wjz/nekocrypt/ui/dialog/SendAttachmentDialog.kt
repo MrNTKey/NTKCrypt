@@ -66,26 +66,17 @@ import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
 fun SendAttachmentDialog(
     onDismissRequest: () -> Unit,
     onSendRequest: (String) -> Unit,
+    // --- ✨ 新增/修改的参数 ---
+    uploadProgress: Float?,      // 从外部接收上传进度
+    resultUrl: String,            // 从外部接收最终的URL
 ) {
-    var selectedUrl by remember { mutableStateOf("") }
-    var uploadProgress by remember { mutableStateOf<Float?>(null) }
     val isUploading = uploadProgress != null
     val coroutineScope = rememberCoroutineScope()
 
-    fun startMockUpload(resultUrl: String) {
-        coroutineScope.launch {
-            uploadProgress = 0f
-            while ((uploadProgress ?: 0f) < 1f) {
-                delay(100)
-                uploadProgress = ((uploadProgress ?: 0f) + 0.1f).coerceAtMost(1.0f)
-            }
-            selectedUrl = resultUrl
-            uploadProgress = null
-        }
-    }
-
     var isVisible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { isVisible = true }
+
+    
     fun dismissWithAnimation() {
         coroutineScope.launch {
             isVisible = false
@@ -155,13 +146,14 @@ fun SendAttachmentDialog(
 
                         Spacer(modifier = Modifier.height(24.dp))
 
+                        // ✨ 链接输入框的可见性和内容，现在由外部传入的 resultUrl 决定
                         AnimatedVisibility(
-                            visible = selectedUrl.isNotEmpty(),
+                            visible = resultUrl.isNotEmpty(),
                             enter = fadeIn(animationSpec = tween(300)),
                             exit = fadeOut(animationSpec = tween(300))
                         ) {
                             OutlinedTextField(
-                                value = selectedUrl,
+                                value = resultUrl,
                                 onValueChange = {},
                                 readOnly = true,
                                 label = { Text("内容链接") },
@@ -183,8 +175,9 @@ fun SendAttachmentDialog(
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             Button(
-                                onClick = { onSendRequest(selectedUrl) },
-                                enabled = selectedUrl.isNotEmpty() && !isUploading
+                                // ✨ 发送按钮的可用性也由外部状态决定
+                                onClick = { onSendRequest(resultUrl) },
+                                enabled = resultUrl.isNotEmpty() && !isUploading
                             ) {
                                 Text("发送")
                             }
