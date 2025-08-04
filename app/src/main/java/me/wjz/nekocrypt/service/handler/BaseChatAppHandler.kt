@@ -26,6 +26,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import me.wjz.nekocrypt.CryptoMode
 import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.service.NCAccessibilityService
@@ -129,7 +130,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     // 启动服务
     override fun onHandlerActivated(service: NCAccessibilityService) {
         this.service = service
-        this.overlayWindowManager = service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        this.overlayWindowManager =
+            service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
         filePickerJob = service.serviceScope.launch {
             ResultRelay.flow.collectLatest { uri ->
@@ -478,6 +480,12 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                     }
                 }
                 overlayWindowManager?.addView(overlayView, params)
+                // 第一次添加进去的时候，位置很可能是歪的，延迟一定时间然后更新悬浮窗位置。
+                delay(50)
+                val rect = Rect()
+                cachedSendBtnNode?.getBoundsInScreen(rect)
+                overlayWindowManager?.updateViewLayout(overlayView, getOverlayLayoutParams(rect))
+
             } else {
                 overlayWindowManager?.updateViewLayout(overlayView, params)
             }
@@ -648,21 +656,26 @@ abstract class BaseChatAppHandler : ChatAppHandler {
      */
     private fun startMockFileUpload(uri: Uri) {
         service?.serviceScope?.launch {
-            // 1. 重置状态，准备开始上传
-            attachmentUploadProgress = 0f
-            attachmentResultUrl = ""
+            // 1. 重置状态，准备开始上传 这里必须在主线程上下文更新，否则UI很可能是没有同步状态的！
+            withContext(Dispatchers.Main) {
+                attachmentUploadProgress = 0f
+                attachmentResultUrl = ""
+            }
 
             // 2. 模拟上传过程，不断更新进度状态
             while ((attachmentUploadProgress ?: 0f) < 1f) {
                 delay(150) // 模拟网络延迟
                 // coerceAtMost确保值不会超过1.0
-                attachmentUploadProgress = ((attachmentUploadProgress ?: 0f) + 0.1f).coerceAtMost(1.0f)
+                attachmentUploadProgress =
+                    ((attachmentUploadProgress ?: 0f) + 0.1f).coerceAtMost(1.0f)
                 Log.d(tag, "上传进度: $attachmentUploadProgress")
             }
 
             // 3. 上传完成，更新最终结果URL，并清空进度
-            attachmentResultUrl = "https://neko.crypt/uploaded_${uri.lastPathSegment}"
-            attachmentUploadProgress = null // 设为null来隐藏进度条
+            withContext(Dispatchers.Main) {
+                attachmentResultUrl = "https://neko.crypt/uploaded_${uri.lastPathSegment}"
+                attachmentUploadProgress = null // 设为null来隐藏进度条
+            }
             Log.d(tag, "上传完成，URL: $attachmentResultUrl")
 
             // 4. (可选) 上传成功后自动发送
