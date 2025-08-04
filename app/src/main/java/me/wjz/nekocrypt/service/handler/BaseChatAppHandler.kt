@@ -21,11 +21,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.graphics.toColorInt
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import me.wjz.nekocrypt.CryptoMode
 import me.wjz.nekocrypt.R
@@ -34,8 +36,12 @@ import me.wjz.nekocrypt.ui.DecryptionPopupContent
 import me.wjz.nekocrypt.ui.dialog.SendAttachmentDialog
 import me.wjz.nekocrypt.util.CryptoManager
 import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
+import me.wjz.nekocrypt.util.CryptoUploader
 import me.wjz.nekocrypt.util.NCWindowManager
 import me.wjz.nekocrypt.util.ResultRelay
+import java.io.IOException
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlin.system.measureTimeMillis
 
 abstract class BaseChatAppHandler : ChatAppHandler {
@@ -139,7 +145,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 Log.d(tag, "收到文件URI: $uri")
                 // TODO: 在这里处理URI，从uri读取文件并上传
                 Toast.makeText(service, "已选择: ${uri.path}", Toast.LENGTH_SHORT).show()
-                startMockFileUpload(uri)
+                startUpload(uri)
             }
         }
 
@@ -736,6 +742,68 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             } else {
                 Log.e(tag, "发送失败：未能找到输入框或发送按钮节点！")
                 Toast.makeText(service, "发送失败：节点已失效", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    // 收到flow中的uri之后，读取资源并上传。
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun startUpload(uri: Uri) {
+        val currentService = service ?: return
+        // 在IO线程读取文件
+        currentService.serviceScope.launch(Dispatchers.IO) {
+            try {
+                // 切主线程更新UI
+                withContext(Dispatchers.Main) {
+                    attachmentUploadProgress = 0f
+                    attachmentResultUrl = ""
+                }
+                val fileName = "ab123"
+                val fileBytes =
+                    currentService.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                        ?: throw IOException("无法读取文件内容")
+                // 开始上传
+                val resultUrl = suspendCancellableCoroutine { continuation ->
+                    CryptoUploader.upload(
+                        fileBytes = fileBytes,
+                        fileName = fileName,
+                        encryptionKey = currentService.currentKey,
+                        onProcess = { progressInt ->
+                            // 将 0-100 的 Int 进度转换为 0.0-1.0 的 Float
+                            val progressFloat = progressInt / 100.0f
+                            // 在主线程更新UI
+                            launch(Dispatchers.Main) {
+                                attachmentUploadProgress = progressFloat
+                            }
+                        },
+                        onComplete = { url ->
+                            if (url != null) {
+                                // 上传成功，恢复协程并返回URL
+                                continuation.resume(url)
+                            } else {
+                                // 上传失败，让协程抛出异常
+                                continuation.resumeWithException(IOException("上传失败，服务器未返回有效链接。"))
+                            }
+                        }
+                    )
+                }
+
+                // 4. 上传成功，更新UI
+                withContext(Dispatchers.Main) {
+                    attachmentResultUrl = resultUrl
+                    attachmentUploadProgress = null
+                    Log.d(tag, "上传成功，URL: $resultUrl")
+                }
+
+            } catch (e: Exception) {
+                // 5. 统一处理所有异常
+                Log.e(tag, "上传失败: ", e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(currentService, "上传失败: ${e.message}", Toast.LENGTH_LONG)
+                        .show()
+                    attachmentUploadProgress = null
+                    attachmentResultUrl = ""
+                }
             }
         }
     }

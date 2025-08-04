@@ -300,7 +300,8 @@ class NCAccessibilityService : AccessibilityService() {
         if (packageName.isNullOrBlank()) {
             return false
         }
-        return packageName.startsWith("com.android.providers")
+        // 相册属于前者，文件选择器属于后者。
+        return packageName.startsWith("com.android.providers") || packageName.startsWith("com.google.android")
     }
 }
 
