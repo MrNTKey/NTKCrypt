@@ -27,7 +27,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import me.wjz.nekocrypt.CryptoMode
 import me.wjz.nekocrypt.R
@@ -40,8 +39,6 @@ import me.wjz.nekocrypt.util.CryptoUploader
 import me.wjz.nekocrypt.util.NCWindowManager
 import me.wjz.nekocrypt.util.ResultRelay
 import java.io.IOException
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 import kotlin.system.measureTimeMillis
 
 abstract class BaseChatAppHandler : ChatAppHandler {
@@ -758,41 +755,28 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                     attachmentUploadProgress = 0f
                     attachmentResultUrl = ""
                 }
-                val fileName = "ab123"
                 val fileBytes =
                     currentService.contentResolver.openInputStream(uri)?.use { it.readBytes() }
                         ?: throw IOException("无法读取文件内容")
                 // 开始上传
-                val resultUrl = suspendCancellableCoroutine { continuation ->
-                    CryptoUploader.upload(
-                        fileBytes = fileBytes,
-                        fileName = fileName,
-                        encryptionKey = currentService.currentKey,
-                        onProcess = { progressInt ->
-                            // 将 0-100 的 Int 进度转换为 0.0-1.0 的 Float
-                            val progressFloat = progressInt / 100.0f
-                            // 在主线程更新UI
-                            launch(Dispatchers.Main) {
-                                attachmentUploadProgress = progressFloat
-                            }
-                        },
-                        onComplete = { url ->
-                            if (url != null) {
-                                // 上传成功，恢复协程并返回URL
-                                continuation.resume(url)
-                            } else {
-                                // 上传失败，让协程抛出异常
-                                continuation.resumeWithException(IOException("上传失败，服务器未返回有效链接。"))
-                            }
+                val resultData = CryptoUploader.upload(
+                    fileBytes = fileBytes,
+                    encryptionKey = currentService.currentKey,
+                    onProcess = { progressInt ->
+                        // 将 0-100 的 Int 进度转换为 0.0-1.0 的 Float
+                        val progressFloat = progressInt / 100.0f
+                        // 在主线程更新UI
+                        launch(Dispatchers.Main) {
+                            attachmentUploadProgress = progressFloat
                         }
-                    )
-                }
+                    },
+                )
 
                 // 4. 上传成功，更新UI
                 withContext(Dispatchers.Main) {
-                    attachmentResultUrl = resultUrl
+                    attachmentResultUrl = resultData
                     attachmentUploadProgress = null
-                    Log.d(tag, "上传成功，URL: $resultUrl")
+                    Log.d(tag, "上传成功，结果: $resultData")
                 }
 
             } catch (e: Exception) {

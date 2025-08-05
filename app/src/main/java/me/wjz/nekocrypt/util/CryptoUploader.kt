@@ -1,6 +1,8 @@
 package me.wjz.nekocrypt.util
 
 import android.util.Base64
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType
@@ -12,6 +14,7 @@ import okhttp3.RequestBody
 import okhttp3.Response
 import okio.BufferedSink
 import java.io.IOException
+import kotlin.coroutines.resumeWithException
 
 /**
  * 封装图片、视频和文件的加密上传逻辑
@@ -30,30 +33,45 @@ object CryptoUploader {
     /**
      * 上传文件的主函数
      */
-    fun upload(
+    @OptIn(ExperimentalCoroutinesApi::class)
+    suspend fun upload(
         fileBytes: ByteArray,
-        fileName: String,
+        fileName: String? = "NekoCryptFile",
         encryptionKey: String,
         onProcess: (progress: Int) -> Unit,
-        onComplete: (String?) -> Unit,
-    ) {
+    ): String {
         val encryptedBytes = CryptoManager.encrypt(fileBytes, encryptionKey)
         // 加密后的文件藏在后面
         val payload = SINGLE_PIXEL_GIF_BUFFER + encryptedBytes
         // 创建一个我们的requestBody
         val requestBody = ProcessRequestBody(payload, "image/gif".toMediaTypeOrNull(), onProcess)
         val multipartBody = MultipartBody.Builder().setType(MultipartBody.FORM)
-            .addFormDataPart("media", "encrypted.gif", requestBody).build()
+            .addFormDataPart("media", "$fileName.gif", requestBody).build()
         val request = Request.Builder().url(UPLOAD_URL).post(multipartBody).build()
         // 发送我们的请求
-        client.newCall(request).enqueue(object : Callback{
-            override fun onFailure(call: Call, e: IOException) {
-                onComplete(null)
+        return suspendCancellableCoroutine { continuation ->
+            val call = client.newCall(request)
+
+            // 当协程被取消时，我们也取消网络请求
+            continuation.invokeOnCancellation {
+                call.cancel()
             }
-            override fun onResponse(call: Call, response: Response) {
-                response.use { onComplete(it.body.string()) }
-            }
-        })
+
+            call.enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    // 确保协程还在活跃状态
+                    if (continuation.isActive) {
+                        continuation.resumeWithException(e)
+                    }
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    response.use { res ->
+                        continuation.resume(res.body.string(), null)
+                    }
+                }
+            })
+        }
     }
 }
 
