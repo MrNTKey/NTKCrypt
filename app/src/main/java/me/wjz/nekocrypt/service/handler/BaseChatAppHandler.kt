@@ -38,7 +38,6 @@ import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
 import me.wjz.nekocrypt.util.CryptoUploader
 import me.wjz.nekocrypt.util.NCWindowManager
 import me.wjz.nekocrypt.util.ResultRelay
-import java.io.IOException
 import kotlin.system.measureTimeMillis
 
 abstract class BaseChatAppHandler : ChatAppHandler {
@@ -755,9 +754,31 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                     attachmentUploadProgress = 0f
                     attachmentResultUrl = ""
                 }
+
                 val fileBytes =
                     currentService.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                        ?: throw IOException("无法读取文件内容")
+
+                // 判断文件大小和文件是否存在。
+                if (fileBytes == null) {
+                    Toast.makeText(
+                        currentService,
+                        currentService.getString(R.string.crypto_attachment_file_not_found),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    resetUploadState()
+                    return@launch
+                }
+
+                if(fileBytes.size > 1024 * 1024 *20){
+                    Toast.makeText(
+                        currentService,
+                        currentService.getString(R.string.crypto_attachment_file_too_large),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    resetUploadState()
+                    return@launch
+                }
+
                 // 开始上传
                 val resultData = CryptoUploader.upload(
                     fileBytes = fileBytes,
@@ -783,12 +804,25 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 // 5. 统一处理所有异常
                 Log.e(tag, "上传失败: ", e)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(currentService, "上传失败: ${e.message}", Toast.LENGTH_LONG)
+                    Toast.makeText(
+                        currentService,
+                        currentService.getString(
+                            R.string.crypto_attachment_upload_failed,
+                            e.message
+                        ),
+                        Toast.LENGTH_LONG
+                    )
                         .show()
-                    attachmentUploadProgress = null
-                    attachmentResultUrl = ""
+                    resetUploadState()
                 }
             }
+        }
+    }
+
+    suspend fun resetUploadState() {
+        withContext(Dispatchers.Main) {
+            attachmentUploadProgress = null
+            attachmentResultUrl = ""
         }
     }
 
