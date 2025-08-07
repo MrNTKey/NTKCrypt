@@ -140,7 +140,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 // 当收到“代办”发回的URI时
                 Log.d(tag, "收到文件URI: $uri")
                 // TODO: 在这里处理URI，从uri读取文件并上传
-                Toast.makeText(service, "已选择: ${uri.path}", Toast.LENGTH_SHORT).show()
                 startUpload(uri)
             }
         }
@@ -542,11 +541,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             else {
                 // 设置密文失败了，弹出toast通知用户
                 service?.serviceScope?.launch(Dispatchers.Main) {
-                    Toast.makeText(
-                        service,
-                        service?.getString(R.string.set_text_failed, encryptedText.length),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    showToast(service!!.getString(R.string.set_text_failed, encryptedText.length))
                 }
             }
         }
@@ -653,41 +648,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     }
 
     /**
-     * ✨ [新增] 模拟文件上传的函数
-     * 这个函数现在是业务逻辑的真正执行者。
-     */
-    private fun startMockFileUpload(uri: Uri) {
-        service?.serviceScope?.launch {
-            // 1. 重置状态，准备开始上传 这里必须在主线程上下文更新，否则UI很可能是没有同步状态的！
-            withContext(Dispatchers.Main) {
-                attachmentUploadProgress = 0f
-                attachmentResultUrl = ""
-            }
-
-            // 2. 模拟上传过程，不断更新进度状态
-            while ((attachmentUploadProgress ?: 0f) < 1f) {
-                delay(150) // 模拟网络延迟
-                // coerceAtMost确保值不会超过1.0
-                attachmentUploadProgress =
-                    ((attachmentUploadProgress ?: 0f) + 0.1f).coerceAtMost(1.0f)
-                Log.d(tag, "上传进度: $attachmentUploadProgress")
-            }
-
-            // 3. 上传完成，更新最终结果URL，并清空进度
-            withContext(Dispatchers.Main) {
-                attachmentResultUrl = "https://neko.crypt/uploaded_${uri.lastPathSegment}"
-                attachmentUploadProgress = null // 设为null来隐藏进度条
-            }
-            Log.d(tag, "上传完成，URL: $attachmentResultUrl")
-
-            // 4. (可选) 上传成功后自动发送
-            // delay(500) // 给用户一点反应时间
-            // onSendRequest(attachmentResultUrl)
-            // sendAttachmentDialogManager?.dismiss() // 发送后自动关闭对话框
-        }
-    }
-
-    /**
      * 创建并显示“发送附件”对话框
      */
     private fun showSendAttachmentDialog() {
@@ -728,16 +688,14 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 if (success) {
                     delay(50)
                     latestSendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                    // 发送成功了就重置状态。
+                    resetUploadState()
                 } else {
-                    Toast.makeText(
-                        service,
-                        service!!.getString(R.string.set_text_failed, url.length),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    showToast(service!!.getString(R.string.set_text_failed, url.length))
                 }
             } else {
                 Log.e(tag, "发送失败：未能找到输入框或发送按钮节点！")
-                Toast.makeText(service, "发送失败：节点已失效", Toast.LENGTH_SHORT).show()
+                showToast(service!!.getString(R.string.crypto_attachment_send_failed_node_not_found))
             }
         }
     }
@@ -760,26 +718,20 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
                 // 判断文件大小和文件是否存在。
                 if (fileBytes == null) {
-                    Toast.makeText(
-                        currentService,
-                        currentService.getString(R.string.crypto_attachment_file_not_found),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    showToast(currentService.getString(R.string.crypto_attachment_file_not_found))
                     resetUploadState()
                     return@launch
                 }
 
-                if(fileBytes.size > 1024 * 1024 *20){
-                    Toast.makeText(
-                        currentService,
-                        currentService.getString(R.string.crypto_attachment_file_too_large),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                if (fileBytes.size > 1024 * 1024 * 20) {
+                    showToast(currentService.getString(R.string.crypto_attachment_file_too_large,20))
                     resetUploadState()
                     return@launch
                 }
 
                 // 开始上传
+                showToast(currentService.getString(R.string.crypto_attachment_chosen_path,uri.path))
+
                 val resultData = CryptoUploader.upload(
                     fileBytes = fileBytes,
                     encryptionKey = currentService.currentKey,
@@ -803,18 +755,13 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             } catch (e: Exception) {
                 // 5. 统一处理所有异常
                 Log.e(tag, "上传失败: ", e)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        currentService,
-                        currentService.getString(
-                            R.string.crypto_attachment_upload_failed,
-                            e.message
-                        ),
-                        Toast.LENGTH_LONG
+                showToast(
+                    currentService.getString(
+                        R.string.crypto_attachment_upload_failed,
+                        e.message
                     )
-                        .show()
-                    resetUploadState()
-                }
+                )
+                resetUploadState()
             }
         }
     }
@@ -826,4 +773,9 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         }
     }
 
+    suspend fun showToast(string: String, duration: Int = Toast.LENGTH_SHORT) {
+        withContext(Dispatchers.Main) {
+            Toast.makeText(service, string, duration).show()
+        }
+    }
 }
