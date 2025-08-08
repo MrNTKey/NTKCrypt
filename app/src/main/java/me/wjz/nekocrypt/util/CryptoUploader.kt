@@ -14,6 +14,7 @@ import okhttp3.RequestBody
 import okhttp3.Response
 import okio.BufferedSink
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resumeWithException
 
 /**
@@ -28,8 +29,11 @@ object CryptoUploader {
     private val SINGLE_PIXEL_GIF_BUFFER: ByteArray =
         Base64.decode("R0lGODdhAQABAIABAP///wAAACwAAAAAAQABAAACAkQBADs=", Base64.DEFAULT)
 
-    private val client = OkHttpClient()
-
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(1, TimeUnit.MINUTES)
+        .readTimeout(5, TimeUnit.MINUTES)
+        .writeTimeout(5, TimeUnit.MINUTES)
+        .build()
     /**
      * 上传文件的主函数
      */
@@ -40,6 +44,7 @@ object CryptoUploader {
         encryptionKey: String,
         onProcess: (progress: Int) -> Unit,
     ): String {
+
         val encryptedBytes = CryptoManager.encrypt(fileBytes, encryptionKey)
         // 加密后的文件藏在后面
         val payload = SINGLE_PIXEL_GIF_BUFFER + encryptedBytes
@@ -103,3 +108,4 @@ private class ProcessRequestBody(
         }
     }
 }
+
