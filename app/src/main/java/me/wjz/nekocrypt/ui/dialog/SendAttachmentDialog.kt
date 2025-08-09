@@ -1,6 +1,7 @@
 package me.wjz.nekocrypt.ui.dialog
 
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -43,18 +45,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.R
+import me.wjz.nekocrypt.service.handler.AttachmentPreviewState
 import me.wjz.nekocrypt.ui.activity.AttachmentPickerActivity
 import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
 
@@ -66,9 +73,9 @@ import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
 fun SendAttachmentDialog(
     onDismissRequest: () -> Unit,
     onSendRequest: (String) -> Unit,
-    // --- ✨ 新增/修改的参数 ---
     uploadProgress: Float?,      // 从外部接收上传进度
     resultUrl: String,            // 从外部接收最终的URL
+    previewInfo: AttachmentPreviewState? // 预览所需信息
 ) {
     val isUploading = uploadProgress != null
     val coroutineScope = rememberCoroutineScope()
@@ -114,11 +121,11 @@ fun SendAttachmentDialog(
                         Spacer(modifier = Modifier.height(24.dp))
 
                         Box(contentAlignment = Alignment.Center) {
-                            // 封装好的组件
+                            // 封装好的组件，包含图片和文件按钮。
                             AttachmentOptions(
                                 isUploading = isUploading,
                             )
-
+                            // 下面就是加载态的圆圈加载
                             Row(horizontalArrangement = Arrangement.Center) {
                                 AnimatedVisibility(
                                     visible = isUploading,
@@ -144,9 +151,26 @@ fun SendAttachmentDialog(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                        // ✨ 链接输入框的可见性和内容，现在由外部传入的 resultUrl 决定
+                        // ✨ 新增的预览区域 ✨
+                        AnimatedVisibility(
+                            // 当有预览信息，并且还没有上传成功拿到URL时，显示预览
+                            visible = previewInfo != null && resultUrl.isEmpty()
+                        ) {
+                            // 使用 rememberUpdatedState 可以在不引起整个对话框重组的情况下更新预览内容
+                            val currentPreview by rememberUpdatedState(previewInfo)
+                            currentPreview?.let {
+                                FilePreview(
+                                    uri = it.uri,
+                                    fileName = it.fileName,
+                                    fileSize = it.fileSizeFormatted,
+                                    isImage = it.isImage
+                                )
+                            }
+                        }
+
+                        // 显示url内容
                         AnimatedVisibility(
                             visible = resultUrl.isNotEmpty(),
                             enter = fadeIn(animationSpec = tween(300)),
@@ -183,6 +207,65 @@ fun SendAttachmentDialog(
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+// 文件和图片的预览组件
+@Composable
+fun FilePreview(
+    uri: Uri,
+    fileName: String,
+    fileSize: String,
+    isImage: Boolean
+){
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 80.dp), // 设置一个最小高度
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+    ) {
+        if (isImage) {
+            // 如果是图片，使用AsyncImage来异步加载并显示
+            AsyncImage(
+                model = uri,
+                contentDescription = "Image Preview",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp) // 给图片一个固定高度
+                    .clip(RoundedCornerShape(16.dp)),
+                contentScale = ContentScale.Crop // 裁剪图片以填充空间
+            )
+        } else {
+            // 如果是普通文件，显示图标、文件名和大小
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.AttachFile,
+                    contentDescription = "File Icon",
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = fileName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2, // 最多显示两行
+                        overflow = TextOverflow.Ellipsis // 超出部分显示省略号
+                    )
+                    Text(
+                        text = fileSize,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }

@@ -42,6 +42,14 @@ import me.wjz.nekocrypt.util.getFileSize
 import java.io.File
 import kotlin.system.measureTimeMillis
 
+// 附件发送视图预览信息
+data class AttachmentPreviewState(
+    val uri: Uri,
+    val fileName: String,
+    val fileSizeFormatted: String,
+    val isImage: Boolean
+)
+
 abstract class BaseChatAppHandler : ChatAppHandler {
     protected val tag = "NCBaseHandler"
 
@@ -84,6 +92,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     // 使用 Compose 的 State Delegate，这样当它们的值改变时，UI会自动更新
     private var attachmentUploadProgress by mutableStateOf<Float?>(null)
     private var attachmentResultUrl by mutableStateOf("")
+    private var attachmentPreview by mutableStateOf<AttachmentPreviewState?>(null)
+
 
     override fun onAccessibilityEvent(event: AccessibilityEvent, service: NCAccessibilityService) {
         // 悬浮窗管理逻辑
@@ -668,7 +678,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                     sendAttachmentDialogManager?.dismiss()
                 },
                 uploadProgress = attachmentUploadProgress, // 传递进度
-                resultUrl = attachmentResultUrl           // 传递结果URL
+                resultUrl = attachmentResultUrl,           // 传递结果URL
+                previewInfo = attachmentPreview
             )
         }
         sendAttachmentDialogManager?.show()
@@ -708,16 +719,12 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         // 在IO线程读取文件
         currentService.serviceScope.launch(Dispatchers.IO) {
             try {
-                // 切主线程更新UI
-                withContext(Dispatchers.Main) {
-                    attachmentUploadProgress = 0f
-                    attachmentResultUrl = ""
-                }
+                // 重置状态
+                resetUploadState()
 
                 // 判断文件大小。
                 if (getFileSize(uri) > 1024 * 1024 * 20) {
                     showToast(currentService.getString(R.string.crypto_attachment_file_too_large,20))
-                    resetUploadState()
                     return@launch
                 }
 
