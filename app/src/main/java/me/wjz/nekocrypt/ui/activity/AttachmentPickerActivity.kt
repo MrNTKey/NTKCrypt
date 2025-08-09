@@ -1,5 +1,6 @@
 package me.wjz.nekocrypt.ui.activity
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -9,6 +10,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.util.ResultRelay
 import java.io.File
@@ -67,11 +69,23 @@ class AttachmentPickerActivity : ComponentActivity() {
 //                }
 
                 lifecycleScope.launch {
-                    try{
+                    try {
+                        // 在拿到Uri后，立刻申请持久化读取权限
+                        val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        contentResolver.takePersistableUriPermission(uri, takeFlags)
+                        Log.d(tag, "已成功获取持久化权限: $uri")
+                        // 将这个现在拥有持久权限的Uri发送出去
                         ResultRelay.send(uri)
+
+                    } catch (e: SecurityException) {
+                        Log.e(tag, "申请持久化权限失败，硬发Uri", e)
+                        ResultRelay.send(uri)
+                    } finally {
+                        // ✨ 关键修复：在关闭Activity前增加一个微小的延迟
+                        // 这给了系统足够的时间来处理持久化权限的授予，
+                        // 防止在Service尝试访问Uri之前，权限就因Activity销毁而失效。
+                        delay(200) // 200毫秒的延迟通常足够了
                         finish()
-                    } catch (e: Exception){
-                        Log.e(tag, "ResultRelay发送uri失败", e)
                     }
                 }
             }
@@ -92,6 +106,7 @@ class AttachmentPickerActivity : ComponentActivity() {
             TYPE_MEDIA -> mediaPicker.launch(
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
             )
+
             TYPE_FILE -> filePicker.launch("*/*")
             else -> {
                 // 如果没有指定类型，默认关闭

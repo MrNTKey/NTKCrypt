@@ -742,6 +742,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                         isImage = isFileImage(uri)
                     )
                 }
+
                 // 开始上传，先拿到bytes，拿不到就直接返回。
                 val fileBytes = currentService.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?:return@launch
 
