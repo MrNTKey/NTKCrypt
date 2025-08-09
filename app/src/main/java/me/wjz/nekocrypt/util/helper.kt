@@ -31,3 +31,16 @@ fun getFileSize(uri: Uri): Long {
     }
     return -1
 }
+
+/**
+ * 检查给定的包名是否属于系统应用。
+ * @param packageName 需要检查的应用包名。
+ * @return 如果是系统应用或核心应用，则返回 true，否则返回 false。
+ */
+fun isSystemApp(packageName: String?): Boolean {
+    if (packageName.isNullOrBlank()) {
+        return false
+    }
+    // 相册属于前者，文件选择器属于后者。
+    return packageName.startsWith("com.android.providers") || packageName.startsWith("com.google.android")
+}

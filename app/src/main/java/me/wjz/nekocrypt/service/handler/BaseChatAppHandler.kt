@@ -38,6 +38,8 @@ import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
 import me.wjz.nekocrypt.util.CryptoUploader
 import me.wjz.nekocrypt.util.NCWindowManager
 import me.wjz.nekocrypt.util.ResultRelay
+import me.wjz.nekocrypt.util.getFileSize
+import java.io.File
 import kotlin.system.measureTimeMillis
 
 abstract class BaseChatAppHandler : ChatAppHandler {
@@ -139,7 +141,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             ResultRelay.flow.collectLatest { uri ->
                 // 当收到“代办”发回的URI时
                 Log.d(tag, "收到文件URI: $uri")
-                // TODO: 在这里处理URI，从uri读取文件并上传
                 startUpload(uri)
             }
         }
@@ -713,25 +714,19 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                     attachmentResultUrl = ""
                 }
 
-                val fileBytes =
-                    currentService.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-
-                // 判断文件大小和文件是否存在。
-                if (fileBytes == null) {
-                    showToast(currentService.getString(R.string.crypto_attachment_file_not_found))
-                    resetUploadState()
-                    return@launch
-                }
-
-                if (fileBytes.size > 1024 * 1024 * 20) {
+                // 判断文件大小。
+                if (getFileSize(uri) > 1024 * 1024 * 20) {
                     showToast(currentService.getString(R.string.crypto_attachment_file_too_large,20))
                     resetUploadState()
                     return@launch
                 }
 
-                // 开始上传
                 showToast(currentService.getString(R.string.crypto_attachment_chosen_path,uri.path))
 
+                // 开始上传，先拿到bytes，拿不到就直接返回。
+                val fileBytes = currentService.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?:return@launch
+
+                // 目前接口似乎不支持流式上传，老是失败
                 val resultData = CryptoUploader.upload(
                     fileBytes = fileBytes,
                     encryptionKey = currentService.currentKey,
@@ -762,6 +757,21 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                     )
                 )
                 resetUploadState()
+            } finally {
+                // 无论文件上传成功与否，如果scheme是file，说明是我们创建的临时文件，删掉
+                if(uri.scheme=="file"){
+                    uri.path?.let { path ->
+                        val cacheFile = File(path)
+                        if (cacheFile.exists()) {
+                            val deleted = cacheFile.delete()
+                            if (deleted) {
+                                Log.d(tag, "✅ 临时缓存文件已成功删除: $path")
+                            } else {
+                                Log.w(tag, "⚠️ 临时缓存文件删除失败: $path")
+                            }
+                        }
+                    }
+                }
             }
         }
     }

@@ -17,10 +17,10 @@ import kotlin.random.Random
 object CryptoManager {
 
     private const val ALGORITHM = "AES"
-    private const val TRANSFORMATION = "AES/GCM/NoPadding"
+    const val TRANSFORMATION = "AES/GCM/NoPadding"
     private const val KEY_SIZE_BITS = 256 // AES-256
-    private const val IV_LENGTH_BYTES = 16  // GCM 推荐的IV长度，为了该死的兼容改成16
-    private const val TAG_LENGTH_BITS = 128 // GCM 推荐的认证标签长度
+    const val IV_LENGTH_BYTES = 16  // GCM 推荐的IV长度是12，为了该死的兼容改成16
+    const val TAG_LENGTH_BITS = 128 // GCM 推荐的认证标签长度
 
     // 下面是一些映射表
     private val STEALTH_ALPHABET = (0xFE00..0xFE0F).map { it.toChar() }.joinToString("")
@@ -215,7 +215,7 @@ object CryptoManager {
         return input.any { STEALTH_CHAR_TO_INDEX_MAP.containsKey(it) }
     }
 
-    private fun deriveKeyFromString(keyString: String): SecretKey {
+    fun deriveKeyFromString(keyString: String): SecretKey {
         val digest = MessageDigest.getInstance("SHA-256")
         val keyBytes = digest.digest(keyString.toByteArray(Charsets.UTF_8))
         return SecretKeySpec(keyBytes, ALGORITHM)

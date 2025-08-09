@@ -15,6 +15,7 @@ class NekoCryptApp : Application() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel() // 创建通知渠道，用于在 Android 8.0 及以上版本上显示通知
+        instance = this
     }
 
 

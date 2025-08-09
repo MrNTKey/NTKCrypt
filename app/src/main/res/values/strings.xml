@@ -89,6 +89,7 @@
     <string name="crypto_attachment_file">文件</string>
     <string name="crypto_attachment_upload_failed">文件上传失败：%s</string>
     <string name="crypto_attachment_file_not_found">文件不存在！</string>
+    <string name="crypto_attachment_file_not_accessible">文件无法访问！</string>
     <string name="crypto_attachment_file_too_large">文件过大！当前最大支持：%d MB</string>
     <string name="crypto_attachment_send_failed_node_not_found">输入框或发送按钮节点未找到！</string>
     <string name="crypto_attachment_chosen_path">已选择: %s</string>
