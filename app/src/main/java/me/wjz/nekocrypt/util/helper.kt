@@ -73,3 +73,13 @@ fun formatFileSize(sizeBytes:Long):String{
     val digitGroups = (log10(sizeBytes.toDouble()) / log10(1024.0)).toInt()
     return String.format(Locale.US,"%.1f %s", sizeBytes / 1024.0.pow(digitGroups.toDouble()), units[digitGroups])
 }
+
+// 定义图片文件的常见扩展名
+val imageExtensions = setOf("jpg", "jpeg", "png", "gif", "bmp", "webp", "heic", "svg", "tiff", "psdng")
+fun isFileImage(uri: Uri): Boolean {
+    val fileName=getFileName(uri)
+    // 获取文件的扩展名
+    val extension = fileName.substringAfterLast(".").lowercase()
+    // 检查扩展名是否在图片扩展名集合中
+    return imageExtensions.contains(extension)
+}

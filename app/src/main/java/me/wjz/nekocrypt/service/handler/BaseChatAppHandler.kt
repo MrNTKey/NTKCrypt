@@ -38,7 +38,10 @@ import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
 import me.wjz.nekocrypt.util.CryptoUploader
 import me.wjz.nekocrypt.util.NCWindowManager
 import me.wjz.nekocrypt.util.ResultRelay
+import me.wjz.nekocrypt.util.formatFileSize
+import me.wjz.nekocrypt.util.getFileName
 import me.wjz.nekocrypt.util.getFileSize
+import me.wjz.nekocrypt.util.isFileImage
 import java.io.File
 import kotlin.system.measureTimeMillis
 
@@ -712,7 +715,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         }
     }
 
-    // 收到flow中的uri之后，读取资源并上传。
+    // 收到flow中的uri之后，读取资源并上传。附带了更新预览状态
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun startUpload(uri: Uri) {
         val currentService = service ?: return
@@ -721,15 +724,24 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             try {
                 // 重置状态
                 resetUploadState()
-
+                val fileSize=getFileSize(uri)
                 // 判断文件大小。
-                if (getFileSize(uri) > 1024 * 1024 * 20) {
+                if (fileSize > 1024 * 1024 * 20) {
                     showToast(currentService.getString(R.string.crypto_attachment_file_too_large,20))
                     return@launch
                 }
 
                 showToast(currentService.getString(R.string.crypto_attachment_chosen_path,uri.path))
 
+                // 更新预览状态
+                withContext(Dispatchers.Main) {
+                    attachmentPreview = AttachmentPreviewState(
+                        uri = uri,
+                        fileName = getFileName(uri),
+                        fileSizeFormatted = formatFileSize(fileSize),
+                        isImage = isFileImage(uri)
+                    )
+                }
                 // 开始上传，先拿到bytes，拿不到就直接返回。
                 val fileBytes = currentService.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?:return@launch
 
