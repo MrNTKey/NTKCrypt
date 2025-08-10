@@ -3,8 +3,9 @@
 
     <!--    闲杂信息-->
     <string name="ok">原来是这样，现在我完全搞懂了</string>
-    <string name="cancel">关 闭 你</string>
-    <string name="accept">就这个</string>
+    <string name="cancel">关闭</string>
+    <string name="send">发送</string>
+    <string name="accept">确认</string>
     <!--    bottomBar的label-->
     <string name="home">主页</string>
     <string name="crypto">加密</string>
@@ -93,4 +94,5 @@
     <string name="crypto_attachment_file_too_large">文件过大！当前最大支持：%d MB</string>
     <string name="crypto_attachment_send_failed_node_not_found">输入框或发送按钮节点未找到！</string>
     <string name="crypto_attachment_chosen_path">已选择: %s</string>
+    <string name="crypto_attachment_uploading">"正在加密上传..."</string>
 </resources>

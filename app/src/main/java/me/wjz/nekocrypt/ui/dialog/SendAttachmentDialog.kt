@@ -159,7 +159,7 @@ fun SendAttachmentDialog(
                                         )
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Text(
-                                            text = "正在加密上传...",
+                                            text = stringResource(R.string.crypto_attachment_uploading),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.primary
                                         )
@@ -200,7 +200,7 @@ fun SendAttachmentDialog(
                                 onClick = { dismissWithAnimation() },
                                 enabled = !attachmentState.isUploading
                             ) {
-                                Text("取消")
+                                Text(stringResource(R.string.cancel))
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             Button(
@@ -208,7 +208,7 @@ fun SendAttachmentDialog(
                                 onClick = { onSendRequest(attachmentState.resultUrl) },
                                 enabled = attachmentState.isUploadFinished && !attachmentState.isUploading
                             ) {
-                                Text("发送")
+                                Text(stringResource(R.string.send))
                             }
                         }
                     }
