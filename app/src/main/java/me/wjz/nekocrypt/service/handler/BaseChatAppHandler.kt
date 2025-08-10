@@ -32,6 +32,7 @@ import me.wjz.nekocrypt.CryptoMode
 import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.service.NCAccessibilityService
 import me.wjz.nekocrypt.ui.DecryptionPopupContent
+import me.wjz.nekocrypt.ui.dialog.AttachmentPreviewState
 import me.wjz.nekocrypt.ui.dialog.AttachmentState
 import me.wjz.nekocrypt.ui.dialog.SendAttachmentDialog
 import me.wjz.nekocrypt.util.CryptoManager
@@ -42,17 +43,10 @@ import me.wjz.nekocrypt.util.ResultRelay
 import me.wjz.nekocrypt.util.formatFileSize
 import me.wjz.nekocrypt.util.getFileName
 import me.wjz.nekocrypt.util.getFileSize
+import me.wjz.nekocrypt.util.getImageAspectRatio
 import me.wjz.nekocrypt.util.isFileImage
 import java.io.File
 import kotlin.system.measureTimeMillis
-
-// 附件发送视图预览信息
-data class AttachmentPreviewState(
-    val uri: Uri,
-    val fileName: String,
-    val fileSizeFormatted: String,
-    val isImage: Boolean
-)
 
 abstract class BaseChatAppHandler : ChatAppHandler {
     protected val tag = "NCBaseHandler"
@@ -741,14 +735,18 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 )
 
                 // 展示预览图片。
-                withContext(Dispatchers.Main) {
-                    attachmentState.previewInfo?.let {
-                        it.uri = uri
-                        it.fileName = getFileName(uri)
-                        it.fileSizeFormatted = formatFileSize(fileSize)
-                        it.isImage = isFileImage(uri)
-                    }
+                updateAttachmentState { currentState ->
+                    currentState.copy(
+                        previewInfo = AttachmentPreviewState(
+                            uri = uri,
+                            fileName = getFileName(uri),
+                            fileSizeFormatted = formatFileSize(getFileSize(uri)),
+                            isImage = isFileImage(uri),
+                            imageAspectRatio = getImageAspectRatio(uri)
+                        )
+                    )
                 }
+
 
                 // 开始上传，先拿到bytes，拿不到就直接返回。
                 val fileBytes = currentService.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?:return@launch
@@ -762,17 +760,19 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                         val progressFloat = progressInt / 100.0f
                         // 在主线程更新UI
                         launch(Dispatchers.Main) {
-                            attachmentState.progress = progressFloat
+                            updateAttachmentState { currentState ->
+                                currentState.copy(progress = progressFloat)
+                            }
                         }
                     },
                 )
 
                 // 4. 上传成功，更新UI
-                withContext(Dispatchers.Main) {
-                    attachmentState.resultUrl = resultData
-                    attachmentState.progress = null
-                    Log.d(tag, "上传成功，结果: $resultData")
+                updateAttachmentState { currentState ->
+                    currentState.copy(resultUrl = resultData, progress = null)
                 }
+                Log.d(tag, "上传成功，结果: $resultData")
+
 
             } catch (e: Exception) {
                 // 5. 统一处理所有异常
@@ -805,6 +805,13 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
     fun resetAttachmentState() {
         attachmentState= AttachmentState()
+    }
+
+    private suspend fun updateAttachmentState(updater: (currentState: AttachmentState) -> AttachmentState) {
+        // 使用 serviceScope 在主线程安全地更新状态
+        withContext(Dispatchers.Main) {
+            attachmentState = updater(attachmentState)
+        }
     }
 
     suspend fun showToast(string: String, duration: Int = Toast.LENGTH_SHORT) {

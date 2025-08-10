@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -125,33 +126,78 @@ fun SendAttachmentDialog(
                     shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = stringResource(R.string.crypto_attachment_title),
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
+                    // ✨ 关键修复 1: 使用Box作为最外层的容器，来实现覆盖效果
+                    Box(modifier = Modifier.padding(24.dp)) {
+                        // 第一层：所有的常规UI内容
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = stringResource(R.string.crypto_attachment_title),
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
 
-                        Box(contentAlignment = Alignment.Center) {
-                            // 封装好的组件，包含图片和文件按钮。
                             AttachmentOptions(
                                 isUploading = attachmentState.isUploading,
                             )
-                            // 下面就是加载态的圆圈加载
-                            Row(horizontalArrangement = Arrangement.Center) {
-                                AnimatedVisibility(
-                                    visible = attachmentState.isUploading,
-                                    enter = fadeIn(animationSpec = tween(300)),
-                                    exit = fadeOut(animationSpec = tween(200)) + scaleOut(
-                                        animationSpec = tween(
-                                            200
-                                        )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            AnimatedVisibility(
+                                visible = attachmentState.previewInfo != null
+                            ) {
+                                val currentPreview by rememberUpdatedState(attachmentState.previewInfo)
+                                currentPreview?.let {
+                                    FilePreview(
+                                        uri = it.uri,
+                                        fileName = it.fileName,
+                                        fileSize = it.fileSizeFormatted,
+                                        isImage = it.isImage,
+                                        aspectRatio = it.imageAspectRatio
                                     )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                TextButton(
+                                    onClick = { dismissWithAnimation() },
+                                    enabled = !attachmentState.isUploading
+                                ) {
+                                    Text("取消")
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Button(
+                                    onClick = { onSendRequest(attachmentState.resultUrl) },
+                                    enabled = attachmentState.isUploadFinished && !attachmentState.isUploading
+                                ) {
+                                    Text("发送")
+                                }
+                            }
+                        }
+
+                        // ✨ 关键修复 2: 第二层，加载动画和遮罩，它会覆盖在上面的Column之上
+                        Row {
+                            AnimatedVisibility(
+                                visible = attachmentState.isUploading,
+                                enter = fadeIn(animationSpec = tween(300)),
+                                exit = fadeOut(animationSpec = tween(200))
+                            ) {
+                                // 半透明的遮罩
+                                Surface(
+                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                                ) {}
+                                // 居中的加载动画
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         CircularProgressIndicator(
@@ -165,50 +211,6 @@ fun SendAttachmentDialog(
                                         )
                                     }
                                 }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // ✨ 3. 预览区域的逻辑更新
-                        AnimatedVisibility(
-                            // 只要有预览信息，就一直显示
-                            visible = attachmentState.previewInfo != null
-                        ) {
-                            // 使用 rememberUpdatedState 可以在不引起整个对话框重组的情况下更新预览内容
-                            val currentPreview by rememberUpdatedState(attachmentState.previewInfo)
-                            currentPreview?.let {
-                                FilePreview(
-                                    uri = it.uri,
-                                    fileName = it.fileName,
-                                    fileSize = it.fileSizeFormatted,
-                                    isImage = it.isImage,
-                                    aspectRatio = it.imageAspectRatio
-                                )
-                            }
-                        }
-
-                        // ✨ 4. URL输入框已完全移除
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            TextButton(
-                                onClick = { dismissWithAnimation() },
-                                enabled = !attachmentState.isUploading
-                            ) {
-                                Text("取消")
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Button(
-                                // ✨ 发送按钮的可用性也由外部状态决定
-                                onClick = { onSendRequest(attachmentState.resultUrl) },
-                                enabled = attachmentState.isUploadFinished && !attachmentState.isUploading
-                            ) {
-                                Text("发送")
                             }
                         }
                     }
@@ -242,6 +244,7 @@ fun FilePreview(
                 contentDescription = "Image Preview",
                 modifier = Modifier
                     .fillMaxWidth()
+                    .heightIn(max=400.dp)
                     .let {
                         // ✨ 关键改动：如果宽高比有效，就应用它
                         if (aspectRatio != null && aspectRatio > 0) {
