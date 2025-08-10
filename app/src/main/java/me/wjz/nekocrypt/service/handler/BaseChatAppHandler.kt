@@ -32,6 +32,7 @@ import me.wjz.nekocrypt.CryptoMode
 import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.service.NCAccessibilityService
 import me.wjz.nekocrypt.ui.DecryptionPopupContent
+import me.wjz.nekocrypt.ui.dialog.AttachmentState
 import me.wjz.nekocrypt.ui.dialog.SendAttachmentDialog
 import me.wjz.nekocrypt.util.CryptoManager
 import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
@@ -93,9 +94,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
     // --- ✨ 附件发送弹窗相关的新增状态 ---
     // 使用 Compose 的 State Delegate，这样当它们的值改变时，UI会自动更新
-    private var attachmentUploadProgress by mutableStateOf<Float?>(null)
-    private var attachmentResultUrl by mutableStateOf("")
-    private var attachmentPreview by mutableStateOf<AttachmentPreviewState?>(null)
+    // ✨ 2. 只用一个 State 来管理所有UI状态
+    private var attachmentState by mutableStateOf(AttachmentState())
 
 
     override fun onAccessibilityEvent(event: AccessibilityEvent, service: NCAccessibilityService) {
@@ -665,6 +665,9 @@ abstract class BaseChatAppHandler : ChatAppHandler {
      * 创建并显示“发送附件”对话框
      */
     private fun showSendAttachmentDialog() {
+        // 每次创建的时候就重置attachmentState
+        resetAttachmentState()
+
         val currentService = service ?: return
         if (sendAttachmentDialogManager != null) return
 
@@ -680,9 +683,9 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                     onSendRequest(url)
                     sendAttachmentDialogManager?.dismiss()
                 },
-                uploadProgress = attachmentUploadProgress, // 传递进度
-                resultUrl = attachmentResultUrl,           // 传递结果URL
-                previewInfo = attachmentPreview
+                uploadProgress = attachmentState.progress, // 传递进度
+                resultUrl = attachmentState.resultUrl,           // 传递结果URL
+                previewInfo = attachmentState.previewInfo
             )
         }
         sendAttachmentDialogManager?.show()
@@ -703,8 +706,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 if (success) {
                     delay(50)
                     latestSendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                    // 发送成功了就重置状态。
-                    resetUploadState()
                 } else {
                     showToast(service!!.getString(R.string.set_text_failed, url.length))
                 }
@@ -722,8 +723,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         // 在IO线程读取文件
         currentService.serviceScope.launch(Dispatchers.IO) {
             try {
-                // 重置状态
-                resetUploadState()
                 val fileSize=getFileSize(uri)
                 // 判断文件大小。
                 if (fileSize > 1024 * 1024 * 20) {
@@ -733,15 +732,14 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
                 showToast(currentService.getString(R.string.crypto_attachment_chosen_path,uri.path))
 
-                // 更新预览状态
-                withContext(Dispatchers.Main) {
-                    attachmentPreview = AttachmentPreviewState(
-                        uri = uri,
-                        fileName = getFileName(uri),
-                        fileSizeFormatted = formatFileSize(fileSize),
-                        isImage = isFileImage(uri)
-                    )
-                }
+                // 展示预览图片。
+                attachmentState.previewInfo = AttachmentPreviewState(
+                    uri = uri,
+                    fileName = getFileName(uri),
+                    fileSizeFormatted = formatFileSize(fileSize),
+                    isImage = isFileImage(uri)
+                )
+
 
                 // 开始上传，先拿到bytes，拿不到就直接返回。
                 val fileBytes = currentService.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?:return@launch
@@ -755,17 +753,16 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                         val progressFloat = progressInt / 100.0f
                         // 在主线程更新UI
                         launch(Dispatchers.Main) {
-                            attachmentUploadProgress = progressFloat
+                            attachmentState.progress = progressFloat
                         }
                     },
                 )
 
                 // 4. 上传成功，更新UI
-                withContext(Dispatchers.Main) {
-                    attachmentResultUrl = resultData
-                    attachmentUploadProgress = null
-                    Log.d(tag, "上传成功，结果: $resultData")
-                }
+                attachmentState.resultUrl=resultData
+                attachmentState.progress = null
+                Log.d(tag, "上传成功，结果: $resultData")
+
 
             } catch (e: Exception) {
                 // 5. 统一处理所有异常
@@ -776,7 +773,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                         e.message
                     )
                 )
-                resetUploadState()
+                resetAttachmentState()
             } finally {
                 // 无论文件上传成功与否，如果scheme是file，说明是我们创建的临时文件，删掉
                 if(uri.scheme=="file"){
@@ -796,11 +793,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         }
     }
 
-    suspend fun resetUploadState() {
-        withContext(Dispatchers.Main) {
-            attachmentUploadProgress = null
-            attachmentResultUrl = ""
-        }
+    fun resetAttachmentState() {
+            attachmentState= AttachmentState()
     }
 
     suspend fun showToast(string: String, duration: Int = Toast.LENGTH_SHORT) {

@@ -65,6 +65,27 @@ import me.wjz.nekocrypt.service.handler.AttachmentPreviewState
 import me.wjz.nekocrypt.ui.activity.AttachmentPickerActivity
 import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
 
+
+// 定义一个UI状态数据类
+data class AttachmentState(
+    var progress: Float? = null,
+    var previewInfo: AttachmentPreviewState? = null,
+    var resultUrl: String = ""
+) {
+    // 计算属性，方便在UI逻辑中使用
+    val isUploading: Boolean get() = progress != null
+    val isUploadFinished: Boolean get() = resultUrl.isNotEmpty()
+}
+
+// 预览信息的具体内容
+data class AttachmentPreviewState(
+    val uri: Uri,
+    val fileName: String,
+    val fileSizeFormatted: String,
+    val isImage: Boolean,
+    val imageAspectRatio: Float? = null // 新增：图片的宽高比
+)
+
 /**
  * ✨ [最终精致版] 发送附件的对话框UI内容
  * 带有动画、进度反馈，并合并了图片/视频选项。
