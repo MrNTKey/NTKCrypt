@@ -683,9 +683,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                     onSendRequest(url)
                     sendAttachmentDialogManager?.dismiss()
                 },
-                uploadProgress = attachmentState.progress, // 传递进度
-                resultUrl = attachmentState.resultUrl,           // 传递结果URL
-                previewInfo = attachmentState.previewInfo
+                attachmentState = attachmentState
             )
         }
         sendAttachmentDialogManager?.show()
@@ -723,23 +721,34 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         // 在IO线程读取文件
         currentService.serviceScope.launch(Dispatchers.IO) {
             try {
-                val fileSize=getFileSize(uri)
+                val fileSize = getFileSize(uri)
                 // 判断文件大小。
                 if (fileSize > 1024 * 1024 * 20) {
-                    showToast(currentService.getString(R.string.crypto_attachment_file_too_large,20))
+                    showToast(
+                        currentService.getString(
+                            R.string.crypto_attachment_file_too_large,
+                            20
+                        )
+                    )
                     return@launch
                 }
 
-                showToast(currentService.getString(R.string.crypto_attachment_chosen_path,uri.path))
-
-                // 展示预览图片。
-                attachmentState.previewInfo = AttachmentPreviewState(
-                    uri = uri,
-                    fileName = getFileName(uri),
-                    fileSizeFormatted = formatFileSize(fileSize),
-                    isImage = isFileImage(uri)
+                showToast(
+                    currentService.getString(
+                        R.string.crypto_attachment_chosen_path,
+                        uri.path
+                    )
                 )
 
+                // 展示预览图片。
+                withContext(Dispatchers.Main) {
+                    attachmentState.previewInfo?.let {
+                        it.uri = uri
+                        it.fileName = getFileName(uri)
+                        it.fileSizeFormatted = formatFileSize(fileSize)
+                        it.isImage = isFileImage(uri)
+                    }
+                }
 
                 // 开始上传，先拿到bytes，拿不到就直接返回。
                 val fileBytes = currentService.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?:return@launch
@@ -759,10 +768,11 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 )
 
                 // 4. 上传成功，更新UI
-                attachmentState.resultUrl=resultData
-                attachmentState.progress = null
-                Log.d(tag, "上传成功，结果: $resultData")
-
+                withContext(Dispatchers.Main) {
+                    attachmentState.resultUrl = resultData
+                    attachmentState.progress = null
+                    Log.d(tag, "上传成功，结果: $resultData")
+                }
 
             } catch (e: Exception) {
                 // 5. 统一处理所有异常
@@ -794,7 +804,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     }
 
     fun resetAttachmentState() {
-            attachmentState= AttachmentState()
+        attachmentState= AttachmentState()
     }
 
     suspend fun showToast(string: String, duration: Int = Toast.LENGTH_SHORT) {

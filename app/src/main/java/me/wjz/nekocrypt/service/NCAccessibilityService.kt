@@ -150,10 +150,9 @@ class NCAccessibilityService : AccessibilityService() {
         }
         // 情况二：事件来自我们不支持的应用
         else {
-
             // 关键逻辑：只有当我们的处理器正在运行，并且当前活跃窗口已经不是它负责的应用时，才停用它
             val activeWindowPackage = rootInActiveWindow?.packageName?.toString()
-            if (currentHandler != null && currentHandler?.packageName != activeWindowPackage
+            if (activeWindowPackage!=null && currentHandler != null && currentHandler?.packageName != activeWindowPackage
                 && !isSystemApp(activeWindowPackage) // 这里判断是否是系统app，直接看开头是不是com.android.provider。
             ) {
                 Log.d(

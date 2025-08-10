@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -35,7 +36,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -61,12 +61,10 @@ import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.wjz.nekocrypt.R
-import me.wjz.nekocrypt.service.handler.AttachmentPreviewState
 import me.wjz.nekocrypt.ui.activity.AttachmentPickerActivity
 import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
 
-
-// 定义一个UI状态数据类
+// ✨ 1. 将UI状态数据类聚合并定义在这里
 data class AttachmentState(
     var progress: Float? = null,
     var previewInfo: AttachmentPreviewState? = null,
@@ -79,10 +77,10 @@ data class AttachmentState(
 
 // 预览信息的具体内容
 data class AttachmentPreviewState(
-    val uri: Uri,
-    val fileName: String,
-    val fileSizeFormatted: String,
-    val isImage: Boolean,
+    var uri: Uri,
+    var fileName: String,
+    var fileSizeFormatted: String,
+    var isImage: Boolean,
     val imageAspectRatio: Float? = null // 新增：图片的宽高比
 )
 
@@ -92,19 +90,17 @@ data class AttachmentPreviewState(
  */
 @Composable
 fun SendAttachmentDialog(
+    // ✨ 2. 接收聚合后的状态对象
+    attachmentState: AttachmentState,
     onDismissRequest: () -> Unit,
     onSendRequest: (String) -> Unit,
-    uploadProgress: Float?,      // 从外部接收上传进度
-    resultUrl: String,            // 从外部接收最终的URL
-    previewInfo: AttachmentPreviewState? // 预览所需信息
 ) {
-    val isUploading = uploadProgress != null
     val coroutineScope = rememberCoroutineScope()
 
     var isVisible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { isVisible = true }
 
-    
+
     fun dismissWithAnimation() {
         coroutineScope.launch {
             isVisible = false
@@ -144,12 +140,12 @@ fun SendAttachmentDialog(
                         Box(contentAlignment = Alignment.Center) {
                             // 封装好的组件，包含图片和文件按钮。
                             AttachmentOptions(
-                                isUploading = isUploading,
+                                isUploading = attachmentState.isUploading,
                             )
                             // 下面就是加载态的圆圈加载
                             Row(horizontalArrangement = Arrangement.Center) {
                                 AnimatedVisibility(
-                                    visible = isUploading,
+                                    visible = attachmentState.isUploading,
                                     enter = fadeIn(animationSpec = tween(300)),
                                     exit = fadeOut(animationSpec = tween(200)) + scaleOut(
                                         animationSpec = tween(
@@ -159,7 +155,7 @@ fun SendAttachmentDialog(
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         CircularProgressIndicator(
-                                            progress = { uploadProgress ?: 0f }
+                                            progress = { attachmentState.progress ?: 0f }
                                         )
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Text(
@@ -174,37 +170,25 @@ fun SendAttachmentDialog(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // ✨ 新增的预览区域 ✨
+                        // ✨ 3. 预览区域的逻辑更新
                         AnimatedVisibility(
-                            // 当有预览信息，并且还没有上传成功拿到URL时，显示预览
-                            visible = previewInfo != null && resultUrl.isEmpty()
+                            // 只要有预览信息，就一直显示
+                            visible = attachmentState.previewInfo != null
                         ) {
                             // 使用 rememberUpdatedState 可以在不引起整个对话框重组的情况下更新预览内容
-                            val currentPreview by rememberUpdatedState(previewInfo)
+                            val currentPreview by rememberUpdatedState(attachmentState.previewInfo)
                             currentPreview?.let {
                                 FilePreview(
                                     uri = it.uri,
                                     fileName = it.fileName,
                                     fileSize = it.fileSizeFormatted,
-                                    isImage = it.isImage
+                                    isImage = it.isImage,
+                                    aspectRatio = it.imageAspectRatio
                                 )
                             }
                         }
 
-                        // 显示url内容
-                        AnimatedVisibility(
-                            visible = resultUrl.isNotEmpty(),
-                            enter = fadeIn(animationSpec = tween(300)),
-                            exit = fadeOut(animationSpec = tween(300))
-                        ) {
-                            OutlinedTextField(
-                                value = resultUrl,
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text("内容链接") },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
+                        // ✨ 4. URL输入框已完全移除
 
                         Spacer(modifier = Modifier.height(24.dp))
 
@@ -214,15 +198,15 @@ fun SendAttachmentDialog(
                         ) {
                             TextButton(
                                 onClick = { dismissWithAnimation() },
-                                enabled = !isUploading
+                                enabled = !attachmentState.isUploading
                             ) {
                                 Text("取消")
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             Button(
                                 // ✨ 发送按钮的可用性也由外部状态决定
-                                onClick = { onSendRequest(resultUrl) },
-                                enabled = resultUrl.isNotEmpty() && !isUploading
+                                onClick = { onSendRequest(attachmentState.resultUrl) },
+                                enabled = attachmentState.isUploadFinished && !attachmentState.isUploading
                             ) {
                                 Text("发送")
                             }
@@ -240,7 +224,8 @@ fun FilePreview(
     uri: Uri,
     fileName: String,
     fileSize: String,
-    isImage: Boolean
+    isImage: Boolean,
+    aspectRatio: Float? // 新增宽高比参数
 ){
     Card(
         modifier = Modifier
@@ -257,7 +242,15 @@ fun FilePreview(
                 contentDescription = "Image Preview",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp) // 给图片一个固定高度
+                    .let {
+                        // ✨ 关键改动：如果宽高比有效，就应用它
+                        if (aspectRatio != null && aspectRatio > 0) {
+                            it.aspectRatio(aspectRatio)
+                        } else {
+                            // 否则给一个默认高度
+                            it.height(180.dp)
+                        }
+                    }
                     .clip(RoundedCornerShape(16.dp)),
                 contentScale = ContentScale.Crop // 裁剪图片以填充空间
             )
