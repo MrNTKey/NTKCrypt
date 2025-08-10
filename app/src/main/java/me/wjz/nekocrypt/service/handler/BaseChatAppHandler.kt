@@ -490,7 +490,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 }
                 overlayWindowManager?.addView(overlayView, params)
                 // 第一次添加进去的时候，位置很可能是歪的，延迟一定时间然后更新悬浮窗位置。
-                delay(50)
+                delay(200)
                 val rect = Rect()
                 cachedSendBtnNode?.getBoundsInScreen(rect)
                 overlayWindowManager?.updateViewLayout(overlayView, getOverlayLayoutParams(rect))
