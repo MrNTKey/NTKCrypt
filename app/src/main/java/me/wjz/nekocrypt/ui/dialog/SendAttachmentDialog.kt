@@ -168,6 +168,7 @@ fun SendAttachmentDialog(
                             }
                         }
 
+
                         Spacer(modifier = Modifier.height(16.dp))
 
                         // ✨ 3. 预览区域的逻辑更新
