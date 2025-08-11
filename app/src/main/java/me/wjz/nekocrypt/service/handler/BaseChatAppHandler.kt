@@ -148,6 +148,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             ResultRelay.flow.collectLatest { uri ->
                 // 当收到“代办”发回的URI时
                 Log.d(tag, "收到文件URI: $uri")
+                showSendAttachmentDialog()
                 startUpload(uri)
             }
         }
