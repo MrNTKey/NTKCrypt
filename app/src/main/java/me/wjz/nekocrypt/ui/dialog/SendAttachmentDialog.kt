@@ -68,7 +68,7 @@ import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
 data class AttachmentState(
     var progress: Float? = null,
     var previewInfo: AttachmentPreviewState? = null,
-    var resultUrl: String = ""
+    var resultUrl: String = "",
 ) {
     // 计算属性，方便在UI逻辑中使用
     val isUploading: Boolean get() = progress != null
@@ -81,7 +81,7 @@ data class AttachmentPreviewState(
     var fileName: String,
     var fileSizeFormatted: String,
     var isImage: Boolean,
-    val imageAspectRatio: Float? = null // 新增：图片的宽高比
+    val imageAspectRatio: Float? = null, // 新增：图片的宽高比
 )
 
 /**
@@ -141,6 +141,7 @@ fun SendAttachmentDialog(
                             // 封装好的组件，包含图片和文件按钮。
                             AttachmentOptions(
                                 isUploading = attachmentState.isUploading,
+                                onClicked = { dismissWithAnimation() } // 这里点击关闭对话框，稍后再重新拉起。
                             )
                             // 下面就是加载态的圆圈加载
                             Row(horizontalArrangement = Arrangement.Center) {
@@ -197,6 +198,7 @@ fun SendAttachmentDialog(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.End
                         ) {
+                            // 取消按钮
                             TextButton(
                                 onClick = { dismissWithAnimation() },
                                 enabled = !attachmentState.isUploading
@@ -226,15 +228,19 @@ fun FilePreview(
     fileName: String,
     fileSize: String,
     isImage: Boolean,
-    aspectRatio: Float? // 新增宽高比参数
-){
+    aspectRatio: Float?, // 新增宽高比参数
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 80.dp), // 设置一个最小高度
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
+                alpha = 0.3f
+            )
+        )
     ) {
         if (isImage) {
             // 如果是图片，使用AsyncImage来异步加载并显示
@@ -243,7 +249,7 @@ fun FilePreview(
                 contentDescription = "Image Preview",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max=400.dp)
+                    .heightIn(max = 400.dp)
                     .let {
                         // ✨ 关键改动：如果宽高比有效，就应用它
                         if (aspectRatio != null && aspectRatio > 0) {
@@ -292,6 +298,7 @@ fun FilePreview(
 private fun AttachmentOptions(
     isUploading: Boolean,
     modifier: Modifier = Modifier,
+    onClicked: () -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -315,10 +322,14 @@ private fun AttachmentOptions(
                 // 下面我们这里指定一个activity，就方便很多。
                 val intent = Intent(context, AttachmentPickerActivity::class.java).apply {
                     // 这里放个extra，activity内部就根据这个额外的kv判断具体拉起逻辑
-                    putExtra(AttachmentPickerActivity.EXTRA_PICK_TYPE, AttachmentPickerActivity.TYPE_MEDIA)
+                    putExtra(
+                        AttachmentPickerActivity.EXTRA_PICK_TYPE,
+                        AttachmentPickerActivity.TYPE_MEDIA
+                    )
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startActivity(intent)
+                onClicked()
             }
         )
         SendOptionItem(
@@ -327,7 +338,10 @@ private fun AttachmentOptions(
             enabled = !isUploading,
             onClick = {
                 val intent = Intent(context, AttachmentPickerActivity::class.java).apply {
-                    putExtra(AttachmentPickerActivity.EXTRA_PICK_TYPE, AttachmentPickerActivity.TYPE_FILE)
+                    putExtra(
+                        AttachmentPickerActivity.EXTRA_PICK_TYPE,
+                        AttachmentPickerActivity.TYPE_FILE
+                    )
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startActivity(intent)

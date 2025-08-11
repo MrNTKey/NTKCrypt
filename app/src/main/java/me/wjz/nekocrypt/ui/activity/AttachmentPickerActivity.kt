@@ -88,6 +88,11 @@ class AttachmentPickerActivity : ComponentActivity() {
                         finish()
                     }
                 }
+                Unit
+            }
+            else{
+                Log.d(tag, "用户取消了文件选择，关闭Activity。")
+                finish()
             }
         }
 
