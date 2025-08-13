@@ -263,3 +263,16 @@ private class ProcessRequestBody(
         }
     }
 }
+
+/**
+ * 扩展函数，把网络返回的结果包装。
+ */
+
+// 下面是其中一个回调示例
+
+//{
+//    "url":"https://chatbotcos.weixin.qq.com/chatbot/30-openaiassets_fd721dab2727e7b8c6056a62574377e1_109711755100397743.gif",
+//    "filekey":"openaiassets_fd721dab2727e7b8c6056a62574377e1_109711755100397743.gif",
+//    "err":null,
+//    "code":0
+//}
