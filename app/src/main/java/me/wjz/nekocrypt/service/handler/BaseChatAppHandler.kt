@@ -38,8 +38,10 @@ import me.wjz.nekocrypt.ui.dialog.SendAttachmentDialog
 import me.wjz.nekocrypt.util.CryptoManager
 import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
 import me.wjz.nekocrypt.util.CryptoUploader
+import me.wjz.nekocrypt.util.NCFileType
 import me.wjz.nekocrypt.util.NCWindowManager
 import me.wjz.nekocrypt.util.ResultRelay
+import me.wjz.nekocrypt.util.encryptToNCProtocol
 import me.wjz.nekocrypt.util.formatFileSize
 import me.wjz.nekocrypt.util.getFileName
 import me.wjz.nekocrypt.util.getFileSize
@@ -742,7 +744,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                         previewInfo = AttachmentPreviewState(
                             uri = uri,
                             fileName = getFileName(uri),
-                            fileSizeFormatted = formatFileSize(getFileSize(uri)),
+                            fileSizeFormatted = formatFileSize(fileSize),
                             isImage = isFileImage(uri),
                             imageAspectRatio = getImageAspectRatio(uri)
                         )
@@ -753,7 +755,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 // 开始上传，先拿到bytes，拿不到就直接返回。
                 val fileBytes = currentService.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?:return@launch
 
-                // 目前接口似乎不支持流式上传，老是失败
+                // 目前上传接口似乎不支持流式上传。
                 val resultData = CryptoUploader.upload(
                     fileBytes = fileBytes,
                     encryptionKey = currentService.currentKey,
@@ -767,6 +769,10 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                             }
                         }
                     },
+                ).encryptToNCProtocol(  //解密后对返回的url做包装处理。
+                    formatFileSize(fileSize),
+                    if (isFileImage(uri)) NCFileType.IMG else NCFileType.FILE,
+                    currentService.currentKey
                 )
 
                 // 4. 上传成功，更新UI

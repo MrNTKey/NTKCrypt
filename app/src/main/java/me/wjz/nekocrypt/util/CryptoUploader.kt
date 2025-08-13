@@ -2,9 +2,12 @@ package me.wjz.nekocrypt.util
 
 import android.net.Uri
 import android.util.Base64
+import com.alibaba.fastjson2.JSON
+import com.alibaba.fastjson2.JSONObject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.suspendCancellableCoroutine
 import me.wjz.nekocrypt.NekoCryptApp
+import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType
@@ -22,6 +25,13 @@ import java.util.concurrent.TimeUnit
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import kotlin.coroutines.resumeWithException
+
+// 文件类型
+enum class NCFileType{
+    IMG,FILE;
+}
+
+const val NC_FILE_PROTOCOL_PREFIX = "NCFile://"
 
 /**
  * 封装图片、视频和文件的加密上传逻辑
@@ -125,6 +135,7 @@ object CryptoUploader {
      * @param fileName 文件名
      * @param encryptionKey 加密密钥
      * @param onProcess 进度回调 (0-100)
+     * @return url 返回的结果是直接的url下载地址，未经过包装
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     suspend fun upload(
@@ -144,7 +155,10 @@ object CryptoUploader {
 
         val request = Request.Builder()
             .url(UPLOAD_URL)
-            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36")
+            .header(
+                "User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+            )
             .post(multipartBody)
             .build()
 
@@ -162,7 +176,30 @@ object CryptoUploader {
                         response.use { res ->
                             val bodyString = res.body.string()
                             if (res.isSuccessful && bodyString.isNotBlank()) {
-                                continuation.resume(bodyString, null)
+                                try {
+                                    // ✨ 1. 将字符串转换为JSON对象
+                                    val jsonObject = JSON.parseObject(bodyString)
+
+                                    // ✨ 2. 从JSON对象中提取"url"字段的值
+                                    val fileUrl = jsonObject.getString("url")
+
+                                    // ✨ 3. [可选，但推荐] 检查一下URL是不是空的
+                                    if (fileUrl.isNotBlank()) {
+                                        // 拿到URL后，就可以恢复协程了
+                                        continuation.resume(fileUrl, null)
+                                    } else {
+                                        continuation.resumeWithException(IOException("服务器返回的JSON中url为空。"))
+                                    }
+
+                                } catch (e: Exception) {
+                                    // 如果bodyString不是一个有效的JSON，或者没有"url"字段，就会在这里捕获到异常
+                                    continuation.resumeWithException(
+                                        IOException(
+                                            "解析服务器响应JSON失败。",
+                                            e
+                                        )
+                                    )
+                                }
                             } else {
                                 continuation.resumeWithException(IOException("上传失败，响应码: ${res.code}，响应体: $bodyString"))
                             }
@@ -173,7 +210,6 @@ object CryptoUploader {
         }
     }
 }
-
 
 
 /**
@@ -267,12 +303,30 @@ private class ProcessRequestBody(
 /**
  * 扩展函数，把网络返回的结果包装。
  */
+fun String.encryptToNCProtocol(
+    fileSize: String,
+    fileType: NCFileType,
+    encryptionKey: String,
+): String {
+    // 1. 创建一个JSON对象来承载所有信息
+    val payloadJson = JSONObject().apply {
+        put("url", this@encryptToNCProtocol) // 放入原始URL
+        put("size", fileSize)                // 放入文件大小
+        put("type", fileType)                // 放入文件类型
+    }
+
+    //加上前缀，加密返回
+    return CryptoManager.encrypt(
+        NC_FILE_PROTOCOL_PREFIX + payloadJson.toString(),
+        encryptionKey
+    ).appendNekoTalk()
+}
 
 // 下面是其中一个回调示例
 
 //{
-//    "url":"https://chatbotcos.weixin.qq.com/chatbot/30-openaiassets_fd721dab2727e7b8c6056a62574377e1_109711755100397743.gif",
-//    "filekey":"openaiassets_fd721dab2727e7b8c6056a62574377e1_109711755100397743.gif",
+//    "url":"https://abc.aa.com.123123.gif",
+//    "filekey":"openaiassets_1754798953_12333333213.gif",
 //    "err":null,
 //    "code":0
 //}
