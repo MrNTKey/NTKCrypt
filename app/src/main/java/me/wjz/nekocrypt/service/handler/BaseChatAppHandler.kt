@@ -663,6 +663,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         // 每次创建的时候就重置attachmentState
         resetAttachmentState()
 
+
         val currentService = service ?: return
         if (sendAttachmentDialogManager != null) return
 
