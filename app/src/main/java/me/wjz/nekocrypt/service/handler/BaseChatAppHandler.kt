@@ -1,5 +1,6 @@
 package me.wjz.nekocrypt.service.handler
 
+import android.R.attr.text
 import android.content.Context
 import android.graphics.PixelFormat
 import android.graphics.Rect
@@ -127,7 +128,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                             // ✨ 等待300毫秒，如果在这期间又有新的事件进来，这个任务就会被取消
                             delay(service.decryptionWindowUpdateInterval)
                             Log.d(tag, "UI稳定，开始执行沉浸式解密...")
-                            performImmersiveDecryption()
+                            handlerImmersiveDecryption()
                         }
                     }
                 }
@@ -184,44 +185,23 @@ abstract class BaseChatAppHandler : ChatAppHandler {
      * 处理节点检查是否需要解密。
      * @param sourceNode 用户点击的源节点。
      */
-    private fun handleDecryption(
-        sourceNode: AccessibilityNodeInfo?,
-        isShowLongTime: Boolean = false,
-    ) {
-        // 经过多次实际测试，单次解密()
-        val costTime = measureTimeMillis {
-            val node = sourceNode ?: return
-            val text = node.text?.toString() ?: return
-            val currentService = service ?: return
-
-            // 1. 判断节点文本是否包含我们的“猫语”
-            if (CryptoManager.containsCiphertext(text)) {
-                Log.d(tag, "检测到密文: $text")
-                // 2. 尝试用所有密钥进行解密
-                Log.d(tag, "目前的全部密钥${currentService.cryptoKeys.joinToString()}")
-                for (key in currentService.cryptoKeys) {
-                    val decryptedText = CryptoManager.decrypt(text, key)
-                    // 3. 只要有一个密钥解密成功...
-                    if (decryptedText != null) {
-                        Log.d(tag, "解密成功 -> $decryptedText")
-                        // ...就立刻显示我们的解密弹窗！
-                        showDecryptionTextPopup(
-                            decryptedText,
-                            node,
-                            if (isShowLongTime) 60 else currentService.decryptionWindowShowTime
-                        )
-                        break // 停止尝试其他密钥
-                    }
-                }
-            }
+    private fun handleDecryption(sourceNode: AccessibilityNodeInfo?) {
+        val node = sourceNode ?: return
+        val text = node.text?.toString() ?: return
+        tryDecryptingText(text)?.let {
+            Log.d(tag, "解密成功 -> $it")
+            showDecryptionTextPopup(
+                decryptedText = it,
+                anchorNode = node,
+                showTime = service!!.decryptionWindowShowTime
+            )
         }
-        Log.d(tag, "解密耗时$costTime ms")
     }
 
     /**
      * 执行沉浸式解密相关逻辑。
      */
-    private fun performImmersiveDecryption() {
+    private fun handlerImmersiveDecryption() {
         val executionTime = measureTimeMillis {
             val currentService = service ?: return
             // ✨ 1. 优先信任缓存：检查消息列表节点的缓存是否依然有效
@@ -255,27 +235,19 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 val updateTasks = mutableListOf<Pair<NCWindowManager, Rect>>()
 
                 for (node in messageNodes) {
-                    val text = node.text?.toString()
-                    if (text.isNullOrEmpty() || !CryptoManager.containsCiphertext(text)) continue
+                    // 解密出内容，再做处理，否则直接跳过
+                    tryDecryptingText(node.text?.toString())?.let { decryptedText ->
+                        val nodeBounds = Rect()
+                        node.getBoundsInScreen(nodeBounds)
+                        val cacheKey = text.hashCode().toString()   // key就直接哈希
+                        visibleCacheKeys.add(cacheKey)
 
-                    val nodeBounds = Rect()
-                    node.getBoundsInScreen(nodeBounds)
-                    val cacheKey = text.hashCode().toString()   // key就直接哈希
-                    visibleCacheKeys.add(cacheKey)
-
-                    val existingManager = immersiveDecryptionCache[cacheKey]
-
-                    if (existingManager != null) {
-                        // ✨ 如果弹窗已存在，则加入“更新位置”任务列表
-                        updateTasks.add(existingManager to nodeBounds)
-                    } else {
-                        // ✨ 如果弹窗不存在，则加入“创建弹窗”任务列表
-                        for (key in currentService.cryptoKeys) {
-                            val decryptedText = CryptoManager.decrypt(text, key)
-                            if (decryptedText != null) {
-                                creationTasks.add(Triple(decryptedText, node, cacheKey))
-                                break
-                            }
+                        // 如果弹窗已经存在，就加入更新位置的任务队列里
+                        immersiveDecryptionCache[cacheKey]?.let { manager ->
+                            updateTasks.add(manager to nodeBounds)
+                        } ?: run {
+                            // 如果弹窗不存在，则加入“创建弹窗”任务列表
+                            creationTasks.add(Triple(decryptedText, node, cacheKey))
                         }
                     }
                 }
@@ -287,10 +259,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                     Log.d(tag, "--- 沉浸式解密任务分配 ---")
                     Log.d(tag, "需要销毁的弹窗 (${keysToDismiss.size}个): $keysToDismiss")
                     Log.d(tag, "需要更新位置的弹窗 (${updateTasks.size}个)")
-                    Log.d(
-                        tag,
-                        "需要新创建的弹窗 (${creationTasks.size}个): ${creationTasks.map { it.third }}"
-                    )
+                    Log.d(tag, "需要新创建的弹窗 (${creationTasks.size}个): ${creationTasks.map { it.third }}")
                     Log.d(tag, "--------------------------")
                 }
 
@@ -326,7 +295,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                             delay(32L)
                         }
                     }
-
                 }
             } else {
                 Log.w(tag, "未找到消息列表容器，无法执行沉浸式解密。")
@@ -812,10 +780,41 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         }
     }
 
+    /**
+     * ✨ [新增] 核心的“解密引擎”函数
+     * 它的职责单一，就是尝试解密一段文本。
+     * @param textToDecrypt 可能包含密文的原始字符串。
+     * @return 如果解密成功，返回明文字符串；否则返回null。
+     */
+    private fun tryDecryptingText(textToDecrypt: String?): String? {
+        if(textToDecrypt == null)return null
+        val currentService = service ?: return null
+        // 1. 先判断是否真的包含“猫语”，避免不必要的计算
+        if (!CryptoManager.containsCiphertext(textToDecrypt)) {
+            return null
+        }
+        Log.d(tag, "检测到密文: $textToDecrypt")
+        // 2. 尝试用所有密钥进行解密
+        Log.d(tag, "目前的全部密钥${currentService.cryptoKeys.joinToString()}")
+        // 2. 遍历所有密钥进行尝试
+        for (key in currentService.cryptoKeys) {
+            val decryptedText = CryptoManager.decrypt(textToDecrypt, key)
+            if (decryptedText != null) {
+                // 3. 只要有一个成功，就立刻返回结果
+                Log.d(tag, "解密成功 -> $decryptedText")
+                return decryptedText
+            }
+        }
+        // 4. 如果所有密钥都失败了，返回null
+        return null
+    }
+
+    // 重置附件的状态
     fun resetAttachmentState() {
         attachmentState= AttachmentState()
     }
 
+    // 更新附件状态
     private suspend fun updateAttachmentState(updater: (currentState: AttachmentState) -> AttachmentState) {
         // 使用 serviceScope 在主线程安全地更新状态
         withContext(Dispatchers.Main) {
