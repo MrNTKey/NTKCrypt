@@ -205,7 +205,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                     if (decryptedText != null) {
                         Log.d(tag, "解密成功 -> $decryptedText")
                         // ...就立刻显示我们的解密弹窗！
-                        showDecryptionPopup(
+                        showDecryptionTextPopup(
                             decryptedText,
                             node,
                             if (isShowLongTime) 60 else currentService.decryptionWindowShowTime
@@ -309,7 +309,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                             if (!isActive) return@forEach
 
                             // ✨ [正确逻辑] 1. 调用通用函数，并传入“从缓存移除自己”的正确回调
-                            val popupManager = showDecryptionPopup(
+                            val popupManager = showDecryptionTextPopup(
                                 decryptedText = decryptedText,
                                 anchorNode = node,
                                 showTime = 30000, // 配置项为 currentService.decryptionWindowShowTime
@@ -357,7 +357,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         return null // 没找到
     }
 
-    private fun showDecryptionPopup(
+    // 展示纯文本类型的弹窗。
+    private fun showDecryptionTextPopup(
         decryptedText: String,
         anchorNode: AccessibilityNodeInfo,
         showTime: Long,
