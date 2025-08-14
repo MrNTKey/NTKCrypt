@@ -41,6 +41,7 @@ import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
 import me.wjz.nekocrypt.util.CryptoUploader
 import me.wjz.nekocrypt.util.NCFileType
 import me.wjz.nekocrypt.util.NCWindowManager
+import me.wjz.nekocrypt.util.NC_FILE_PROTOCOL_PREFIX
 import me.wjz.nekocrypt.util.ResultRelay
 import me.wjz.nekocrypt.util.encryptToNCProtocol
 import me.wjz.nekocrypt.util.formatFileSize
@@ -190,10 +191,9 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         val text = node.text?.toString() ?: return
         tryDecryptingText(text)?.let {
             Log.d(tag, "解密成功 -> $it")
-            showDecryptionTextPopup(
+            showDecryptionPopup(
                 decryptedText = it,
                 anchorNode = node,
-                showTime = service!!.decryptionWindowShowTime
             )
         }
     }
@@ -278,7 +278,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                             if (!isActive) return@forEach
 
                             // ✨ [正确逻辑] 1. 调用通用函数，并传入“从缓存移除自己”的正确回调
-                            val popupManager = showDecryptionTextPopup(
+                            val popupManager = showDecryptionPopup(
                                 decryptedText = decryptedText,
                                 anchorNode = node,
                                 showTime = 30000, // 配置项为 currentService.decryptionWindowShowTime
@@ -325,8 +325,58 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         return null // 没找到
     }
 
+    /**
+     * 它会判断解密后的内容是普通文本还是我们的文件协议，并显示不同的UI。
+     */
+    private fun showDecryptionPopup(
+        decryptedText: String,
+        anchorNode: AccessibilityNodeInfo,
+        showTime: Long = service!!.decryptionWindowShowTime,
+        onDismiss: (() -> Unit)? = null,
+    ): NCWindowManager {
+        // 1. “安检口”：检查解密后的文本是否是我们的文件协议
+        return if (decryptedText.startsWith(NC_FILE_PROTOCOL_PREFIX)) {
+            // 2. 如果是，就交给专门的函数去处理
+            showDecryptedFilePopup(decryptedText, anchorNode, showTime, onDismiss)
+        } else
+        // --- 如果不是文件协议，就走原来的普通文本显示逻辑 ---
+            showDecryptedTextPopup(decryptedText,anchorNode,showTime,onDismiss)
+    }
+
     // 展示纯文本类型的弹窗。
-    private fun showDecryptionTextPopup(
+    private fun showDecryptedTextPopup(
+        decryptedText: String,
+        anchorNode: AccessibilityNodeInfo,
+        showTime: Long,
+        onDismiss: (() -> Unit)? = null,
+    ): NCWindowManager {
+
+        val anchorRect = Rect()
+        anchorNode.getBoundsInScreen(anchorRect)
+
+        // 每个弹窗都有自己的管理器实例。
+        var popupManager: NCWindowManager? = null
+        // 创建并显示我们的弹窗
+        popupManager = NCWindowManager(
+            context = service!!, onDismissRequest = {
+                onDismiss?.invoke()
+                popupManager = null
+            },// 关闭时清理引用
+            anchorRect = anchorRect
+        ) {
+            // 把UI内容传进去
+            DecryptionPopupContent(
+                text = decryptedText,
+                onDismiss = { popupManager?.dismiss() },
+                durationMills = showTime
+            )
+        }
+        popupManager?.show()
+        return popupManager!!
+    }
+
+    // 展示文件类型的弹窗缩略信息，包含文件or图片
+    private fun showDecryptedFilePopup(
         decryptedText: String,
         anchorNode: AccessibilityNodeInfo,
         showTime: Long,
