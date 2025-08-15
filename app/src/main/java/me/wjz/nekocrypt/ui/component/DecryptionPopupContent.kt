@@ -53,7 +53,6 @@ import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
  */
 @Composable
 fun DecryptionPopupContent(text: String, durationMills: Long = 3000, onDismiss: () -> Unit) {
-    // 不手动指定darkTheme，会出问题。
     val animationTime = 250 // 动画时间
 
     // 创建一个从1.0开始的动画值。
@@ -61,33 +60,41 @@ fun DecryptionPopupContent(text: String, durationMills: Long = 3000, onDismiss: 
     // ✨ 1. 新增一个状态来控制整体的可见性，用于驱动出入场动画
     var isVisible by remember { mutableStateOf(false) }
 
-    // ✨ 2. 使用两个 LaunchedEffect，职责分离
-    // 第一个：负责UI的出现和消失
-    LaunchedEffect(text) {
-        isVisible = true // 触发“出现”动画
+    // ✨ 核心修复：这个LaunchedEffect现在只负责“自动销毁”的计时
+    LaunchedEffect(Unit) {
+        isVisible = true // 触发出现
         // 启动倒计时
         progress.animateTo(
             0.0f,
-            animationSpec = tween(durationMills.toInt(), easing = LinearEasing)
+            animationSpec = tween(
+                durationMills.toInt(),
+                easing = LinearEasing
+            )
         )
-        // 倒计时结束后，触发“消失”动画
+        // 倒计时结束后，触发消失
         isVisible = false
-        // 等待消失动画播放完毕
-        delay(animationTime.toLong())
-        // 动画完全结束后，才真正调用 onDismiss
-        onDismiss()
     }
 
+    // ✨ 新增：这个LaunchedEffect专门负责“销毁”流程
+    // 无论isVisible是如何变成false的，它都会被触发
+    LaunchedEffect(isVisible) {
+        if (!isVisible) {
+            // 等待消失动画播放完毕
+            delay(animationTime.toLong())
+            // 动画完全结束后，才真正调用 onDismiss
+            onDismiss()
+        }
+    }
+
+    // 如果不手动指定darkTheme，会出问题。
     NekoCryptTheme(darkTheme = false) {
         // ✨ 关键！在最外层用一个 Box 包裹，并给它加上内边距。
         // 这个内边距就是我们为动画和阴影预留的“安全区”，
         // 确保它们在“弹跳”时不会被最外层的边界裁剪掉。
         Box(modifier = Modifier.padding(16.dp)) {
 
-            // ✨ 3. 用 AnimatedVisibility 包裹整个UI，赋予它出入场动画
             AnimatedVisibility(
                 visible = isVisible,
-                // ✨ 出现动画：像气泡一样“啵”地一下弹出来！
                 enter = scaleIn(
                     animationSpec = spring( // 使用 spring 动画，让效果更Q弹
                         dampingRatio = Spring.DampingRatioLowBouncy,
