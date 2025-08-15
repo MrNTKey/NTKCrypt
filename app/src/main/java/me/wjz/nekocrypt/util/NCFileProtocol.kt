@@ -24,13 +24,11 @@ data class NCFileProtocol(
          * @param encryptionKey 用于解密的密钥。
          * @return 如果解密和解析成功，返回NCFileProtocol对象；否则返回null。
          */
-        fun fromEncryptedString(protocolString: String, encryptionKey: String): NCFileProtocol? {
+        fun fromString(decryptedString: String): NCFileProtocol? {
             return try {
-                if (!protocolString.startsWith(NC_FILE_PROTOCOL_PREFIX)) return null
+                if (!decryptedString.startsWith(NC_FILE_PROTOCOL_PREFIX)) return null
 
-                val stealthPayload = protocolString.substringAfter(NC_FILE_PROTOCOL_PREFIX)
-                val jsonPayload = CryptoManager.decrypt(stealthPayload, encryptionKey)
-                    ?: return null
+                val jsonPayload = decryptedString.substringAfter(NC_FILE_PROTOCOL_PREFIX)
 
                 // ✨ 使用Fastjson进行解析
                 val jsonObject = JSON.parseObject(jsonPayload)

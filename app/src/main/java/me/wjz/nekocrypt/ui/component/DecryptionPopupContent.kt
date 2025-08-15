@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
+import me.wjz.nekocrypt.util.NCFileProtocol
 
 
 /**
@@ -52,13 +53,16 @@ import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
  * 它完全不知道什么是无障碍服务，什么是处理器。
  */
 @Composable
-fun DecryptionPopupContent(text: String, durationMills: Long = 3000, onDismiss: () -> Unit) {
+fun DecryptionPopupContent(decryptedText: String, durationMills: Long = 3000, onDismiss: () -> Unit) {
     val animationTime = 250 // 动画时间
 
     // 创建一个从1.0开始的动画值。
     val progress = remember { Animatable(1.0f) }
     // ✨ 1. 新增一个状态来控制整体的可见性，用于驱动出入场动画
     var isVisible by remember { mutableStateOf(false) }
+
+    // 增加判断，看需要展示纯文本还是图片or文件。
+    val fileProtocol : NCFileProtocol? = NCFileProtocol.fromString(decryptedText)
 
     // ✨ 核心修复：这个LaunchedEffect现在只负责“自动销毁”的计时
     LaunchedEffect(Unit) {
@@ -133,20 +137,25 @@ fun DecryptionPopupContent(text: String, durationMills: Long = 3000, onDismiss: 
                         ),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = text,
-                            fontSize = 18.sp,
-                            color = MaterialTheme.colorScheme.primary,
-                            style = TextStyle(
-                                shadow = Shadow(
-                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f), // 阴影颜色
-                                    offset = Offset(2f, 2f), // 阴影偏移量
-                                    blurRadius = 4f // 阴影模糊半径
-                                )
-                            ),
-                            // ✨ 限制文本的最大宽度，防止一行文本过长导致弹窗撑得太大
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
+                        if (fileProtocol != null) {
+
+                        } else {
+                            Text(
+                                text = decryptedText,
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                                style = TextStyle(
+                                    shadow = Shadow(
+                                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f), // 阴影颜色
+                                        offset = Offset(2f, 2f), // 阴影偏移量
+                                        blurRadius = 4f // 阴影模糊半径
+                                    )
+                                ),
+                                // ✨ 限制文本的最大宽度，防止一行文本过长导致弹窗撑得太大
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                        }
+
                         Spacer(modifier = Modifier.width(8.dp))
 
                         Box(

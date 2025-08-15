@@ -346,7 +346,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             anchorRect = anchorRect
         ) {
             DecryptionPopupContent(
-                text = decryptedText,
+                decryptedText = decryptedText,
                 onDismiss = { popupManager?.dismiss() },
                 durationMills = showTime
             )
@@ -354,9 +354,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         popupManager!!.show()
         return popupManager!!
     }
-
-
-
 
     // --- 所有悬浮窗和加密逻辑都内聚在这里 ---
 
