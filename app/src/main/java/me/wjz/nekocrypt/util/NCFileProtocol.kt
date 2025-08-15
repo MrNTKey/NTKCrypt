@@ -57,19 +57,12 @@ data class NCFileProtocol(
      * @return 格式为 "NCFile://[加密并隐写编码后的JSON载荷]" 的字符串。
      */
     fun toEncryptedString(encryptionKey: String): String {
-        // 1. 将data class自身转换为Fastjson的JSONObject
         val payloadJson = JSONObject().apply {
             put("url", url)
             put("size", size)
             put("type", type.name) // 将枚举转换为字符串存储
         }
-        // ✨ 使用Fastjson转换为最小化的JSON字符串
-        val payloadString = payloadJson.toJSONString()
+        return CryptoManager.encrypt(NC_FILE_PROTOCOL_PREFIX + payloadJson, encryptionKey).appendNekoTalk()
 
-        // 2. 使用CryptoManager对JSON字符串进行加密和隐写编码
-        val stealthPayload = CryptoManager.encrypt(payloadString, encryptionKey)
-
-        // 3. 组装成最终的协议格式
-        return "$NC_FILE_PROTOCOL_PREFIX$stealthPayload".appendNekoTalk()
     }
 }
