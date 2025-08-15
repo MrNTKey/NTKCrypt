@@ -13,15 +13,13 @@ const val NC_FILE_PROTOCOL_PREFIX = "NCFile://"
 
 data class NCFileProtocol(
     val url: String,
-    val size: String,
+    val size: Long,
+    val name: String,
     val type: NCFileType
 ) {
     companion object {
         /**
-         * ✨ [解密 & 反序列化] (使用Fastjson)
-         * 将一个完整的、加密的协议字符串，转换为一个结构化的NCFileProtocol对象。
-         * @param protocolString 包含"NCFile://"前缀的完整加密字符串。
-         * @param encryptionKey 用于解密的密钥。
+         * ✨ [反序列化] (使用Fastjson)
          * @return 如果解密和解析成功，返回NCFileProtocol对象；否则返回null。
          */
         fun fromString(decryptedString: String): NCFileProtocol? {
@@ -35,9 +33,11 @@ data class NCFileProtocol(
 
                 NCFileProtocol(
                     url = jsonObject.getString("url"),
-                    size = jsonObject.getString("size"),
+                    size = jsonObject.getLong("size"),
+                    name = jsonObject.getString("name"),
                     type = NCFileType.valueOf(jsonObject.getString("type"))
                 )
+
             } catch (e: JSONException) {
                 // Fastjson解析失败
                 null
@@ -58,6 +58,7 @@ data class NCFileProtocol(
         val payloadJson = JSONObject().apply {
             put("url", url)
             put("size", size)
+            put("name",name)
             put("type", type.name) // 将枚举转换为字符串存储
         }
         return CryptoManager.encrypt(NC_FILE_PROTOCOL_PREFIX + payloadJson, encryptionKey).appendNekoTalk()
