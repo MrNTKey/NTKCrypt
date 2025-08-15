@@ -1,53 +1,35 @@
 package me.wjz.nekocrypt.ui
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -64,38 +46,24 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
 import androidx.datastore.preferences.core.Preferences
-import kotlinx.coroutines.delay
 import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.hook.rememberDataStoreState
-import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
-import androidx.core.graphics.toColorInt
 import kotlin.math.roundToLong
 
 /**
@@ -235,204 +203,6 @@ fun SwitchSettingCard(
         }
     }
 }
-
-// 猫爪按钮
-@Composable
-fun CatPawButton(
-    isEnabled: Boolean,
-    statusText: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    // --- 所有与猫爪按钮相关的动画状态都内聚在这里 ---
-    val buttonFillColor by animateColorAsState(
-        targetValue = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-        animationSpec = tween(500),
-        label = "ButtonFillAnimation"
-    )
-    val contentColor by animateColorAsState(
-        targetValue = if (isEnabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-        animationSpec = tween(500),
-        label = "ContentColorAnimation"
-    )
-    val shadowElevation by animateDpAsState(if (isEnabled) 16.dp else 8.dp, tween(500), label = "")
-    val rotationSpeed by animateFloatAsState(
-        if (isEnabled) 15f else 5f,
-        tween(1500),
-        label = "RotationSpeedAnimation"
-    )
-    var rotationAngle by remember { mutableFloatStateOf(0f) }
-    val ringSize by animateDpAsState(
-        if (isEnabled) 290.dp else 270.dp,
-        tween(600),
-        label = "RingSizeAnimation"
-    )
-    val outlineColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-    val arcColor1 by animateColorAsState(
-        if (isEnabled) MaterialTheme.colorScheme.primary else outlineColor,
-        tween(700),
-        label = "ArcColor1"
-    )
-    val arcColor2 by animateColorAsState(
-        if (isEnabled) MaterialTheme.colorScheme.tertiary else outlineColor,
-        tween(700),
-        label = "ArcColor2"
-    )
-    val arcBrush = Brush.sweepGradient(colors = listOf(arcColor1, arcColor2, arcColor1))
-    val palmOffsetY by animateFloatAsState(if (isEnabled) -10f else 0f, tween(400), label = "")
-    val outerLeftToeX by animateFloatAsState(if (isEnabled) -18f else 0f, tween(400), label = "")
-    val outerLeftToeY by animateFloatAsState(if (isEnabled) -15f else 0f, tween(400), label = "")
-    val innerLeftToeX by animateFloatAsState(if (isEnabled) -10f else 0f, tween(400), label = "")
-    val innerLeftToeY by animateFloatAsState(if (isEnabled) -25f else 0f, tween(400), label = "")
-    val innerRightToeX by animateFloatAsState(if (isEnabled) 10f else 0f, tween(400), label = "")
-    val innerRightToeY by animateFloatAsState(if (isEnabled) -25f else 0f, tween(400), label = "")
-    val outerRightToeX by animateFloatAsState(if (isEnabled) 18f else 0f, tween(400), label = "")
-    val outerRightToeY by animateFloatAsState(if (isEnabled) -15f else 0f, tween(400), label = "")
-    val gapAngle by animateFloatAsState(
-        if (isEnabled) 8f else 12f,
-        tween(700),
-        label = "GapAngleAnimation"
-    )
-
-    LaunchedEffect(Unit) {
-        var lastFrameTimeNanos = 0L
-        while (true) {
-            withFrameNanos { frameTimeNanos ->
-                if (lastFrameTimeNanos != 0L) {
-                    val deltaTimeMillis = (frameTimeNanos - lastFrameTimeNanos) / 1_000_000f
-                    val deltaAngle = (rotationSpeed * deltaTimeMillis) / 1000f
-                    rotationAngle = (rotationAngle + deltaAngle) % 360f
-                }
-                lastFrameTimeNanos = frameTimeNanos
-            }
-        }
-    }
-
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
-    ) {
-        Canvas(modifier = Modifier.size(ringSize)) {
-            val strokeWidth = 10f
-            val dashCount = 12
-            val totalAnglePerDash = 360f / dashCount
-            val dashAngle = totalAnglePerDash - gapAngle
-            rotate(degrees = rotationAngle) {
-                for (i in 0 until dashCount) {
-                    drawArc(
-                        brush = arcBrush,
-                        startAngle = i * totalAnglePerDash,
-                        sweepAngle = dashAngle,
-                        useCenter = false,
-                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                    )
-                }
-            }
-        }
-
-        Surface(
-            modifier = Modifier
-                .size(260.dp)
-                .shadow(elevation = shadowElevation, shape = CircleShape)
-                .clip(CircleShape)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onClick
-                ),
-            color = buttonFillColor
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Canvas(modifier = Modifier.size(110.dp)) {
-                    val strokeWidth = 11f
-                    val palmSize = Size(size.width * 0.6f, size.height * 0.45f)
-                    val palmBaseCenter = Offset(center.x, center.y + size.height * 0.2f)
-                    val palmAnimatedCenter = palmBaseCenter.copy(y = palmBaseCenter.y + palmOffsetY)
-                    val palmTopLeft = Offset(
-                        palmAnimatedCenter.x - palmSize.width / 2f,
-                        palmAnimatedCenter.y - palmSize.height / 2f
-                    )
-                    drawOval(
-                        color = contentColor,
-                        topLeft = palmTopLeft,
-                        size = palmSize,
-                        style = Stroke(width = strokeWidth)
-                    )
-
-                    val toeRadius = size.width * 0.1f
-                    val outerLeftBaseCenter =
-                        Offset(center.x - size.width * 0.35f, center.y - size.height * 0.08f)
-                    val innerLeftBaseCenter =
-                        Offset(center.x - size.width * 0.15f, center.y - size.height * 0.25f)
-                    val innerRightBaseCenter =
-                        Offset(center.x + size.width * 0.15f, center.y - size.height * 0.25f)
-                    val outerRightBaseCenter =
-                        Offset(center.x + size.width * 0.35f, center.y - size.height * 0.08f)
-
-                    drawCircle(
-                        color = contentColor,
-                        center = outerLeftBaseCenter.copy(
-                            x = outerLeftBaseCenter.x + outerLeftToeX,
-                            y = outerLeftBaseCenter.y + outerLeftToeY
-                        ),
-                        radius = toeRadius,
-                        style = Stroke(width = strokeWidth)
-                    )
-                    drawCircle(
-                        color = contentColor,
-                        center = innerLeftBaseCenter.copy(
-                            x = innerLeftBaseCenter.x + innerLeftToeX,
-                            y = innerLeftBaseCenter.y + innerLeftToeY
-                        ),
-                        radius = toeRadius,
-                        style = Stroke(width = strokeWidth)
-                    )
-                    drawCircle(
-                        color = contentColor,
-                        center = innerRightBaseCenter.copy(
-                            x = innerRightBaseCenter.x + innerRightToeX,
-                            y = innerRightBaseCenter.y + innerRightToeY
-                        ),
-                        radius = toeRadius,
-                        style = Stroke(width = strokeWidth)
-                    )
-                    drawCircle(
-                        color = contentColor,
-                        center = outerRightBaseCenter.copy(
-                            x = outerRightBaseCenter.x + outerRightToeX,
-                            y = outerRightBaseCenter.y + outerRightToeY
-                        ),
-                        radius = toeRadius,
-                        style = Stroke(width = strokeWidth)
-                    )
-                }
-
-                AnimatedContent(
-                    targetState = isEnabled,
-                    transitionSpec = {
-                        (slideInVertically { h -> h } + fadeIn(tween(250)))
-                            .togetherWith(slideOutVertically { h -> -h } + fadeOut(tween(250)))
-                            .using(SizeTransform(clip = false))
-                    },
-                    label = "Status Text Animation"
-                ) { _ ->
-                    Text(
-                        text = statusText, // ✨ 使用传入的文本
-                        color = contentColor,
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-        }
-    }
-}
-
 
 // 分段按钮实现
 
@@ -602,131 +372,6 @@ fun SliderSettingItem(
                     steps = ((valueRange.last - valueRange.first) / step - 1).toInt(), // 设置步数，让滑块可以吸附到整数值
                     modifier = Modifier.height(30.dp).padding(top = 4.dp),
                 )
-            }
-        }
-    }
-}
-
-
-/**
- *  一个独立的、可复用的解密弹窗 Composable UI
- * 它只关心需要显示什么文本 (text)，以及被关闭时该做什么 (onDismiss)。
- * 它完全不知道什么是无障碍服务，什么是处理器。
- */
-@Composable
-fun DecryptionPopupContent(text: String, durationMills: Long = 3000, onDismiss: () -> Unit) {
-    // 不手动指定darkTheme，会出问题。
-    val animationTime = 250 // 动画时间
-
-    // 创建一个从1.0开始的动画值。
-    val progress = remember { Animatable(1.0f) }
-    // ✨ 1. 新增一个状态来控制整体的可见性，用于驱动出入场动画
-    var isVisible by remember { mutableStateOf(false) }
-
-    // ✨ 2. 使用两个 LaunchedEffect，职责分离
-    // 第一个：负责UI的出现和消失
-    LaunchedEffect(text) {
-        isVisible = true // 触发“出现”动画
-        // 启动倒计时
-        progress.animateTo(
-            0.0f,
-            animationSpec = tween(durationMills.toInt(), easing = LinearEasing)
-        )
-        // 倒计时结束后，触发“消失”动画
-        isVisible = false
-        // 等待消失动画播放完毕
-        delay(animationTime.toLong())
-        // 动画完全结束后，才真正调用 onDismiss
-        onDismiss()
-    }
-
-    NekoCryptTheme(darkTheme = false) {
-        // ✨ 关键！在最外层用一个 Box 包裹，并给它加上内边距。
-        // 这个内边距就是我们为动画和阴影预留的“安全区”，
-        // 确保它们在“弹跳”时不会被最外层的边界裁剪掉。
-        Box(modifier = Modifier.padding(16.dp)) {
-
-            // ✨ 3. 用 AnimatedVisibility 包裹整个UI，赋予它出入场动画
-            AnimatedVisibility(
-                visible = isVisible,
-                // ✨ 出现动画：像气泡一样“啵”地一下弹出来！
-                enter = scaleIn(
-                    animationSpec = spring( // 使用 spring 动画，让效果更Q弹
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessLow
-                    )
-                ) + fadeIn(animationSpec = tween(animationTime)),
-                // ✨ 消失动画：优雅地缩小并淡出
-                exit = scaleOut(animationSpec = tween(animationTime)) + fadeOut(
-                    animationSpec = tween(
-                        animationTime
-                    )
-                )
-            ) {
-                Card(
-                    // ✨ 4. 关键！让 Card 的尺寸自适应内容
-                    modifier = Modifier
-                        .wrapContentSize() // 让卡片包裹内容，而不是撑满
-                        .shadow(elevation = 8.dp, shape = RoundedCornerShape(12.dp)),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(
-                            alpha = 0.92f
-                        )
-                    ),
-                    border = BorderStroke(
-                        1.dp,
-                        MaterialTheme.colorScheme.outline.copy(alpha = 0.8f)
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier.padding(
-                            start = 12.dp,
-                            top = 8.dp,
-                            bottom = 8.dp,
-                            end = 8.dp
-                        ),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = text,
-                            fontSize = 18.sp,
-                            color = MaterialTheme.colorScheme.primary,
-                            style = TextStyle(
-                                shadow = Shadow(
-                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f), // 阴影颜色
-                                    offset = Offset(2f, 2f), // 阴影偏移量
-                                    blurRadius = 4f // 阴影模糊半径
-                                )
-                            ),
-                            // ✨ 限制文本的最大宽度，防止一行文本过长导致弹窗撑得太大
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.size(25.dp)
-                        ) {
-                            CircularProgressIndicator(
-                                progress = { progress.value },
-                                modifier = Modifier.size(25.dp),
-                                color = MaterialTheme.colorScheme.primary,
-                                strokeWidth = 2.dp
-                            )
-                            IconButton(onClick = {
-                                // ✨ 点击关闭按钮时，也应该优雅地播放“消失”动画
-                                isVisible = false
-                            }) {
-                                Icon(
-                                    Icons.Default.Close,
-                                    contentDescription = "关闭",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
             }
         }
     }

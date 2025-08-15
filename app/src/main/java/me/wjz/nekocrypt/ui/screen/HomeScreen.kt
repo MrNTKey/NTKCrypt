@@ -33,11 +33,11 @@ import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.SettingKeys
 import me.wjz.nekocrypt.hook.rememberDataStoreState
 import me.wjz.nekocrypt.service.NCAccessibilityService
-import me.wjz.nekocrypt.ui.CatPawButton
 import me.wjz.nekocrypt.ui.InfoDialogIcon
 import me.wjz.nekocrypt.ui.RadioOption
 import me.wjz.nekocrypt.ui.SegmentedButtonSetting
 import me.wjz.nekocrypt.ui.SwitchSettingCard
+import me.wjz.nekocrypt.ui.component.CatPawButton
 import me.wjz.nekocrypt.util.openAccessibilitySettings
 import me.wjz.nekocrypt.util.rememberAccessibilityServiceState
 

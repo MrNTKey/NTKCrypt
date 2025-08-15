@@ -32,7 +32,7 @@ import kotlinx.coroutines.withContext
 import me.wjz.nekocrypt.CryptoMode
 import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.service.NCAccessibilityService
-import me.wjz.nekocrypt.ui.DecryptionPopupContent
+import me.wjz.nekocrypt.ui.component.DecryptionPopupContent
 import me.wjz.nekocrypt.ui.dialog.AttachmentPreviewState
 import me.wjz.nekocrypt.ui.dialog.AttachmentState
 import me.wjz.nekocrypt.ui.dialog.SendAttachmentDialog
