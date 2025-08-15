@@ -1,0 +1,75 @@
+package me.wjz.nekocrypt.util
+
+import com.alibaba.fastjson2.JSON
+import com.alibaba.fastjson2.JSONException
+import com.alibaba.fastjson2.JSONObject
+import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
+
+enum class NCFileType{
+    IMAGE,FILE;
+}
+
+const val NC_FILE_PROTOCOL_PREFIX = "NCFile://"
+
+data class NCFileProtocol(
+    val url: String,
+    val size: String,
+    val type: NCFileType
+) {
+    companion object {
+        /**
+         * ✨ [解密 & 反序列化] (使用Fastjson)
+         * 将一个完整的、加密的协议字符串，转换为一个结构化的NCFileProtocol对象。
+         * @param protocolString 包含"NCFile://"前缀的完整加密字符串。
+         * @param encryptionKey 用于解密的密钥。
+         * @return 如果解密和解析成功，返回NCFileProtocol对象；否则返回null。
+         */
+        fun fromEncryptedString(protocolString: String, encryptionKey: String): NCFileProtocol? {
+            return try {
+                if (!protocolString.startsWith(NC_FILE_PROTOCOL_PREFIX)) return null
+
+                val stealthPayload = protocolString.substringAfter(NC_FILE_PROTOCOL_PREFIX)
+                val jsonPayload = CryptoManager.decrypt(stealthPayload, encryptionKey)
+                    ?: return null
+
+                // ✨ 使用Fastjson进行解析
+                val jsonObject = JSON.parseObject(jsonPayload)
+
+                NCFileProtocol(
+                    url = jsonObject.getString("url"),
+                    size = jsonObject.getString("size"),
+                    type = NCFileType.valueOf(jsonObject.getString("type"))
+                )
+            } catch (e: JSONException) {
+                // Fastjson解析失败
+                null
+            } catch (e: Exception) {
+                // 捕获其他所有可能的异常（如枚举转换失败）
+                null
+            }
+        }
+    }
+
+    /**
+     * ✨ [加密 & 序列化] (使用Fastjson)
+     * 将当前的NCFileProtocol对象，转换为一个完整的、加密的协议字符串。
+     * @param encryptionKey 用于加密的密钥。
+     * @return 格式为 "NCFile://[加密并隐写编码后的JSON载荷]" 的字符串。
+     */
+    fun toEncryptedString(encryptionKey: String): String {
+        // 1. 将data class自身转换为Fastjson的JSONObject
+        val payloadJson = JSONObject().apply {
+            put("url", url)
+            put("size", size)
+            put("type", type.name) // 将枚举转换为字符串存储
+        }
+        // ✨ 使用Fastjson转换为最小化的JSON字符串
+        val payloadString = payloadJson.toJSONString()
+
+        // 2. 使用CryptoManager对JSON字符串进行加密和隐写编码
+        val stealthPayload = CryptoManager.encrypt(payloadString, encryptionKey)
+
+        // 3. 组装成最终的协议格式
+        return "$NC_FILE_PROTOCOL_PREFIX$stealthPayload".appendNekoTalk()
+    }
+}

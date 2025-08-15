@@ -39,11 +39,9 @@ import me.wjz.nekocrypt.ui.dialog.SendAttachmentDialog
 import me.wjz.nekocrypt.util.CryptoManager
 import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
 import me.wjz.nekocrypt.util.CryptoUploader
-import me.wjz.nekocrypt.util.NCFileType
+import me.wjz.nekocrypt.util.NCFileProtocol
 import me.wjz.nekocrypt.util.NCWindowManager
-import me.wjz.nekocrypt.util.NC_FILE_PROTOCOL_PREFIX
 import me.wjz.nekocrypt.util.ResultRelay
-import me.wjz.nekocrypt.util.encryptToNCProtocol
 import me.wjz.nekocrypt.util.formatFileSize
 import me.wjz.nekocrypt.util.getFileName
 import me.wjz.nekocrypt.util.getFileSize
@@ -334,79 +332,30 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         showTime: Long = service!!.decryptionWindowShowTime,
         onDismiss: (() -> Unit)? = null,
     ): NCWindowManager {
-        // 1. “安检口”：检查解密后的文本是否是我们的文件协议
-        return if (decryptedText.startsWith(NC_FILE_PROTOCOL_PREFIX)) {
-            // 2. 如果是，就交给专门的函数去处理
-            showDecryptedFilePopup(decryptedText, anchorNode, showTime, onDismiss)
-        } else
-        // --- 如果不是文件协议，就走原来的普通文本显示逻辑 ---
-            showDecryptedTextPopup(decryptedText,anchorNode,showTime,onDismiss)
-    }
-
-    // 展示纯文本类型的弹窗。
-    private fun showDecryptedTextPopup(
-        decryptedText: String,
-        anchorNode: AccessibilityNodeInfo,
-        showTime: Long,
-        onDismiss: (() -> Unit)? = null,
-    ): NCWindowManager {
-
-        val anchorRect = Rect()
-        anchorNode.getBoundsInScreen(anchorRect)
-
-        // 每个弹窗都有自己的管理器实例。
-        var popupManager: NCWindowManager? = null
-        // 创建并显示我们的弹窗
-        popupManager = NCWindowManager(
-            context = service!!, onDismissRequest = {
-                onDismiss?.invoke()
-                popupManager = null
-            },// 关闭时清理引用
-            anchorRect = anchorRect
-        ) {
-            // 把UI内容传进去
-            DecryptionPopupContent(
-                text = decryptedText,
-                onDismiss = { popupManager?.dismiss() },
-                durationMills = showTime
-            )
-        }
-        popupManager?.show()
-        return popupManager!!
-    }
-
-    // 展示文件类型的弹窗缩略信息，包含文件or图片
-    private fun showDecryptedFilePopup(
-        decryptedText: String,
-        anchorNode: AccessibilityNodeInfo,
-        showTime: Long,
-        onDismiss: (() -> Unit)? = null,
-    ): NCWindowManager {
         val currentService = service!!
-
         val anchorRect = Rect()
         anchorNode.getBoundsInScreen(anchorRect)
 
-        // 每个弹窗都有自己的管理器实例。
         var popupManager: NCWindowManager? = null
-        // 创建并显示我们的弹窗
         popupManager = NCWindowManager(
-            context = currentService, onDismissRequest = {
+            context = currentService,
+            onDismissRequest = {
                 onDismiss?.invoke()
                 popupManager = null
-            },// 关闭时清理引用
+            },
             anchorRect = anchorRect
         ) {
-            // 把UI内容传进去
             DecryptionPopupContent(
                 text = decryptedText,
                 onDismiss = { popupManager?.dismiss() },
                 durationMills = showTime
             )
         }
-        popupManager?.show()
+        popupManager!!.show()
         return popupManager!!
     }
+
+
 
 
     // --- 所有悬浮窗和加密逻辑都内聚在这里 ---
@@ -763,7 +712,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                         previewInfo = AttachmentPreviewState(
                             uri = uri,
                             fileName = getFileName(uri),
-                            fileSizeFormatted = formatFileSize(fileSize),
+                            fileSizeFormatted = fileSize.formatFileSize(),
                             isImage = isFileImage(uri),
                             imageAspectRatio = getImageAspectRatio(uri)
                         )
@@ -775,9 +724,10 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 val fileBytes = currentService.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?:return@launch
 
                 // 目前上传接口似乎不支持流式上传。
-                val resultData = CryptoUploader.upload(
+                val result : NCFileProtocol = CryptoUploader.upload(
                     fileBytes = fileBytes,
                     encryptionKey = currentService.currentKey,
+                    fileName = getFileName(uri),
                     onProcess = { progressInt ->
                         // 将 0-100 的 Int 进度转换为 0.0-1.0 的 Float
                         val progressFloat = progressInt / 100.0f
@@ -788,18 +738,13 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                             }
                         }
                     },
-                ).encryptToNCProtocol(  //解密后对返回的url做包装处理。
-                    formatFileSize(fileSize),
-                    if (isFileImage(uri)) NCFileType.IMG else NCFileType.FILE,
-                    currentService.currentKey
                 )
 
                 // 4. 上传成功，更新UI
                 updateAttachmentState { currentState ->
-                    currentState.copy(resultUrl = resultData, progress = null)
+                    currentState.copy(result = result.toEncryptedString(currentService.currentKey), progress = null)
                 }
-                Log.d(tag, "上传成功，结果: $resultData")
-
+                Log.d(tag, "上传成功，结果: $result")
 
             } catch (e: Exception) {
                 // 5. 统一处理所有异常

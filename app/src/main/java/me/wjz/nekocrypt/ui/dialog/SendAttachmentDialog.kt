@@ -68,11 +68,11 @@ import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
 data class AttachmentState(
     var progress: Float? = null,
     var previewInfo: AttachmentPreviewState? = null,
-    var resultUrl: String = "",
+    var result: String = "", // NCFileProtocol的格式
 ) {
     // 计算属性，方便在UI逻辑中使用
     val isUploading: Boolean get() = progress != null
-    val isUploadFinished: Boolean get() = resultUrl.isNotEmpty()
+    val isUploadFinished: Boolean get() = result.isNotEmpty()
 }
 
 // 预览信息的具体内容
@@ -175,7 +175,7 @@ fun SendAttachmentDialog(
                         // ✨ 3. 预览区域的逻辑更新
                         AnimatedVisibility(
                             // 上传完毕才显示
-                            visible = attachmentState.previewInfo != null && attachmentState.resultUrl.isNotEmpty()
+                            visible = attachmentState.previewInfo != null && attachmentState.result.isNotEmpty()
                         ) {
                             // 使用 rememberUpdatedState 可以在不引起整个对话框重组的情况下更新预览内容
                             val currentPreview by rememberUpdatedState(attachmentState.previewInfo)
@@ -208,7 +208,7 @@ fun SendAttachmentDialog(
                             Spacer(modifier = Modifier.width(8.dp))
                             Button(
                                 // ✨ 发送按钮的可用性也由外部状态决定
-                                onClick = { onSendRequest(attachmentState.resultUrl) },
+                                onClick = { onSendRequest(attachmentState.result) },
                                 enabled = attachmentState.isUploadFinished && !attachmentState.isUploading
                             ) {
                                 Text(stringResource(R.string.send))

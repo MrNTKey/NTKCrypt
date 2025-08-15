@@ -3,11 +3,9 @@ package me.wjz.nekocrypt.util
 import android.net.Uri
 import android.util.Base64
 import com.alibaba.fastjson2.JSON
-import com.alibaba.fastjson2.JSONObject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.suspendCancellableCoroutine
 import me.wjz.nekocrypt.NekoCryptApp
-import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType
@@ -25,13 +23,6 @@ import java.util.concurrent.TimeUnit
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import kotlin.coroutines.resumeWithException
-
-// 文件类型
-enum class NCFileType{
-    IMG,FILE;
-}
-
-const val NC_FILE_PROTOCOL_PREFIX = "NCFile://"
 
 /**
  * 封装图片、视频和文件的加密上传逻辑
@@ -140,10 +131,10 @@ object CryptoUploader {
     @OptIn(ExperimentalCoroutinesApi::class)
     suspend fun upload(
         fileBytes: ByteArray,
-        fileName: String? = System.currentTimeMillis().toString(),
+        fileName: String = "",
         encryptionKey: String,
         onProcess: (progress: Int) -> Unit,
-    ): String {
+    ): NCFileProtocol {
         val encryptedBytes = CryptoManager.encrypt(fileBytes, encryptionKey)
         val payload = SINGLE_PIXEL_GIF_BUFFER + encryptedBytes
         val requestBody = ProcessRequestBody(payload, "image/gif".toMediaTypeOrNull(), onProcess)
@@ -185,8 +176,14 @@ object CryptoUploader {
 
                                     // ✨ 3. [可选，但推荐] 检查一下URL是不是空的
                                     if (fileUrl.isNotBlank()) {
-                                        // 拿到URL后，就可以恢复协程了
-                                        continuation.resume(fileUrl, null)
+                                        // 拿到URL后，就可以封装成对象恢复协程了
+                                        continuation.resume(
+                                            NCFileProtocol(
+                                                url = fileUrl,
+                                                size = fileBytes.size.toLong().formatFileSize(),
+                                                type = if(fileBytes.isImage()) NCFileType.IMAGE else NCFileType.FILE
+                                            ), null
+                                        )
                                     } else {
                                         continuation.resumeWithException(IOException("服务器返回的JSON中url为空。"))
                                     }
@@ -298,28 +295,6 @@ private class ProcessRequestBody(
             }
         }
     }
-}
-
-/**
- * 扩展函数，把网络返回的结果包装。
- */
-fun String.encryptToNCProtocol(
-    fileSize: String,
-    fileType: NCFileType,
-    encryptionKey: String,
-): String {
-    // 1. 创建一个JSON对象来承载所有信息
-    val payloadJson = JSONObject().apply {
-        put("url", this@encryptToNCProtocol) // 放入原始URL
-        put("size", fileSize)                // 放入文件大小
-        put("type", fileType)                // 放入文件类型
-    }
-
-    //加上前缀，加密返回
-    return CryptoManager.encrypt(
-        NC_FILE_PROTOCOL_PREFIX + payloadJson.toString(),
-        encryptionKey
-    ).appendNekoTalk()
 }
 
 // 下面是其中一个回调示例

@@ -69,14 +69,14 @@ fun isSystemApp(packageName: String?): Boolean {
 /**
  * 格式化文件大小，入参单位为bytes
  */
-fun formatFileSize(sizeBytes: Long): String {
-    if (sizeBytes <= 0) return "0 B"
+fun Long.formatFileSize(): String {
+    if (this <= 0) return "0 B"
     val units = arrayOf("B", "KB", "MB", "GB", "TB")
-    val digitGroups = (log10(sizeBytes.toDouble()) / log10(1024.0)).toInt()
+    val digitGroups = (log10(this.toDouble()) / log10(1024.0)).toInt()
     return String.format(
         Locale.US,
         "%.1f %s",
-        sizeBytes / 1024.0.pow(digitGroups.toDouble()),
+        this / 1024.0.pow(digitGroups.toDouble()),
         units[digitGroups]
     )
 }
@@ -93,6 +93,23 @@ fun isFileImage(uri: Uri): Boolean {
     return imageExtensions.contains(extension)
 }
 
+private val IMAGE_HEADERS = setOf(
+    "FFD8",                 // JPEG
+    "89504E47",             // PNG
+    "47494638",             // GIF
+    "49492A00", "4D4D002A", // TIFF 两种字节序
+    "424D",                 // BMP
+    "52494646",             // WEBP 的前 4 字节
+    "000000"                // ICO
+)
+
+fun ByteArray.isImage(): Boolean {
+    if (isEmpty()) return false
+    // 前 8 字节足够覆盖上面所有魔数
+    val prefix = take(8)
+        .joinToString("") { "%02X".format(it) }
+    return IMAGE_HEADERS.any { prefix.startsWith(it) }
+}
 
 /**
  * ✨ [新增] 专门获取图片宽高比的辅助函数
