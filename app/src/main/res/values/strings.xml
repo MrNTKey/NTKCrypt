@@ -11,6 +11,9 @@
     <string name="crypto">加密</string>
     <string name="key">密钥</string>
     <string name="settings">设置</string>
+    <string name="file_size">文件大小</string>
+    <string name="url">URL</string>
+    <string name="download">下载</string>
 
     <!--    加解密模式-->
     <string name="mode_standard">标准模式</string>
@@ -95,4 +98,9 @@
     <string name="crypto_attachment_send_failed_node_not_found">输入框或发送按钮节点未找到！</string>
     <string name="crypto_attachment_chosen_path">已选择: %s</string>
     <string name="crypto_attachment_uploading">"正在加密上传..."</string>
+
+    <!--    图片文件下载、展示页面-->
+    <string name="dialog_download_file_download_failed">文件下载失败：%s</string>
+
+
 </resources>

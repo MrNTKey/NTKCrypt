@@ -22,7 +22,7 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.FilePresent
+import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -48,6 +48,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import me.wjz.nekocrypt.service.handler.LocalFileActionHandler
 import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
 import me.wjz.nekocrypt.util.NCFileProtocol
 import me.wjz.nekocrypt.util.NCFileType
@@ -59,7 +60,9 @@ import me.wjz.nekocrypt.util.NCFileType
  * 它完全不知道什么是无障碍服务，什么是处理器。
  */
 @Composable
-fun DecryptionPopup(decryptedText: String, durationMills: Long = 3000, onDismiss: () -> Unit) {
+fun DecryptionPopup(
+    decryptedText: String, durationMills: Long = 3000, onDismiss: () -> Unit,
+) {
     // 增加判断，看需要展示纯文本还是图片or文件。
     val fileProtocol: NCFileProtocol? = NCFileProtocol.fromString(decryptedText)
 
@@ -289,9 +292,15 @@ private fun DecryptedFilePopupContent(
 }
 
 @Composable
-fun FileButton(fileInfo: NCFileProtocol) {
+fun FileButton(
+    fileInfo: NCFileProtocol,
+) {
+    val onFileClick = LocalFileActionHandler.current
+
     TextButton(
-        onClick = { handlerFileButtonClick(fileInfo) },
+        onClick = {
+            onFileClick?.invoke(fileInfo)
+        },
         modifier = Modifier.wrapContentWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.textButtonColors(
@@ -306,7 +315,7 @@ fun FileButton(fileInfo: NCFileProtocol) {
             )
 
             NCFileType.FILE -> Icon(
-                Icons.Default.FilePresent,
+                Icons.Default.FileOpen,
                 contentDescription = "click to show file"
             )
         }
@@ -325,8 +334,4 @@ fun FileButton(fileInfo: NCFileProtocol) {
             modifier = Modifier.weight(1f, fill = false)
         )
     }
-}
-
-fun handlerFileButtonClick(fileInfo: NCFileProtocol) {
-
 }

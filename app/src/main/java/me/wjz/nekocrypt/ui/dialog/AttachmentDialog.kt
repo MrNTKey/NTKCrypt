@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material.icons.outlined.Collections
+import androidx.compose.material.icons.outlined.FileOpen
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -333,7 +334,7 @@ private fun AttachmentOptions(
             }
         )
         SendOptionItem(
-            icon = Icons.Outlined.AttachFile,
+            icon = Icons.Outlined.FileOpen,
             label = stringResource(R.string.crypto_attachment_file),
             enabled = !isUploading,
             onClick = {
@@ -345,6 +346,7 @@ private fun AttachmentOptions(
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startActivity(intent)
+                onClicked()
             }
         )
     }

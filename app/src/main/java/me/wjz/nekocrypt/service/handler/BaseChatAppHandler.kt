@@ -1,6 +1,5 @@
 package me.wjz.nekocrypt.service.handler
 
-import android.R.attr.text
 import android.content.Context
 import android.graphics.PixelFormat
 import android.graphics.Rect
@@ -17,6 +16,8 @@ import android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Toast
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -49,6 +50,10 @@ import me.wjz.nekocrypt.util.getImageAspectRatio
 import me.wjz.nekocrypt.util.isFileImage
 import java.io.File
 import kotlin.system.measureTimeMillis
+
+
+// 创建一个CompositionLocal来提供给弹窗
+val LocalFileActionHandler = compositionLocalOf<((NCFileProtocol) -> Unit)?> { null }
 
 abstract class BaseChatAppHandler : ChatAppHandler {
     protected val tag = "NCBaseHandler"
@@ -150,7 +155,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             ResultRelay.flow.collectLatest { uri ->
                 // 当收到“代办”发回的URI时
                 Log.d(tag, "收到文件URI: $uri")
-                showSendAttachmentDialog()
+                showAttachmentDialog()
                 startUpload(uri)
             }
         }
@@ -237,7 +242,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                     tryDecryptingText(node.text?.toString())?.let { decryptedText ->
                         val nodeBounds = Rect()
                         node.getBoundsInScreen(nodeBounds)
-                        val cacheKey = text.hashCode().toString()   // key就直接哈希
+                        val cacheKey = decryptedText.hashCode().toString()   // key就直接哈希
                         visibleCacheKeys.add(cacheKey)
 
                         // 如果弹窗已经存在，就加入更新位置的任务队列里
@@ -332,24 +337,29 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         showTime: Long = service!!.decryptionWindowShowTime,
         onDismiss: (() -> Unit)? = null,
     ): NCWindowManager {
-        val currentService = service!!
+
         val anchorRect = Rect()
         anchorNode.getBoundsInScreen(anchorRect)
 
         var popupManager: NCWindowManager? = null
         popupManager = NCWindowManager(
-            context = currentService,
+            context = service!!,
             onDismissRequest = {
                 onDismiss?.invoke()
                 popupManager = null
             },
             anchorRect = anchorRect
         ) {
-            DecryptionPopup(
-                decryptedText = decryptedText,
-                onDismiss = { popupManager?.dismiss() },
-                durationMills = showTime
-            )
+            // ✨ 使用 CompositionLocalProvider 将 fileActionHandler 的 show 方法放入“魔法通道”
+            CompositionLocalProvider(
+                LocalFileActionHandler provides { fileInfo -> FileActionHandler(service!!).show(fileInfo) }
+            ) {
+                DecryptionPopup(
+                    decryptedText = decryptedText,
+                    onDismiss = { popupManager?.dismiss() },
+                    durationMills = showTime
+                )
+            }
         }
         popupManager!!.show()
         return popupManager!!
@@ -598,7 +608,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             // 2. 检查距离上次点击的时间，是否在我们的“双击”阈值之内
             if (currentTime - lastInputClickTime < currentService.doubleClickThreshold) {
                 Log.d(tag, "检测到输入框双击事件, 准备启动发送附件Activity")
-                showSendAttachmentDialog()
+                showAttachmentDialog()
                 lastInputClickTime = 0L
             } else {
                 // 如果是第一次点击，或者距离上次点击太久，就只更新时间戳
@@ -626,7 +636,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     /**
      * 创建并显示“发送附件”对话框
      */
-    private fun showSendAttachmentDialog() {
+    private fun showAttachmentDialog() {
         // 每次创建的时候就重置attachmentState
         resetAttachmentState()
 
