@@ -180,7 +180,7 @@ object CryptoUploader {
                                         continuation.resume(
                                             NCFileProtocol(
                                                 url = fileUrl,
-                                                size = fileBytes.size.toLong().formatFileSize(),
+                                                size = fileBytes.size.toLong(),
                                                 name =fileName,
                                                 type = if(fileBytes.isImage()) NCFileType.IMAGE else NCFileType.FILE
                                             ), null
