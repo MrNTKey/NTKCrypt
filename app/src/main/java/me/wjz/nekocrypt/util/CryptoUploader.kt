@@ -199,7 +199,9 @@ object CryptoUploader {
                                     )
                                 }
                             } else {
-                                continuation.resumeWithException(IOException("上传失败，响应码: ${res.code}，响应体: $bodyString"))
+                                continuation.resumeWithException(
+                                    IOException("上传失败，响应码: ${res.code}，响应体: $response")
+                                )
                             }
                         }
                     }
@@ -268,7 +270,7 @@ private class StreamingProcessRequestBody(
     }
 }
 
-// 一个普通的上传body。
+// 一个普通的上传body，带进度条回调
 private class ProcessRequestBody(
     private val data: ByteArray,
     private val contentType: MediaType?,
@@ -276,6 +278,7 @@ private class ProcessRequestBody(
 ) : RequestBody() {
     override fun contentType(): MediaType? = contentType
     override fun contentLength(): Long = data.size.toLong()
+
     override fun writeTo(sink: BufferedSink) {
         val totalBytes = contentLength()
         var bytesWritten = 0L
