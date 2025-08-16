@@ -7,10 +7,11 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
-import com.alibaba.fastjson2.JSON
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import me.wjz.nekocrypt.Constant
 import me.wjz.nekocrypt.SettingKeys
 
@@ -54,7 +55,7 @@ class DataStoreManager(private val context: Context) {
      * 调用者只需要传入一个数组，无需关心JSON转换的细节。
      */
     suspend fun saveKeyArray(keys: Array<String>) {
-        val jsonString = JSON.toJSONString(keys)
+        val jsonString = Json.encodeToString(keys)
         saveSetting(SettingKeys.ALL_THE_KEYS, jsonString)
     }
 
@@ -66,7 +67,7 @@ class DataStoreManager(private val context: Context) {
             if (jsonString.isEmpty()) arrayOf(Constant.DEFAULT_SECRET_KEY)
             else {
                 try {
-                    val keys = JSON.parseArray(jsonString, String()::class.java).toTypedArray()
+                    val keys = Json.decodeFromString<Array<String>>(jsonString)
                     if (keys.isEmpty()) arrayOf(Constant.DEFAULT_SECRET_KEY) else keys
                 } catch (e: Exception) {
                     Log.e("Neko", "解析密钥数组失败!", e)

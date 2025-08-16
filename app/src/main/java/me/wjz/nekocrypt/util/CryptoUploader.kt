@@ -2,9 +2,11 @@ package me.wjz.nekocrypt.util
 
 import android.net.Uri
 import android.util.Base64
-import com.alibaba.fastjson2.JSON
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import me.wjz.nekocrypt.NekoCryptApp
 import okhttp3.Call
 import okhttp3.Callback
@@ -169,13 +171,13 @@ object CryptoUploader {
                             if (res.isSuccessful && bodyString.isNotBlank()) {
                                 try {
                                     // ✨ 1. 将字符串转换为JSON对象
-                                    val jsonObject = JSON.parseObject(bodyString)
+                                    val jsonObject = Json.parseToJsonElement(bodyString).jsonObject
 
                                     // ✨ 2. 从JSON对象中提取"url"字段的值
-                                    val fileUrl = jsonObject.getString("url")
+                                    val fileUrl = jsonObject["url"]?.jsonPrimitive?.content
 
                                     // ✨ 3. [可选，但推荐] 检查一下URL是不是空的
-                                    if (fileUrl.isNotBlank()) {
+                                    if (fileUrl?.isNotBlank() == true) {
                                         // 拿到URL后，就可以封装成对象恢复协程了
                                         continuation.resume(
                                             NCFileProtocol(

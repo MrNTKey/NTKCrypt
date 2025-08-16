@@ -694,7 +694,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             try {
                 val fileSize = getFileSize(uri)
                 // 判断文件大小。
-                if (fileSize > 1024 * 1024 * 20) {
+                if (fileSize > 1024 * 1024 * 10) {
                     showToast(
                         currentService.getString(
                             R.string.crypto_attachment_file_too_large,

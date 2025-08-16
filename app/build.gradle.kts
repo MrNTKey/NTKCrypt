@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
 }
 
 android {
@@ -64,7 +65,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1") // 包含 ViewTreeViewModelStoreOwner
     implementation("androidx.savedstate:savedstate-ktx:1.2.0") // 包含 ViewTreeSavedStateRegistryOwner
 
-    implementation("com.alibaba.fastjson2:fastjson2:2.0.57") //json解析
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")// json解析
     implementation("com.squareup.okhttp3:okhttp:5.1.0") //http
     implementation(libs.androidx.compiler)//安装preferences datastore 插件
 

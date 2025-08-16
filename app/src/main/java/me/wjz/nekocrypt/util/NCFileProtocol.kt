@@ -1,9 +1,11 @@
 package me.wjz.nekocrypt.util
 
-import com.alibaba.fastjson2.JSON
-import com.alibaba.fastjson2.JSONException
-import com.alibaba.fastjson2.JSONObject
+import android.util.Log
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import me.wjz.nekocrypt.util.CryptoManager.appendNekoTalk
+import org.json.JSONException
 
 enum class NCFileType{
     IMAGE,FILE;
@@ -11,6 +13,7 @@ enum class NCFileType{
 
 const val NC_FILE_PROTOCOL_PREFIX = "NCFile://"
 
+@Serializable
 data class NCFileProtocol(
     val url: String,
     val size: Long,
@@ -27,17 +30,8 @@ data class NCFileProtocol(
                 if (!decryptedString.startsWith(NC_FILE_PROTOCOL_PREFIX)) return null
 
                 val jsonPayload = decryptedString.substringAfter(NC_FILE_PROTOCOL_PREFIX)
-
                 // ✨ 使用Fastjson进行解析
-                val jsonObject = JSON.parseObject(jsonPayload)
-
-                NCFileProtocol(
-                    url = jsonObject.getString("url"),
-                    size = jsonObject.getLong("size"),
-                    name = jsonObject.getString("name"),
-                    type = NCFileType.valueOf(jsonObject.getString("type"))
-                )
-
+                Json.decodeFromString<NCFileProtocol>(jsonPayload)
             } catch (e: JSONException) {
                 // Fastjson解析失败
                 null
@@ -55,13 +49,9 @@ data class NCFileProtocol(
      * @return 格式为 "NCFile://[加密并隐写编码后的JSON载荷]" 的字符串。
      */
     fun toEncryptedString(encryptionKey: String): String {
-        val payloadJson = JSONObject().apply {
-            put("url", url)
-            put("size", size)
-            put("name",name)
-            put("type", type.name) // 将枚举转换为字符串存储
-        }
+        Log.d("NekoAccessibility", "protocol本身结果结果：$this")
+        val payloadJson = Json.encodeToString(this)
+        Log.d("NekoAccessibility", "protocol转json结果：$payloadJson")
         return CryptoManager.encrypt(NC_FILE_PROTOCOL_PREFIX + payloadJson, encryptionKey).appendNekoTalk()
-
     }
 }

@@ -70,7 +70,6 @@ fun FilePreviewDialog(
     val coroutineScope = rememberCoroutineScope()
     var isVisible by remember { mutableStateOf(false) }
     val isDownloading = downloadProgress != null // ✨ 判断当前是否正在下载
-
     // 出现动画
     LaunchedEffect(Unit) {
         isVisible = true
@@ -152,7 +151,7 @@ fun FilePreviewDialog(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         // --- 文件大小和URL ---
-                        InfoRow(label = stringResource(R.string.file_size), value = fileInfo.size.formatFileSize())
+                        InfoRow(label = stringResource(R.string.file_size),fileInfo.size.formatFileSize())
                         InfoRow(label = stringResource(R.string.url), value = fileInfo.url)
 
                         Spacer(modifier = Modifier.height(24.dp))
