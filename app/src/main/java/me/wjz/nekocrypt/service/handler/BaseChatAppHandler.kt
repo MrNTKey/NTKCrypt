@@ -640,12 +640,10 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         // 每次创建的时候就重置attachmentState
         resetAttachmentState()
 
-
-        val currentService = service ?: return
         if (sendAttachmentDialogManager != null) return
 
         sendAttachmentDialogManager = NCWindowManager(
-            context = currentService,
+            context = service!!,
             onDismissRequest = { sendAttachmentDialogManager = null },
             anchorRect = null
         ) {
@@ -713,7 +711,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                     )
                 )
 
-                // 展示预览图片。
+                // 更新预览状态
                 updateAttachmentState { currentState ->
                     currentState.copy(
                         previewInfo = AttachmentPreviewState(
