@@ -7,7 +7,6 @@ import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.content.FileProvider
 import androidx.core.content.FileProvider.getUriForFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -151,7 +150,7 @@ class FileActionHandler(private val service: NCAccessibilityService) {
 
     private fun getUriForFile(file: File):Uri{
         return getUriForFile(service,
-            "${service.packageName}.provider",
+            "${service.packageName}.provider",  // 这个地方的authority一定要和manifest里面配置的一样
             file)
     }
 }
