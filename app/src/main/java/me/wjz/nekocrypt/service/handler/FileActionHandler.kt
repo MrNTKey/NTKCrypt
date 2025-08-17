@@ -123,7 +123,7 @@ class FileActionHandler(private val service: NCAccessibilityService) {
     suspend fun showToast(string: String, duration: Int = Toast.LENGTH_SHORT) {
         Log.d(tag, "showToast: $string")
         withContext(Dispatchers.Main) {
-            Toast.makeText(service, string, duration).show()
+            Toast.makeText(service.applicationContext, string, duration).show()
         }
     }
 

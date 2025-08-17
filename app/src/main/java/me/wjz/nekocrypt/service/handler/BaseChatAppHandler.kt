@@ -693,12 +693,12 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         currentService.serviceScope.launch(Dispatchers.IO) {
             try {
                 val fileSize = getFileSize(uri)
-                // 判断文件大小。
+                // 判断文件大小。当前接口传图片最大支持10M。
                 if (fileSize > 1024 * 1024 * 10) {
                     showToast(
                         currentService.getString(
                             R.string.crypto_attachment_file_too_large,
-                            20
+                            10
                         )
                     )
                     return@launch
@@ -823,6 +823,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     }
 
     suspend fun showToast(string: String, duration: Int = Toast.LENGTH_SHORT) {
+        Log.d(tag, "showToast: $string")
         withContext(Dispatchers.Main) {
             Toast.makeText(service, string, duration).show()
         }
