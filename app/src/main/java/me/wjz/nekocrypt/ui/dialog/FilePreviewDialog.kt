@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Launch
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FilePresent
 import androidx.compose.material.icons.filled.Image
@@ -73,7 +74,8 @@ fun FilePreviewDialog(
     downloadedFileUri: Uri?,
     onDismissRequest: () -> Unit,
     onDownloadRequest: (NCFileProtocol) -> Unit,
-    onOpenRequest: (Uri) -> Unit
+    onOpenRequest: (Uri) -> Unit,
+    onSaveToGalleryRequest: (Uri) -> Unit // ✨ 新增：保存到相册的回调
 ) {
     val coroutineScope = rememberCoroutineScope()
     var isVisible by remember { mutableStateOf(false) }
@@ -117,21 +119,23 @@ fun FilePreviewDialog(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(
-                        modifier = Modifier.padding(24.dp),
+                        modifier = Modifier.padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally)
                     {
                         // 标题
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = stringResource(R.string.dialog_download_file_file_info),
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            //只有文件类型才需要
+                            if (fileInfo.type == NCFileType.FILE)
+                                Text(
+                                    text = stringResource(R.string.dialog_download_file_file_info),
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
 //                            IconButton(onClick = { dismissWithAnimation() }) {
 //                                Icon(
 //                                    Icons.Default.Close,
@@ -141,31 +145,37 @@ fun FilePreviewDialog(
 //                            }
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         // 核心预览区
                         Card(
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp, max = 450.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 600.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(contentColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                         ) {
                             AnimatedContent(
                                 targetState = downloadedFileUri,
                                 label = "preview_animation",
-                                modifier = Modifier.fillMaxSize()
                             ) { uri ->
                                 if(uri !=null && fileInfo.type == NCFileType.IMAGE){
                                     // 如果是图片并且已经有缓存文件，直接展示图片
                                     AsyncImage(
                                         model = uri,
                                         contentDescription = "image preview",
-                                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)),
-                                        contentScale = ContentScale.FillHeight
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp)),
+                                        contentScale = ContentScale.FillWidth
                                     )
                                 } else {
                                     // 图片下载未完成，或者根本不是图片格式，就展示普通的样式
                                     Box(
-                                        modifier = Modifier.fillMaxSize().padding(16.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(200.dp)
+                                            .padding(16.dp),
                                         contentAlignment = Alignment.Center
                                     ){
                                         if (isDownloading) DownloadProgressIndicator(progress = downloadProgress)
@@ -175,6 +185,7 @@ fun FilePreviewDialog(
                             }
                         }
 
+                        Spacer(modifier = Modifier.height(16.dp))
                         // --- 文件图标和名称 ---
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             val icon = when (fileInfo.type) {
@@ -207,14 +218,40 @@ fun FilePreviewDialog(
                             Spacer(modifier = Modifier.width(8.dp))
                             // 根据是否已下载，显示不同按钮
                             if (downloadedFileUri != null) {
-                                Button(onClick = { onOpenRequest(downloadedFileUri) }) {
-                                    Icon(Icons.AutoMirrored.Filled.Launch, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(stringResource(R.string.open_file))
+                                // --- 已下载完成 ---
+                                if (fileInfo.type == NCFileType.FILE) {
+                                    // 文件类型：显示“打开文件”
+                                    Button(onClick = { onOpenRequest(downloadedFileUri) }) {
+                                        Icon(
+                                            Icons.AutoMirrored.Filled.Launch,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(stringResource(R.string.open_file))
+                                    }
+                                } else {
+                                    // 图片类型：显示“保存到相册”
+                                    Button(onClick = { onSaveToGalleryRequest(downloadedFileUri) }) {
+                                        Icon(
+                                            Icons.Default.AddPhotoAlternate,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(stringResource(R.string.save_to_gallery))
+                                    }
                                 }
                             } else {
-                                Button(onClick = { onDownloadRequest(fileInfo) }, enabled = !isDownloading) {
-                                    Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Button(
+                                    onClick = { onDownloadRequest(fileInfo) },
+                                    enabled = !isDownloading
+                                ) {
+                                    Icon(
+                                        Icons.Default.Download,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(stringResource(R.string.download))
                                 }

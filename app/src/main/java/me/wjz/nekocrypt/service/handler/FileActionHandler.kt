@@ -1,8 +1,13 @@
 package me.wjz.nekocrypt.service.handler
 
+import android.content.ContentValues
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
+import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -18,6 +23,7 @@ import me.wjz.nekocrypt.util.CryptoDownloader
 import me.wjz.nekocrypt.util.NCFileProtocol
 import me.wjz.nekocrypt.util.NCWindowManager
 import java.io.File
+import java.io.IOException
 
 /**
  * 点击文件or图片按钮后的处理类，负责控制悬浮窗的生命周期，并负责下载，展示等逻辑
@@ -63,7 +69,10 @@ class FileActionHandler(private val service: NCAccessibilityService) {
                     startDownload(info)
                 },
                 onOpenRequest = { uri ->
-                    openFile(uri) // ✨ 回调现在直接使用 Uri
+                    openFile(uri,fileInfo) // ✨ 回调现在直接使用 Uri
+                },
+                onSaveToGalleryRequest = {uri ->
+                    saveImageToGallery(uri,fileInfo)
                 }
             )
         }
@@ -105,17 +114,14 @@ class FileActionHandler(private val service: NCAccessibilityService) {
                     Log.e(tag, "文件下载失败: $error")
                     showToast(service.getString(R.string.dialog_download_file_download_failed, error))
                 }
-
             } finally {
-                // ✨ 只有在下载失败时才重置进度
-                if (downloadedFileUri == null) {
-                    downloadProgress = null
-                }
+                downloadProgress = null
             }
         }
     }
 
     suspend fun showToast(string: String, duration: Int = Toast.LENGTH_SHORT) {
+        Log.d(tag, "showToast: $string")
         withContext(Dispatchers.Main) {
             Toast.makeText(service, string, duration).show()
         }
@@ -126,15 +132,25 @@ class FileActionHandler(private val service: NCAccessibilityService) {
         val baseDir = service.externalCacheDir ?: service.cacheDir
         val downloadDir = File(baseDir,"download").apply { mkdirs() }
         // 用唯一文件名，避免重名之类的
-        val fileName="${fileInfo.name}-${fileInfo.url.hashCode()}"
+        val fileName = fileInfo.name.let { name ->
+            val dot = name.lastIndexOf('.')
+            if (dot == -1) "${name}-${fileInfo.url.hashCode()}"
+            else "${name.substring(0, dot)}-${fileInfo.url.hashCode()}${name.substring(dot)}"
+        }
         return File(downloadDir,fileName)
     }
 
-    private fun openFile(uri: Uri){
+    private fun openFile(uri: Uri,fileInfo: NCFileProtocol){
         service.serviceScope.launch {
             try{
+                // 1. ✨ 从原始文件名中获取文件后缀
+                val extension = fileInfo.name.substringAfterLast('.', "")
+                // 2. ✨ 使用 MimeTypeMap 将后缀转换为标准的MIME类型
+                val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension.lowercase())
+                    ?: "*/*" // 如果找不到，使用通用类型
+
                 val intent = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(uri,service.contentResolver.getType(uri))
+                    setDataAndType(uri,mimeType)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
@@ -152,6 +168,60 @@ class FileActionHandler(private val service: NCAccessibilityService) {
         return getUriForFile(service,
             "${service.packageName}.provider",  // 这个地方的authority一定要和manifest里面配置的一样
             file)
+    }
+
+    private fun saveImageToGallery(uri:Uri, fileInfo: NCFileProtocol){
+        service.serviceScope.launch {
+            val success =withContext(Dispatchers.IO){
+                runCatching{
+                    val extension = fileInfo.name.substringAfterLast('.',"")
+                    val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+
+                    // ContentValues 就像一个“档案袋”，我们把新文件的所有信息（元数据）都放进去。
+                    val contentValues = ContentValues().apply {
+                        put(MediaStore.MediaColumns.DISPLAY_NAME,fileInfo.name)      // 文件在相册里显示的名字。
+                        put(MediaStore.MediaColumns.MIME_TYPE,mimeType)         // 文件的mime类型
+                        // 档案3 & 4 (仅限 Android 10 及以上)：
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            // 告诉系统要把这个文件放在公共的“相册”文件夹里。
+                            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+                            // 先把文件标记为“待定”状态。这意味着在文件内容被完全写入之前，
+                            // 其他应用（包括相册自己）是看不到这个文件的，可以防止出现损坏的半成品文件。
+                            put(MediaStore.MediaColumns.IS_PENDING, 1)
+                        }
+                    }
+
+                    // 用我们写好的信息，去申请一个URI
+                    val imageUri = service.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                        ?: throw IOException("无法在相册中创建新文件。")
+
+                    // 使用我们新的imageUri，写入文件
+                    service.contentResolver.openOutputStream(imageUri).use { outputStream ->
+                        service.contentResolver.openInputStream(uri).use { inputStream ->
+                            requireNotNull(inputStream) { "无法打开缓存文件的输入流" }
+                            requireNotNull(outputStream) { "无法打开相册文件的输出流" }
+                            inputStream.copyTo(outputStream)
+                        }
+                    }
+
+                    // (仅限 Android 10 及以上) 文件内容已经写完，我们再次更新档案，
+                    // 把“待定”状态改为0，正式通知系统：“文件已准备就绪，可以对外展示了！”
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        contentValues.clear()
+                        contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                        service.contentResolver.update(imageUri, contentValues, null, null)
+                    }
+
+                    //顺利完成，返回true
+                    true
+                }.onFailure{ e ->
+                    Log.e(tag, "保存图片到相册失败", e)
+                    false // 返回失败
+                }.getOrDefault(false) // 拿不到，默认就返回false
+            }
+            if (success) showToast(service.getString(R.string.image_saved_to_gallery_success))
+            else showToast(service.getString(R.string.image_saved_to_gallery_failed))
+        }
     }
 }
 

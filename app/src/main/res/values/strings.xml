@@ -12,6 +12,9 @@
     <string name="downloading">下载中</string>
     <string name="open_file">打开文件</string>
     <string name="cannot_open_file">打开文件失败</string>
+    <string name="save_to_gallery">保存到相册</string>
+    <string name="image_saved_to_gallery_success">成功保存到相册</string>
+    <string name="image_saved_to_gallery_failed">保存到相册失败</string>
 
 
     <!--    bottomBar的label-->
