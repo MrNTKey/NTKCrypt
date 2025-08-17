@@ -72,9 +72,13 @@ fun FilePreviewDialog(
     val coroutineScope = rememberCoroutineScope()
     var isVisible by remember { mutableStateOf(false) }
     val isDownloading = downloadProgress != null // ✨ 判断当前是否正在下载
-    // 出现动画
+
+    // 出现动画，并且判断如果是图片且未缓存，直接下载。
     LaunchedEffect(Unit) {
         isVisible = true
+        if(fileInfo.type == NCFileType.IMAGE && downloadedFile == null){
+            onDownloadRequest(fileInfo)
+        }
     }
 
     // 带动画的关闭逻辑
@@ -116,7 +120,7 @@ fun FilePreviewDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = stringResource(R.string.dialog_download_file_download_failed),
+                                text = stringResource(R.string.dialog_download_file_file_info),
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.primary
                             )

@@ -101,6 +101,6 @@
 
     <!--    图片文件下载、展示页面-->
     <string name="dialog_download_file_download_failed">文件下载失败：%s</string>
-
+    <string name="dialog_download_file_file_info">文件详情</string>
 
 </resources>
