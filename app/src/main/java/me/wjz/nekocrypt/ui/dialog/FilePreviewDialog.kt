@@ -56,6 +56,7 @@ import me.wjz.nekocrypt.ui.theme.NekoCryptTheme
 import me.wjz.nekocrypt.util.NCFileProtocol
 import me.wjz.nekocrypt.util.NCFileType
 import me.wjz.nekocrypt.util.formatFileSize
+import java.io.File
 
 /**
  * ✨ 全新改造的文件详情对话框 UI
@@ -64,6 +65,7 @@ import me.wjz.nekocrypt.util.formatFileSize
 fun FilePreviewDialog(
     fileInfo: NCFileProtocol,
     downloadProgress: Int?,
+    downloadedFile: File?,
     onDismissRequest: () -> Unit,
     onDownloadRequest: (NCFileProtocol) -> Unit
 ) {
