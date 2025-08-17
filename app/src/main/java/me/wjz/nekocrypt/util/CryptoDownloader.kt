@@ -29,51 +29,35 @@ object CryptoDownloader {
             runCatching {
                 val url = fileInfo.url
                 val encryptionKey = fileInfo.encryptionKey
-                val totalOriginalSize = fileInfo.size
 
-                // 1. ✨ 使用 OkHttp 创建一个网络请求
                 val request = Request.Builder().url(url).build()
 
-                // 2. ✨ 执行请求并获取响应
-                val response = client.newCall(request).execute()
+                // execute 会 suspend
+                client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) throw IOException("下载失败，响应码: ${response.code}")
 
-                // 3. ✨ 检查响应是否成功，并确保响应体不为空
-                if (!response.isSuccessful) throw IOException("下载失败，响应码: ${response.code}")
-                val body = response.body
+                    ProgressInputStream(response.body.byteStream()) { bytesRead ->
+                        // 这里处理下载回调
+                        val estimatedTotalRead = (bytesRead - CryptoUploader.SINGLE_PIXEL_GIF_BUFFER.size).coerceAtLeast(0)
+                        val progress = (estimatedTotalRead * 100 / fileInfo.size).toInt()
+                        onProgress(progress.coerceIn(0, 100))
 
-                // 使用我们优化后的 ProgressInputStream
-                val progressInputStream =
-                    ProgressInputStream(body.byteStream(), body.contentLength())
-
-                // 4. ✨ 在 use 块之前设置好进度监听
-                progressInputStream.progressListener = { bytesRead, _ ->
-                    // 进度基于原始文件大小计算，对用户更友好
-                    val estimatedTotalRead =
-                        (bytesRead - CryptoUploader.SINGLE_PIXEL_GIF_BUFFER.size).coerceAtLeast(0)
-                    val progress = (estimatedTotalRead * 100 / totalOriginalSize).toInt()
-                    onProgress(progress.coerceIn(0, 100))
-                }
-
-                // 5. ✨ 使用 try-finally 确保响应体总是被关闭
-                try {
-                    progressInputStream.use { networkStream ->
+                    }.use { networkStream ->
                         // 使用循环确保跳过完整的GIF头
                         val skipSize = CryptoUploader.SINGLE_PIXEL_GIF_BUFFER.size.toLong()
                         var skipped = 0L
                         while (skipped < skipSize) {
+                            // 这里用while循环是因为这个skip可能会跳过少于预期的字节数量。
                             val n = networkStream.skip(skipSize - skipped)
                             if (n <= 0) throw IOException("无法跳过GIF头部，文件可能已损坏。")
                             skipped += n
                         }
-
+                        // 流式解密 && 下载
                         targetFile.outputStream().use { outputStream ->
                             CryptoManager.decryptStream(networkStream, outputStream, encryptionKey)
                         }
                     }
-                } finally {
-                    response.close() // 确保响应资源被释放
                 }
-
                 targetFile
             }
         }
@@ -85,11 +69,10 @@ object CryptoDownloader {
  */
 class ProgressInputStream(
     inStream: InputStream,
-    private val totalBytes: Long, // 文件的总大小
+    private val onProgress: (Long) -> Unit,
 ) : FilterInputStream(inStream) {
 
     private var bytesRead: Long = 0 // 已经读取的字节数
-    var progressListener: ((bytesRead: Long, totalBytes: Long) -> Unit)? = null
 
     /**
      * 只重写这一个 read 方法就足够了。
@@ -101,7 +84,7 @@ class ProgressInputStream(
         if (read > 0) {
             bytesRead += read
             // 安全地调用监听器，报告当前的进度
-            progressListener?.invoke(bytesRead, totalBytes)
+            onProgress(bytesRead)
         }
         return read
     }
