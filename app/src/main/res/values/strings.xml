@@ -6,14 +6,21 @@
     <string name="cancel">关闭</string>
     <string name="send">发送</string>
     <string name="accept">确认</string>
+    <string name="file_size">文件大小</string>
+    <string name="url">URL</string>
+    <string name="download">下载</string>
+    <string name="downloading">下载中</string>
+    <string name="open_file">打开文件</string>
+    <string name="cannot_open_file">打开文件失败</string>
+
+
     <!--    bottomBar的label-->
     <string name="home">主页</string>
     <string name="crypto">加密</string>
     <string name="key">密钥</string>
     <string name="settings">设置</string>
-    <string name="file_size">文件大小</string>
-    <string name="url">URL</string>
-    <string name="download">下载</string>
+
+
 
     <!--    加解密模式-->
     <string name="mode_standard">标准模式</string>
