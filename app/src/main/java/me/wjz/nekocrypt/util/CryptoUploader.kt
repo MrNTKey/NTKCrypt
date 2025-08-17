@@ -184,6 +184,7 @@ object CryptoUploader {
                                                 url = fileUrl,
                                                 size = fileBytes.size.toLong(),
                                                 name =fileName,
+                                                encryptionKey =encryptionKey,
                                                 type = if(fileBytes.isImage()) NCFileType.IMAGE else NCFileType.FILE
                                             ), null
                                         )

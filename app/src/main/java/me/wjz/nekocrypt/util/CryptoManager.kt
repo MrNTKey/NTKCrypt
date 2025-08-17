@@ -1,5 +1,7 @@
 package me.wjz.nekocrypt.util
 
+import java.io.InputStream
+import java.io.OutputStream
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -272,5 +274,41 @@ object CryptoManager {
         return if (bytes[0].toInt() == 0) {
             bytes.copyOfRange(1, bytes.size)
         } else { bytes }
+    }
+
+    // -- 通过inputStream和outputStream来流式解密 --
+    /**
+     * 为 AES/GCM 实现的、真正安全的流式解密方法
+     * 它会从输入流中读取加密数据，解密后写入输出流。
+     * @param inputStream 包含加密数据的输入流 (必须是已经跳过GIF头的数据)
+     * @param outputStream 用于写入解密后数据的输出流
+     * @param key 用于解密的密钥
+     */
+    fun decryptStream(inputStream: InputStream, outputStream: OutputStream, key: String){
+        val iv = ByteArray(IV_LENGTH_BYTES)
+        require(inputStream.read(iv) == IV_LENGTH_BYTES) {
+            "输入流太短，无法读取IV。"
+        }
+
+        // 2. 初始化 Cipher
+        val cipher = Cipher.getInstance(TRANSFORMATION).apply {
+            val spec = GCMParameterSpec(TAG_LENGTH_BITS, iv)
+            init(Cipher.DECRYPT_MODE, deriveKeyFromString(key), spec)
+        }
+
+        // 3. 边读边解密边写
+        val buffer = ByteArray(8 * 1024)
+        while (true) {
+            val read = inputStream.read(buffer)
+            if (read == -1) break
+            cipher.update(buffer, 0, read)?.let { outputStream.write(it) }
+        }
+
+        // 4. 关键！在所有数据都处理完后，调用 doFinal 来验证“防伪标签”
+        try {
+            cipher.doFinal()?.let { outputStream.write(it) } // 验证通过后，就doFinal做检验，校验不过抛出错误。
+        } catch (e: AEADBadTagException) {
+            throw SecurityException("解密失败，数据可能被篡改或密钥错误", e)
+        }
     }
 }

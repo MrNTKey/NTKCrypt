@@ -14,7 +14,7 @@ import kotlinx.coroutines.withContext
 import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.service.NCAccessibilityService
 import me.wjz.nekocrypt.ui.dialog.FilePreviewDialog
-import me.wjz.nekocrypt.util.FileDownloader
+import me.wjz.nekocrypt.util.CryptoDownloader
 import me.wjz.nekocrypt.util.NCFileProtocol
 import me.wjz.nekocrypt.util.NCWindowManager
 import java.io.File
@@ -89,8 +89,8 @@ class FileActionHandler(private val service: NCAccessibilityService) {
             try{
                 downloadProgress = 0
                 // download会suspend。
-                val result = FileDownloader.download(
-                    url = fileInfo.url,
+                val result = CryptoDownloader.download(
+                    fileInfo = fileInfo,
                     targetFile = targetFile,
                     onProgress = { progress -> downloadProgress = progress }
                 )

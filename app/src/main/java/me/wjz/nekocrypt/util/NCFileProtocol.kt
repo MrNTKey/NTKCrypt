@@ -18,7 +18,8 @@ data class NCFileProtocol(
     val url: String,
     val size: Long,
     val name: String,
-    val type: NCFileType
+    val type: NCFileType,
+    val encryptionKey: String
 ) {
     companion object {
         /**
