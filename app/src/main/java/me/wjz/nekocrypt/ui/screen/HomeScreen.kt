@@ -8,8 +8,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -64,23 +66,33 @@ fun HomeScreen(modifier: Modifier = Modifier) {
     ) {
         // 使用带权重的 Column 来包裹原有的猫爪UI，使其占据大部分空间并保持居中
         Column(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).fillMaxWidth(),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            CatPawButton(
-                isEnabled = isAccessibilityEnabled,
-                statusText = if (isAccessibilityEnabled)
-                    stringResource(id = R.string.accessibility_service_enabled)
-                else
-                    stringResource(id = R.string.accessibility_service_disabled),
-                onClick = { openAccessibilitySettings(context) }
-            )
+            // ✨ 核心修正：用一个 Box 把猫爪按钮包裹起来，并给这个 Box 一个“方形模具”
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth() // 让 Box 尽可能宽
+                    .padding(48.dp) // 给猫爪留出一些呼吸空间
+                    .aspectRatio(1f), // ✨ 魔法！强制这个 Box 的高度等于它的宽度，永远保持正方形
+                contentAlignment = Alignment.Center
+            ) {
+                CatPawButton(
+                    modifier = Modifier.fillMaxSize(), // 让猫爪按钮填满这个完美的正方形
+                    isEnabled = isAccessibilityEnabled,
+                    statusText = if (isAccessibilityEnabled)
+                        stringResource(id = R.string.accessibility_service_enabled)
+                    else
+                        stringResource(id = R.string.accessibility_service_disabled),
+                    onClick = { openAccessibilitySettings(context) }
+                )
+            }
         }
 
         // 在底部添加我们的设置卡片
 
-        // ✨ 关键改动：将加密相关的设置项全部放进一个 Card 里
+        // 加密选项
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -129,6 +141,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
             }
         }
 
+        // 解密选项
         Card(
             modifier = Modifier
                 .fillMaxWidth()

@@ -220,9 +220,13 @@ fun SegmentedButtonSetting(
 ) {
     var currentSelection by rememberDataStoreState(settingKey, defaultOptionKey)
 
-    Column(modifier = modifier.padding(start = 8.dp, end = 8.dp)) {
+    Column(
+        modifier = modifier.padding(start = 8.dp, end = 8.dp),
+        verticalArrangement = Arrangement.spacedBy((-12).dp)
+    ) {
+        // 字体和旁边的按钮设置
         Row(
-            modifier = Modifier.padding(start = 8.dp, end = 8.dp), // 调整内边距以适应IconButton
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp), // 调整内边距以适应IconButton
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start   // 从左到右排列
         ) {
@@ -238,7 +242,7 @@ fun SegmentedButtonSetting(
         SingleChoiceSegmentedButtonRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             options.forEachIndexed { index, option ->
                 // ✨ 关键改动：根据位置动态计算形状！
