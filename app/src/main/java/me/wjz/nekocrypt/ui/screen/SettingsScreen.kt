@@ -123,8 +123,8 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             )
         }
         item {
-            SliderSettingItem(  //  控制拉起图片&文件发送窗口的时间间隔。
-                key = SettingKeys.ENCRYPTION_LONG_PRESS_DELAY,
+            SliderSettingItem(  //  控制拉起附件发送悬浮窗的时间间隔。
+                key = SettingKeys.SHOW_ATTACHMENT_VIEW_DOUBLE_CLICK_THRESHOLD,
                 defaultValue = 250L,
                 icon = { Icon(Icons.Outlined.Timer, contentDescription = "Long Press Delay") },
                 title = stringResource(R.string.double_click_threshold),

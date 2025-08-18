@@ -91,8 +91,8 @@ class NCAccessibilityService : AccessibilityService() {
     }, initialValue = "#5066ccff")
 
     // 控制弹出图片&文件的弹窗触发用的双击时间间隔
-    val doubleClickThreshold: Long by serviceScope.observeAsState(flowProvider = {
-        dataStoreManager.getSettingFlow(SettingKeys.DOUBLE_CLICK_THRESHOLD, 250)
+    val showAttachmentViewDoubleClickThreshold: Long by serviceScope.observeAsState(flowProvider = {
+        dataStoreManager.getSettingFlow(SettingKeys.SHOW_ATTACHMENT_VIEW_DOUBLE_CLICK_THRESHOLD, 250)
     }, initialValue = 250)
 
     // 新增：系统级白名单

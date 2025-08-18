@@ -74,7 +74,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth() // 让 Box 尽可能宽
-                    .padding(48.dp) // 给猫爪留出一些呼吸空间
+                    .padding(52.dp) // 给猫爪留出一些呼吸空间
                     .aspectRatio(1f), // ✨ 魔法！强制这个 Box 的高度等于它的宽度，永远保持正方形
                 contentAlignment = Alignment.Center
             ) {

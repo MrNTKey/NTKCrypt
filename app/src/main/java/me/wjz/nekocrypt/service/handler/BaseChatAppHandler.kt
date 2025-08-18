@@ -606,7 +606,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             val currentTime = System.currentTimeMillis()
 
             // 2. 检查距离上次点击的时间，是否在我们的“双击”阈值之内
-            if (currentTime - lastInputClickTime < currentService.doubleClickThreshold) {
+            if (currentTime - lastInputClickTime < currentService.showAttachmentViewDoubleClickThreshold) {
                 Log.d(tag, "检测到输入框双击事件, 准备启动发送附件Activity")
                 showAttachmentDialog()
                 lastInputClickTime = 0L
