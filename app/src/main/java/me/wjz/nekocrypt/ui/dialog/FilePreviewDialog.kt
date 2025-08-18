@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Launch
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FilePresent
 import androidx.compose.material.icons.filled.Image
@@ -55,6 +57,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -72,6 +75,7 @@ fun FilePreviewDialog(
     fileInfo: NCFileProtocol,
     downloadProgress: Int?,
     downloadedFileUri: Uri?,
+    isImageSavedThisTime : Boolean,
     onDismissRequest: () -> Unit,
     onDownloadRequest: (NCFileProtocol) -> Unit,
     onOpenRequest: (Uri) -> Unit,
@@ -128,21 +132,12 @@ fun FilePreviewDialog(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            //只有文件类型才需要
-                            if (fileInfo.type == NCFileType.FILE)
-                                Text(
-                                    text = stringResource(R.string.dialog_download_file_file_info),
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-//                            IconButton(onClick = { dismissWithAnimation() }) {
-//                                Icon(
-//                                    Icons.Default.Close,
-//                                    contentDescription = "关闭",
-//                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-//                                )
-//                            }
+                            Text(
+                                text = if(fileInfo.type == NCFileType.FILE) stringResource(R.string.dialog_download_file_file_info) else fileInfo.name,
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -166,7 +161,7 @@ fun FilePreviewDialog(
                                         contentDescription = "image preview",
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clip(RoundedCornerShape(8.dp)),
+                                            .clip(RoundedCornerShape(4.dp)),
                                         contentScale = ContentScale.FillWidth
                                     )
                                 } else {
@@ -186,74 +181,73 @@ fun FilePreviewDialog(
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
-                        // --- 文件图标和名称 ---
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            val icon = when (fileInfo.type) {
-                                NCFileType.IMAGE -> Icons.Default.Image
-                                NCFileType.FILE -> Icons.Default.FilePresent
-                            }
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = "文件类型",
-                                tint = MaterialTheme.colorScheme.secondary
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text(
-                                text = fileInfo.name,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
 
                         // --- ✨ 智能操作按钮 ---
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.End
                         ) {
+                            // 关闭按钮
                             TextButton(onClick = { dismissWithAnimation() }, enabled = !isDownloading) {
                                 Text(stringResource(R.string.cancel))
                             }
                             Spacer(modifier = Modifier.width(8.dp))
-                            // 根据是否已下载，显示不同按钮
-                            if (downloadedFileUri != null) {
-                                // --- 已下载完成 ---
-                                if (fileInfo.type == NCFileType.FILE) {
-                                    // 文件类型：显示“打开文件”
-                                    Button(onClick = { onOpenRequest(downloadedFileUri) }) {
-                                        Icon(
-                                            Icons.AutoMirrored.Filled.Launch,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(stringResource(R.string.open_file))
+
+                            AnimatedContent(
+                                targetState = downloadedFileUri != null,
+                                transitionSpec = {
+                                    fadeIn(animationSpec = tween(200)) togetherWith
+                                            fadeOut(animationSpec = tween(200))
+                                },
+                                label = "ActionButtonAnimation"
+                            ) { isDownloaded ->
+                                if (isDownloaded) {
+                                    // --- 已下载完成 ---
+                                    if (fileInfo.type == NCFileType.FILE) {
+                                        // 文件类型：显示“打开文件”
+                                        Button(onClick = {
+                                            // ✨ 核心修正2：先调用打开逻辑，再触发带动画的关闭
+                                            onOpenRequest(downloadedFileUri!!)
+                                            dismissWithAnimation()
+                                        }) {
+                                            Icon(Icons.AutoMirrored.Filled.Launch, contentDescription = null, modifier = Modifier.size(18.dp))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(stringResource(R.string.open_file))
+                                        }
+                                    } else {
+                                        // 图片类型：显示带动画的“保存”或“已保存”按钮
+                                        Button(
+                                            onClick = { onSaveToGalleryRequest(downloadedFileUri!!) },
+                                            enabled = !isImageSavedThisTime
+                                        ) {
+                                            AnimatedContent(
+                                                targetState = isImageSavedThisTime,
+                                                transitionSpec = {
+                                                    fadeIn(tween(300)) togetherWith fadeOut(tween(300))
+                                                },
+                                                label = "SaveButtonAnimation"
+                                            ) { saved ->
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    if (saved) {
+                                                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text(stringResource(R.string.image_saved_to_gallery_saved))
+                                                    } else {
+                                                        Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, modifier = Modifier.size(18.dp))
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text(stringResource(R.string.save_to_gallery))
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 } else {
-                                    // 图片类型：显示“保存到相册”
-                                    Button(onClick = { onSaveToGalleryRequest(downloadedFileUri) }) {
-                                        Icon(
-                                            Icons.Default.AddPhotoAlternate,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp)
-                                        )
+                                    // --- 未下载 ---
+                                    Button(onClick = { onDownloadRequest(fileInfo) }, enabled = !isDownloading) {
+                                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text(stringResource(R.string.save_to_gallery))
+                                        Text(stringResource(R.string.download))
                                     }
-                                }
-                            } else {
-                                Button(
-                                    onClick = { onDownloadRequest(fileInfo) },
-                                    enabled = !isDownloading
-                                ) {
-                                    Icon(
-                                        Icons.Default.Download,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(stringResource(R.string.download))
                                 }
                             }
                         }
@@ -285,22 +279,27 @@ private fun InitialFileInfo(fileInfo: NCFileProtocol) {
         Icon(
             imageVector = icon,
             contentDescription = "文件类型",
-            modifier = Modifier.size(64.dp), // 变大了！
+            modifier = Modifier.size(96.dp), // 变大了！
             tint = MaterialTheme.colorScheme.primary
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+        // 文件名
         Text(
             text = fileInfo.name,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
+            fontSize = 24.sp,
+            color = MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+        // 文件大小
         Text(
             text = fileInfo.size.formatFileSize(),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 16.sp
         )
     }
 }

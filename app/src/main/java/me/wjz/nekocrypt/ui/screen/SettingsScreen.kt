@@ -82,6 +82,13 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             SettingsHeader(stringResource(R.string.crypto_ui_settings))
         }
         item {
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                thickness = DividerDefaults.Thickness,
+                color = DividerDefaults.color
+            )
+        }
+        item {
             SliderSettingItem( //   沉浸式下，密文位置更新间隔
                 key = SettingKeys.DECRYPTION_WINDOW_POSITION_UPDATE_DELAY,
                 defaultValue = 250L, // 默认 250

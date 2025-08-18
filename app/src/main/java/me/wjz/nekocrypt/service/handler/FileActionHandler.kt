@@ -33,6 +33,7 @@ class FileActionHandler(private val service: NCAccessibilityService) {
     private var dialogManager: NCWindowManager? = null
     private var downloadProgress by mutableStateOf<Int?>(null)
     private var downloadedFileUri by mutableStateOf<Uri?>(null)
+    private var isImageSavedThisTime by mutableStateOf(false)
 
     /**
      * 显示文件预览对话框
@@ -64,6 +65,7 @@ class FileActionHandler(private val service: NCAccessibilityService) {
                 fileInfo = fileInfo,
                 downloadProgress = downloadProgress, // ✨ 将进度状态传递给UI
                 downloadedFileUri = downloadedFileUri, // nullable
+                isImageSavedThisTime = isImageSavedThisTime, // 本次会话中是否把图片保存到了系统相册
                 onDismissRequest = { dismiss() },
                 onDownloadRequest = { info ->
                     startDownload(info)
@@ -72,7 +74,9 @@ class FileActionHandler(private val service: NCAccessibilityService) {
                     openFile(uri,fileInfo) // ✨ 回调现在直接使用 Uri
                 },
                 onSaveToGalleryRequest = {uri ->
-                    saveImageToGallery(uri,fileInfo)
+                    service.serviceScope.launch {
+                        isImageSavedThisTime = saveImageToGallery(uri, fileInfo)
+                    }
                 }
             )
         }
@@ -170,58 +174,62 @@ class FileActionHandler(private val service: NCAccessibilityService) {
             file)
     }
 
-    private fun saveImageToGallery(uri:Uri, fileInfo: NCFileProtocol){
-        service.serviceScope.launch {
-            val success =withContext(Dispatchers.IO){
-                runCatching{
-                    val extension = fileInfo.name.substringAfterLast('.',"")
-                    val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+    // 根据uri和文件名保存到系统相册，并返回操作结果。
+    private suspend fun saveImageToGallery(uri: Uri, fileInfo: NCFileProtocol): Boolean {
 
-                    // ContentValues 就像一个“档案袋”，我们把新文件的所有信息（元数据）都放进去。
-                    val contentValues = ContentValues().apply {
-                        put(MediaStore.MediaColumns.DISPLAY_NAME,fileInfo.name)      // 文件在相册里显示的名字。
-                        put(MediaStore.MediaColumns.MIME_TYPE,mimeType)         // 文件的mime类型
-                        // 档案3 & 4 (仅限 Android 10 及以上)：
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            // 告诉系统要把这个文件放在公共的“相册”文件夹里。
-                            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
-                            // 先把文件标记为“待定”状态。这意味着在文件内容被完全写入之前，
-                            // 其他应用（包括相册自己）是看不到这个文件的，可以防止出现损坏的半成品文件。
-                            put(MediaStore.MediaColumns.IS_PENDING, 1)
-                        }
-                    }
+        val success = withContext(Dispatchers.IO) {
+            runCatching {
+                val extension = fileInfo.name.substringAfterLast('.', "")
+                val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
 
-                    // 用我们写好的信息，去申请一个URI
-                    val imageUri = service.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-                        ?: throw IOException("无法在相册中创建新文件。")
-
-                    // 使用我们新的imageUri，写入文件
-                    service.contentResolver.openOutputStream(imageUri).use { outputStream ->
-                        service.contentResolver.openInputStream(uri).use { inputStream ->
-                            requireNotNull(inputStream) { "无法打开缓存文件的输入流" }
-                            requireNotNull(outputStream) { "无法打开相册文件的输出流" }
-                            inputStream.copyTo(outputStream)
-                        }
-                    }
-
-                    // (仅限 Android 10 及以上) 文件内容已经写完，我们再次更新档案，
-                    // 把“待定”状态改为0，正式通知系统：“文件已准备就绪，可以对外展示了！”
+                // ContentValues 就像一个“档案袋”，我们把新文件的所有信息（元数据）都放进去。
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, fileInfo.name)      // 文件在相册里显示的名字。
+                    put(MediaStore.MediaColumns.MIME_TYPE, mimeType)         // 文件的mime类型
+                    // 档案3 & 4 (仅限 Android 10 及以上)：
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        contentValues.clear()
-                        contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
-                        service.contentResolver.update(imageUri, contentValues, null, null)
+                        // 告诉系统要把这个文件放在公共的“相册”文件夹里。
+                        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+                        // 先把文件标记为“待定”状态。这意味着在文件内容被完全写入之前，
+                        // 其他应用（包括相册自己）是看不到这个文件的，可以防止出现损坏的半成品文件。
+                        put(MediaStore.MediaColumns.IS_PENDING, 1)
                     }
+                }
 
-                    //顺利完成，返回true
-                    true
-                }.onFailure{ e ->
-                    Log.e(tag, "保存图片到相册失败", e)
-                    false // 返回失败
-                }.getOrDefault(false) // 拿不到，默认就返回false
-            }
-            if (success) showToast(service.getString(R.string.image_saved_to_gallery_success))
-            else showToast(service.getString(R.string.image_saved_to_gallery_failed))
+                // 用我们写好的信息，去申请一个URI
+                val imageUri = service.contentResolver.insert(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    contentValues
+                )
+                    ?: throw IOException("无法在相册中创建新文件。")
+
+                // 使用我们新的imageUri，写入文件
+                service.contentResolver.openOutputStream(imageUri).use { outputStream ->
+                    service.contentResolver.openInputStream(uri).use { inputStream ->
+                        requireNotNull(inputStream) { "无法打开缓存文件的输入流" }
+                        requireNotNull(outputStream) { "无法打开相册文件的输出流" }
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+
+                // (仅限 Android 10 及以上) 文件内容已经写完，我们再次更新档案，
+                // 把“待定”状态改为0，正式通知系统：“文件已准备就绪，可以对外展示了！”
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    contentValues.clear()
+                    contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                    service.contentResolver.update(imageUri, contentValues, null, null)
+                }
+
+                //顺利完成，返回true
+                true
+            }.onFailure { e ->
+                Log.e(tag, "保存图片到相册失败", e)
+                false // 返回失败
+            }.getOrDefault(false) // 拿不到，默认就返回false
         }
+        if (success) showToast(service.getString(R.string.image_saved_to_gallery_success))
+        else showToast(service.getString(R.string.image_saved_to_gallery_failed))
+        return success
     }
 }
 

@@ -370,7 +370,7 @@ fun SliderSettingItem(
                     },
                     valueRange = valueRange.first.toFloat()..valueRange.last.toFloat(),
                     steps = ((valueRange.last - valueRange.first) / step - 1).toInt(), // 设置步数，让滑块可以吸附到整数值
-                    modifier = Modifier.height(30.dp).padding(top = 4.dp),
+                    modifier = Modifier.padding(top = 4.dp),
                 )
             }
         }
