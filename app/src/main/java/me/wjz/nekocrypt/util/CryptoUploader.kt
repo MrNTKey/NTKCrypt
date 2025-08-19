@@ -2,6 +2,7 @@ package me.wjz.nekocrypt.util
 
 import android.net.Uri
 import android.util.Base64
+import android.util.Log
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.json.Json
@@ -57,10 +58,12 @@ object CryptoUploader {
     @OptIn(ExperimentalCoroutinesApi::class)
     suspend fun upload(
         uri: Uri,
-        fileName: String? = System.currentTimeMillis().toString(),
+        fileName: String,
         encryptionKey: String,
         onProcess: (progress: Int) -> Unit,
-    ): String {
+    ): NCFileProtocol {
+        Log.d(NekoCryptApp.TAG, "准备上传文件: $uri，文件名：$fileName，大小${getFileSize(uri)}")
+
         val inputStream = NekoCryptApp.instance.contentResolver.openInputStream(uri)
             ?: throw IOException("Failed to open input stream from URI")
 
@@ -102,18 +105,47 @@ object CryptoUploader {
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    response.use { res ->
-                        // ✨ 关键修复：严格的哨兵逻辑
-                        val bodyString = res.body.string()
-                        if (res.isSuccessful && bodyString.isNotBlank()) {
-                            // 只有成功且响应体不为空，才算真正的成功
-                            continuation.resume(bodyString, null)
-                        } else if (!res.isSuccessful) {
-                            // 如果网络请求本身就失败了
-                            continuation.resumeWithException(IOException("Upload failed with code: ${res.code} and body: $bodyString"))
-                        } else {
-                            // 如果成功了但响应体是空的
-                            continuation.resumeWithException(IOException("Server returned an empty or null response body."))
+                    if (continuation.isActive) {
+                        response.use { res ->
+                            val bodyString = res.body.string()
+                            if (res.isSuccessful && bodyString.isNotBlank()) {
+                                try {
+                                    // ✨ 1. 将字符串转换为JSON对象
+                                    val jsonObject = Json.parseToJsonElement(bodyString).jsonObject
+
+                                    // ✨ 2. 从JSON对象中提取"url"字段的值
+                                    val fileUrl = jsonObject["url"]?.jsonPrimitive?.content
+
+                                    // ✨ 3. [可选，但推荐] 检查一下URL是不是空的
+                                    if (fileUrl?.isNotBlank() == true) {
+                                        // 拿到URL后，就可以封装成对象恢复协程了
+                                        continuation.resume(
+                                            NCFileProtocol(
+                                                url = fileUrl,
+                                                size = getFileSize(uri),
+                                                name =fileName,
+                                                encryptionKey =encryptionKey,
+                                                type = if(isFileImage(uri)) NCFileType.IMAGE else NCFileType.FILE
+                                            ), null
+                                        )
+                                    } else {
+                                        continuation.resumeWithException(IOException("服务器返回的JSON中url为空。"))
+                                    }
+
+                                } catch (e: Exception) {
+                                    // 如果bodyString不是一个有效的JSON，或者没有"url"字段，就会在这里捕获到异常
+                                    continuation.resumeWithException(
+                                        IOException(
+                                            "解析服务器响应JSON失败。",
+                                            e
+                                        )
+                                    )
+                                }
+                            } else {
+                                continuation.resumeWithException(
+                                    IOException("上传失败，响应码: ${res.code}，响应体: $response")
+                                )
+                            }
                         }
                     }
                 }

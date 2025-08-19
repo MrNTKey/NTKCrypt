@@ -84,7 +84,7 @@ class AttachmentPickerActivity : ComponentActivity() {
                         // ✨ 关键修复：在关闭Activity前增加一个微小的延迟
                         // 这给了系统足够的时间来处理持久化权限的授予，
                         // 防止在Service尝试访问Uri之前，权限就因Activity销毁而失效。
-                        delay(200)
+                        delay(5000)
                         finish()
                     }
                 }

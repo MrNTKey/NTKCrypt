@@ -640,11 +640,11 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     private fun showAttachmentDialog() {
         // 每次创建的时候就重置attachmentState
         resetAttachmentState()
-
+        val currentService = service ?: return
         if (sendAttachmentDialogManager != null) return
 
         sendAttachmentDialogManager = NCWindowManager(
-            context = service!!,
+            context = currentService,
             onDismissRequest = { sendAttachmentDialogManager = null },
             anchorRect = null
         ) {
@@ -745,6 +745,22 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                         }
                     },
                 )
+
+//                val result : NCFileProtocol = CryptoUploader.upload(
+//                    uri = uri,
+//                    encryptionKey = currentService.currentKey,
+//                    fileName = getFileName(uri),
+//                    onProcess = { progressInt ->
+//                        // 将 0-100 的 Int 进度转换为 0.0-1.0 的 Float
+//                        val progressFloat = progressInt / 100.0f
+//                        // 在主线程更新UI
+//                        launch(Dispatchers.Main) {
+//                            updateAttachmentState { currentState ->
+//                                currentState.copy(progress = progressFloat)
+//                            }
+//                        }
+//                    },
+//                )
 
                 // 4. 上传成功，更新UI
                 updateAttachmentState { currentState ->
