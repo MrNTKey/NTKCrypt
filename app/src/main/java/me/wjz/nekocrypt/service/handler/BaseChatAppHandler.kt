@@ -124,7 +124,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 }
                 // 沉浸模式：当窗口内容变化时，主动扫描并解密
                 CryptoMode.IMMERSIVE.key -> {
-                    if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
+                    if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED ||
+                        event.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
                         //带防抖处理
                         immersiveDecryptionJob?.cancel()
                         // 启动一个新的扫描任务

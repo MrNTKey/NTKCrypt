@@ -95,13 +95,6 @@ class NCAccessibilityService : AccessibilityService() {
         dataStoreManager.getSettingFlow(SettingKeys.SHOW_ATTACHMENT_VIEW_DOUBLE_CLICK_THRESHOLD, 250)
     }, initialValue = 250)
 
-    // 新增：系统级白名单
-    private val SYSTEM_PREFIXES = setOf(
-        "com.android.",
-        "android.",
-        "com.google.android."
-    )
-
     // —————————————————————————— override ——————————————————————————
 
     // handler工厂方法
