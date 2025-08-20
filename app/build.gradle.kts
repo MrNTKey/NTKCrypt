@@ -13,8 +13,8 @@ android {
         applicationId = "me.wjz.nekocrypt"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5     // 唯一版本识别码，每次打包记得+1！！
-        versionName = "0.2.1-Beta"
+        versionCode = 6     // 唯一版本识别码，每次打包记得+1！！
+        versionName = "0.2.2-Beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
