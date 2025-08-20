@@ -161,7 +161,7 @@ fun FilePreviewDialog(
                                         contentDescription = "image preview",
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clip(RoundedCornerShape(4.dp)),
+                                            .clip(RoundedCornerShape(2.dp)),
                                         contentScale = ContentScale.FillWidth
                                     )
                                 } else {

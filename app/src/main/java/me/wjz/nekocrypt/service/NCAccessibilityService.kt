@@ -159,10 +159,10 @@ class NCAccessibilityService : AccessibilityService() {
         }
 
         // debug逻辑，会变卡
-//        if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {//点击了屏幕
-//            Log.d(tag, "检测到点击事件，开始调试节点...")
-//            debugNodeTree(event.source)
-//        }
+        if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {//点击了屏幕
+            Log.d(tag, "检测到点击事件，开始调试节点...")
+            debugNodeTree(event.source)
+        }
 
         // 打印事件名
 //        if (event.packageName == PACKAGE_NAME_QQ) {
@@ -190,7 +190,7 @@ class NCAccessibilityService : AccessibilityService() {
         // 1. 向上查找列表容器
         var listContainerNode: AccessibilityNodeInfo? = null
         var currentNode: AccessibilityNodeInfo? = sourceNode
-        for (i in 1..15) { // 增加查找深度，确保能爬到顶
+        for (i in 1..30) { // 增加查找深度，确保能爬到顶
             val className = currentNode?.className?.toString() ?: ""
             // 我们要找的就是这个能滚动的列表！
             if (className.contains("RecyclerView") || className.contains("ListView")) {
@@ -202,7 +202,10 @@ class NCAccessibilityService : AccessibilityService() {
                 break
             }
             currentNode = currentNode?.parent
-            if (currentNode == null) break // 爬到顶了就停
+            if (currentNode == null) {
+                Log.d(tag,"已找到最祖先根节点，结束循环")
+                break
+            } // 爬到顶了就停
         }
 
         // 2. 如果成功找到了列表容器，就遍历它下面的所有文本
@@ -230,7 +233,6 @@ class NCAccessibilityService : AccessibilityService() {
     private fun printAllTextFromNode(node: AccessibilityNodeInfo, depth: Int) {
         // 根据深度创建缩进，让日志的层级关系一目了然
         val indent = "  ".repeat(depth)
-
         // 1. 检查当前节点本身是否有文本，如果有就打印出来
         val text = node.text
         if (!text.isNullOrEmpty()) {
@@ -251,11 +253,7 @@ class NCAccessibilityService : AccessibilityService() {
     private fun createKeepAliveOverlay() {
         if (keepAliveOverlay != null) return
         keepAliveOverlay = View(this)
-        val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        } else {
-            WindowManager.LayoutParams.TYPE_PHONE
-        }
+        val layoutFlag = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
         val params = WindowManager.LayoutParams(
             0, 0, 0, 0, layoutFlag,
             WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
