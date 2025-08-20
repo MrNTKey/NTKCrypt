@@ -509,21 +509,9 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         // ✨ 2. [核心优化] 使用“快速失败，优雅降级”策略来查找输入框
         if (!isNodeValid(cachedInputNode)) {
             val root = currentService.rootInActiveWindow ?: return
-            // a. 先用最快的、通用的方法尝试查找
-            var foundNode = findNodeById(root, inputId)
-            // b. 检查找到的节点是否是我们想要的EditText
-            if (foundNode?.className?.toString()?.contains("EditText") != true) {
-                // 如果不是，说明可能找到了“伪装者”（比如微信的FrameLayout）
-                // 启动“B计划”，使用更精确的方法作为兜底
-                Log.w(tag, "快速查找找到了一个非EditText节点，启动精确查找作为兜底...")
-                foundNode = findEditTextNodeById(root, inputId)
-            }
-            cachedInputNode = foundNode
+            cachedInputNode = findNodeById(root, inputId)
         }
-        val inputNode = cachedInputNode ?: run {
-            Log.e(tag, "加密失败：未能精确找到EditText输入框！")
-            return
-        }
+        val inputNode = cachedInputNode ?: return
 
         // 3. 执行核心加密逻辑
         val originalText = inputNode.text?.toString()
@@ -561,8 +549,20 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     protected fun findNodeById(
         rootNode: AccessibilityNodeInfo,
         viewId: String,
+        className:String? = null
     ): AccessibilityNodeInfo? {
-        return rootNode.findAccessibilityNodeInfosByViewId(viewId).firstOrNull()
+        // 1. 先根据ID找到所有候选者
+        val candidateNodes = rootNode.findAccessibilityNodeInfosByViewId(viewId)
+        if (candidateNodes.isNullOrEmpty()) return null
+
+        // 2. 如果调用者没有提供className，就直接返回第一个结果（旧的行为）
+        if (className == null) {
+            return candidateNodes.firstOrNull()
+        }
+        // 3. 如果提供了className，就在候选者中进一步筛选
+        return candidateNodes.find {
+            it.className?.toString()?.contains(className) == true
+        }
     }
 
     /**
