@@ -19,5 +19,4 @@ class QQHandler : BaseChatAppHandler() {
         get() = Constant.ID_QQ_MESSAGE_TEXT
     override val messageListClassName: String
         get() = Constant.CLASS_NAME_QQ_RECYCLER_VIEW
-
 }

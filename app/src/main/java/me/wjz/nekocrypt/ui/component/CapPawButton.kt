@@ -1,5 +1,6 @@
 package me.wjz.nekocrypt.ui.component
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
@@ -89,6 +90,7 @@ private object CatPawDefaults {
  * ✨ 响应式猫爪按钮
  * 它会根据父组件提供的空间，自动调整自身大小和内部所有元素的比例。
  */
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun CatPawButton(
     isEnabled: Boolean,

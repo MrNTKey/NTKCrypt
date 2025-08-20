@@ -13,6 +13,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import me.wjz.nekocrypt.Constant
 import me.wjz.nekocrypt.Constant.PACKAGE_NAME_QQ
 import me.wjz.nekocrypt.CryptoMode
@@ -21,6 +25,7 @@ import me.wjz.nekocrypt.SettingKeys
 import me.wjz.nekocrypt.hook.observeAsState
 import me.wjz.nekocrypt.service.handler.ChatAppHandler
 import me.wjz.nekocrypt.service.handler.QQHandler
+import me.wjz.nekocrypt.service.handler.WeChatHandler
 import me.wjz.nekocrypt.util.isSystemApp
 
 class NCAccessibilityService : AccessibilityService() {
@@ -99,7 +104,8 @@ class NCAccessibilityService : AccessibilityService() {
 
     // handler工厂方法
     private val handlerFactory: Map<String, () -> ChatAppHandler> = mapOf(
-        PACKAGE_NAME_QQ to { QQHandler() }
+        PACKAGE_NAME_QQ to { QQHandler() },
+        WeChatHandler.PACKAGE_NAME to { WeChatHandler()}
     )
     private var currentHandler: ChatAppHandler? = null
 
@@ -107,6 +113,7 @@ class NCAccessibilityService : AccessibilityService() {
         super.onServiceConnected()
         Log.d(tag, "无障碍服务已连接！")
         createKeepAliveOverlay()
+        // startPeriodicScreenScan()// 做debug扫描
     }
 
     // ✨ 新增：重写 onDestroy 方法，这是服务生命周期结束时最后的清理机会
@@ -126,6 +133,15 @@ class NCAccessibilityService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null || event.packageName == null) return
+
+        // debug逻辑，会变卡
+//        if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED
+//            || event.eventType == AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED
+//            || event.eventType == AccessibilityEvent.TYPE_TOUCH_INTERACTION_START
+//        ) {//点击了屏幕
+//            Log.d(tag, "检测到点击事件，开始调试节点...")
+//            debugNodeTree(event.source)
+//        }
 
         val eventPackage = event.packageName.toString() // 事件来自的包名
 
@@ -158,12 +174,6 @@ class NCAccessibilityService : AccessibilityService() {
             // 否则，即使收到了其他包的事件，但只要活跃窗口没变，就保持处理器不变，忽略这些“噪音”事件。
         }
 
-        // debug逻辑，会变卡
-        if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {//点击了屏幕
-            Log.d(tag, "检测到点击事件，开始调试节点...")
-            debugNodeTree(event.source)
-        }
-
         // 打印事件名
 //        if (event.packageName == PACKAGE_NAME_QQ) {
 //            Log.d(
@@ -185,6 +195,7 @@ class NCAccessibilityService : AccessibilityService() {
             Log.d(tag, "===== DEBUG NODE: 节点为空 =====")
             return
         }
+        printNodeDetails(sourceNode,0)
         Log.d(tag, "===== Neko 节点调试器 (列表全扫描) =====")
 
         // 1. 向上查找列表容器
@@ -247,6 +258,42 @@ class NCAccessibilityService : AccessibilityService() {
                 printAllTextFromNode(child, depth + 1)
             }
         }
+    }
+
+    private fun printNodeDetails(node: AccessibilityNodeInfo?, depth: Int) {
+        val indent = "  ".repeat(depth)
+        if (node == null) {
+            Log.d(tag, "$indent[节点] -> null")
+            return
+        }
+        val text = node.text?.toString()?.take(50)
+        val desc = node.contentDescription?.toString()?.take(50)
+
+        Log.d(tag, "$indent[文本] -> '$text'")
+        Log.d(tag, "$indent[描述] -> '$desc'")
+        Log.d(tag, "$indent[类名] -> ${node.className}")
+        Log.d(tag, "$indent[ID]   -> ${node.viewIdResourceName}")
+        Log.d(tag, "$indent[子节点数] -> ${node.childCount}")
+        Log.d(tag, "$indent[父节点] -> ${node.parent?.className}")
+        Log.d(tag, "$indent[属性] -> [可点击:${node.isClickable}, 可滚动:${node.isScrollable}, 可编辑:${node.isEditable}]")
+    }
+
+    private fun startPeriodicScreenScan() {
+        serviceScope.launch {
+            // 使用 while(isActive) 来创建一个可以在协程取消时安全退出的循环
+            while (isActive) {
+                Log.d(tag, "================ 周期性屏幕扫描 START ================")
+                // 切换到后台线程执行耗时的节点遍历，避免阻塞主线程
+                withContext(Dispatchers.Default) {
+                    // 复用你已经写好的强大的debug方法
+                    debugNodeTree(rootInActiveWindow)
+                }
+                Log.d(tag, "================ 周期性屏幕扫描 END =================")
+                // 等待1秒，然后进行下一次扫描
+                delay(1000)
+            }
+        }
+        Log.d(tag, "✅ 周期性屏幕扫描任务已启动。")
     }
 
 
