@@ -472,7 +472,10 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 delay(1500)
                 val rect = Rect()
                 cachedSendBtnNode?.getBoundsInScreen(rect)
-                overlayWindowManager?.updateViewLayout(overlayView, getOverlayLayoutParams(rect))
+                // overlayView存在才可以这么做
+                overlayView?.let {
+                    overlayWindowManager?.updateViewLayout(overlayView, getOverlayLayoutParams(rect))
+                }
                 Log.d(tag,"悬浮窗位置修正，修正后位置：$rect")
             } else {
                 overlayWindowManager?.updateViewLayout(overlayView, params)
@@ -503,12 +506,24 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         }
         val sendBtnNode = cachedSendBtnNode ?: return
 
-        // 2. 获取输入框节点 (逻辑同上)
+        // ✨ 2. [核心优化] 使用“快速失败，优雅降级”策略来查找输入框
         if (!isNodeValid(cachedInputNode)) {
             val root = currentService.rootInActiveWindow ?: return
-            cachedInputNode = findNodeById(root, inputId)
+            // a. 先用最快的、通用的方法尝试查找
+            var foundNode = findNodeById(root, inputId)
+            // b. 检查找到的节点是否是我们想要的EditText
+            if (foundNode?.className?.toString()?.contains("EditText") != true) {
+                // 如果不是，说明可能找到了“伪装者”（比如微信的FrameLayout）
+                // 启动“B计划”，使用更精确的方法作为兜底
+                Log.w(tag, "快速查找找到了一个非EditText节点，启动精确查找作为兜底...")
+                foundNode = findEditTextNodeById(root, inputId)
+            }
+            cachedInputNode = foundNode
         }
-        val inputNode = cachedInputNode ?: return
+        val inputNode = cachedInputNode ?: run {
+            Log.e(tag, "加密失败：未能精确找到EditText输入框！")
+            return
+        }
 
         // 3. 执行核心加密逻辑
         val originalText = inputNode.text?.toString()
@@ -794,6 +809,20 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                     }
                 }
             }
+        }
+    }
+
+    protected fun findEditTextNodeById(
+        rootNode: AccessibilityNodeInfo,
+        viewId: String,
+    ): AccessibilityNodeInfo? {
+        // 1. 像以前一样，根据ID找到所有挂着这个“门牌号”的房间
+        val candidateNodes = rootNode.findAccessibilityNodeInfosByViewId(viewId)
+        if (candidateNodes.isNullOrEmpty()) return null
+
+        // 2. 戴上“透视眼镜”！遍历所有候选者，找到那个类名包含"EditText"的真身
+        return candidateNodes.find {
+            it.className?.toString()?.contains("EditText") == true
         }
     }
 
