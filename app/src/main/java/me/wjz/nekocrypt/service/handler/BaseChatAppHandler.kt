@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import me.wjz.nekocrypt.Constant
 import me.wjz.nekocrypt.CryptoMode
 import me.wjz.nekocrypt.R
 import me.wjz.nekocrypt.service.NCAccessibilityService
@@ -498,43 +499,18 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     // 自动加密并发送消息
     protected fun doEncryptAndClick() {
         val currentService = service ?: return
+        // ✨ 使用一个单独的协程来准备加密文本，避免阻塞
+        // 1. 查找输入框以获取原始文本
+        val root = currentService.rootInActiveWindow ?: return
+        val inputNode = findNodeById(root, inputId, Constant.VIEW_ID_INPUT)
+        val originalText = inputNode?.text?.toString()
 
-        // 1. 获取发送按钮节点 (优先从缓存，不行再找)
-        if (!isNodeValid(cachedSendBtnNode)) {
-            val root = currentService.rootInActiveWindow ?: return
-            cachedSendBtnNode = findNodeById(root, sendBtnId)
-        }
-        val sendBtnNode = cachedSendBtnNode ?: return
+        // 2. 加密文本
+        val encryptedText =
+            CryptoManager.encrypt(originalText ?: "喵~", currentService.currentKey).appendNekoTalk()
 
-        // ✨ 2. [核心优化] 使用“快速失败，优雅降级”策略来查找输入框
-        if (!isNodeValid(cachedInputNode)) {
-            val root = currentService.rootInActiveWindow ?: return
-            cachedInputNode = findNodeById(root, inputId)
-        }
-        val inputNode = cachedInputNode ?: return
-
-        // 3. 执行核心加密逻辑
-        val originalText = inputNode.text?.toString()
-        if (originalText.isNullOrEmpty()) {
-            // 输入框内容为空，直接发送。
-            sendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-        } else {
-            val encryptedText =
-                CryptoManager.encrypt(originalText, currentService.currentKey).appendNekoTalk()
-            val isSetText = performSetText(inputNode, encryptedText)
-
-            if (isSetText)
-                currentService.serviceScope.launch {
-                    delay(50)
-                    sendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                }
-            else {
-                // 设置密文失败了，弹出toast通知用户
-                service?.serviceScope?.launch(Dispatchers.Main) {
-                    showToast(service!!.getString(R.string.set_text_failed, encryptedText.length))
-                }
-            }
-        }
+        // 3. 调用核心发送函数
+        setTextAndSend(encryptedText)
     }
 
     // 普通点击的发送逻辑 (用于标准模式的短按)
@@ -667,7 +643,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 onDismissRequest = { sendAttachmentDialogManager?.dismiss() },
                 onSendRequest = { url ->
                     // 发送成功后，也关闭对话框
-                    onSendRequest(url)
+                    Log.d(tag, "准备发送URL: $url")
+                    setTextAndSend(url)
                     sendAttachmentDialogManager?.dismiss()
                 },
                 attachmentState = attachmentState
@@ -677,26 +654,56 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     }
 
     /**
-     * ✨ [核心] 发送逻辑现在是一个独立的函数，等待被调用
+     * ✨ 核心的、可复用的“设置文本并发送”函数
+     * 它封装了查找节点、设置文本、轮询查找按钮并点击的完整健壮流程。
+     * @param textToSet 需要设置到输入框的最终文本。
      */
-    private fun onSendRequest(url: String) {
-        Log.d(tag, "准备发送URL: $url")
-        service?.serviceScope?.launch {
-            // 在执行操作前，总是重新获取最新的节点，因为之前的可能已失效
-            val latestInputNode = findNodeById(service!!.rootInActiveWindow, inputId)
-            val latestSendBtnNode = findNodeById(service!!.rootInActiveWindow, sendBtnId)
+    private fun setTextAndSend(textToSet: String) {
+        val currentService = service
+        if (currentService == null) {
+            Log.d(tag, "service为null！不执行发送！")
+            return
+        }
+        val root =currentService.rootInActiveWindow
+        if(root == null){
+            Log.d(tag, "root为null！不执行发送！")
+            return
+        }
+        currentService.serviceScope.launch {
+            // --- 更新缓存的输入框节点 ---
+            cachedInputNode = if (isNodeValid(cachedInputNode)) cachedInputNode else findNodeById(root, inputId, Constant.VIEW_ID_INPUT)
 
-            if (latestInputNode != null && latestSendBtnNode != null) {
-                val success = performSetText(latestInputNode, url)
-                if (success) {
-                    delay(50)
-                    latestSendBtnNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                } else {
-                    showToast(service!!.getString(R.string.set_text_failed, url.length))
+            if (cachedInputNode == null) {
+                Log.e(tag, "发送失败：未能精确找到EditText输入框！")
+                showToast("发送失败：找不到输入框")
+                return@launch
+            }
+
+            // --- 2. 设置文本 ---
+            performSetText(cachedInputNode!!, textToSet).let { success ->
+                if (!success) {
+                    showToast(currentService.getString(R.string.set_text_failed, textToSet.length))
+                    return@launch
                 }
+            }
+
+            // --- 更新缓存的发送按钮 ---
+            repeat(5) { attempt ->
+                cachedSendBtnNode = findNodeById(root, sendBtnId, Constant.VIEW_ID_BTN)
+                if (cachedSendBtnNode != null) {
+                    return@repeat
+                }
+                Log.d(tag, "第 ${attempt + 1} 次尝试查找发送按钮...")
+                delay(100)
+            }
+
+            // --- 4. 根据查找结果执行操作 ---
+            if (cachedSendBtnNode != null) {
+                Log.d(tag, "成功找到发送按钮，执行点击！")
+                cachedSendBtnNode!!.performAction(AccessibilityNodeInfo.ACTION_CLICK)
             } else {
-                Log.e(tag, "发送失败：未能找到输入框或发送按钮节点！")
-                showToast(service!!.getString(R.string.crypto_attachment_send_failed_node_not_found))
+                Log.e(tag, "发送失败：在设置文本后，依然未能找到发送按钮！")
+                showToast("发送失败：找不到发送按钮")
             }
         }
     }
@@ -812,22 +819,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         }
     }
 
-    protected fun findEditTextNodeById(
-        rootNode: AccessibilityNodeInfo,
-        viewId: String,
-    ): AccessibilityNodeInfo? {
-        // 1. 像以前一样，根据ID找到所有挂着这个“门牌号”的房间
-        val candidateNodes = rootNode.findAccessibilityNodeInfosByViewId(viewId)
-        if (candidateNodes.isNullOrEmpty()) return null
-
-        // 2. 戴上“透视眼镜”！遍历所有候选者，找到那个类名包含"EditText"的真身
-        return candidateNodes.find {
-            it.className?.toString()?.contains("EditText") == true
-        }
-    }
-
     /**
-     * ✨ [新增] 核心的“解密引擎”函数
+     * ✨ 核心的“解密引擎”函数
      * 它的职责单一，就是尝试解密一段文本。
      * @param textToDecrypt 可能包含密文的原始字符串。
      * @return 如果解密成功，返回明文字符串；否则返回null。

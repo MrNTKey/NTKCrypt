@@ -15,6 +15,10 @@ object Constant {
     const val ID_QQ_MESSAGE_TEXT="com.tencent.mobileqq:id/sbl"
     const val PACKAGE_NAME_QQ ="com.tencent.mobileqq"
     const val CLASS_NAME_QQ_RECYCLER_VIEW="RecyclerView"
+
+    // ---- 其他 ----
+    const val VIEW_ID_INPUT="EditText"
+    const val VIEW_ID_BTN = "Button"
 }
 
 object SettingKeys {
