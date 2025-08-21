@@ -48,6 +48,7 @@ import me.wjz.nekocrypt.util.formatFileSize
 import me.wjz.nekocrypt.util.getFileName
 import me.wjz.nekocrypt.util.getFileSize
 import me.wjz.nekocrypt.util.getImageAspectRatio
+import me.wjz.nekocrypt.util.isEmpty
 import me.wjz.nekocrypt.util.isFileImage
 import java.io.File
 import kotlin.system.measureTimeMillis
@@ -214,7 +215,12 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 cachedMessageListNode
             } else {
                 // ✨ 2. 缓存无效，则在整个窗口中查找一次列表容器，并存入缓存
-                findMessageListContainer(currentService.rootInActiveWindow)?.also {
+
+                // 先拿合法根节点
+                val root =if(currentService.rootInActiveWindow.isEmpty()) getActiveWindowRoot()
+                    else currentService.rootInActiveWindow
+
+                findMessageListContainer(root)?.also {
                     Log.d(tag, "找到了新的消息列表容器并已缓存！")
                     cachedMessageListNode = it
                 }
@@ -383,8 +389,11 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         }
         // 2. 缓存无效，才启动昂贵的“全楼大搜查”
         else {
-            val rootNode = service?.rootInActiveWindow ?: return
-            sendBtnNode = findNodeById(rootNode, sendBtnId)
+            val rootNode =if(service!!.rootInActiveWindow.isEmpty()) getActiveWindowRoot()
+            else service!!.rootInActiveWindow
+            Log.d(tag,"尝试添加or更新悬浮窗位置，当前根节点是否为空：${service!!.rootInActiveWindow.isEmpty()}")
+
+            sendBtnNode = findNodeById(rootNode!!, sendBtnId)
             // 搜索到了就更新缓存，为下一次做准备
             cachedSendBtnNode = sendBtnNode
         }
@@ -397,10 +406,12 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 createOrUpdateOverlayView(rect)
             } else {
                 // 节点虽然存在，但没有实际尺寸，也视为无效
+                Log.d(tag,"按钮虽存在但没有实际尺寸！")
                 removeOverlayView()
             }
         } else {
             // 如果最终还是没有有效节点，就清理
+            Log.d(tag,"未找到有效发送按钮节点！")
             removeOverlayView()
         }
     }
@@ -501,8 +512,10 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         val currentService = service ?: return
         // ✨ 使用一个单独的协程来准备加密文本，避免阻塞
         // 1. 查找输入框以获取原始文本
-        val root = currentService.rootInActiveWindow ?: return
-        val inputNode = findNodeById(root, inputId, Constant.VIEW_ID_INPUT)
+        val root =if(service!!.rootInActiveWindow.isEmpty()) getActiveWindowRoot()
+        else currentService.rootInActiveWindow
+
+        val inputNode = findNodeById(root!!, inputId, Constant.VIEW_ID_INPUT)
         val originalText = inputNode?.text?.toString()
 
         // 2. 加密文本
@@ -527,6 +540,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         viewId: String,
         className:String? = null
     ): AccessibilityNodeInfo? {
+
         // 1. 先根据ID找到所有候选者
         val candidateNodes = rootNode.findAccessibilityNodeInfosByViewId(viewId)
         if (candidateNodes.isNullOrEmpty()) return null
@@ -578,6 +592,35 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             return false
         }
     }
+
+    /**
+     * ✨ 获取当前活跃窗口的根节点
+     * 优先寻找那个既活跃又获得焦点的窗口，这通常是用户正在交互的主窗口。
+     * @return 活跃窗口的根节点，如果找不到则返回null。
+     */
+    private fun getActiveWindowRoot(): AccessibilityNodeInfo? {
+        //从service里面拿的rootInActiveWindow不一定是真的，微信在部分端上拿到的root属性全为null，得想办法解决。
+        val currentService = service ?: return null
+        val windows = currentService.windows
+        // 优先寻找既活跃又获得焦点的窗口
+        val activeFocusedWindow = windows.find { it.isActive && it.isFocused }
+        if (activeFocusedWindow?.root != null) {
+            Log.d(tag, "✅ 成功定位到活跃且获得焦点的窗口 (ID: ${activeFocusedWindow.id})")
+            return activeFocusedWindow.root
+        }
+
+        // 如果找不到，退而求其次，寻找第一个活跃的窗口
+        val activeWindow = windows.find { it.isActive }
+        if (activeWindow?.root != null) {
+            Log.w(tag, "⚠️ 未找到获得焦点的窗口，回退到第一个活跃窗口 (ID: ${activeWindow.id})")
+            return activeWindow.root
+        }
+
+        // 如果连活跃窗口都没有，就返回null
+        return null
+    }
+
+
 
     /**
      * ✨ 验证缓存节点有效性的“金标准”方法 ✨
@@ -664,7 +707,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             Log.d(tag, "service为null！不执行发送！")
             return
         }
-        val root =currentService.rootInActiveWindow
+        val root =if(service!!.rootInActiveWindow.isEmpty()) getActiveWindowRoot()
+        else currentService.rootInActiveWindow
         if(root == null){
             Log.d(tag, "root为null！不执行发送！")
             return

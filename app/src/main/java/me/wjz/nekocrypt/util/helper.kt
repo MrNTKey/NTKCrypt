@@ -3,6 +3,7 @@ package me.wjz.nekocrypt.util
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.view.accessibility.AccessibilityNodeInfo
 import androidx.compose.ui.graphics.Color
 import me.wjz.nekocrypt.NekoCryptApp
 import java.io.IOException
@@ -144,4 +145,11 @@ fun getImageAspectRatio(uri: Uri): Float? {
         print(e.stackTraceToString())
         null
     }
+}
+
+/**
+ * 判断节点是否为空，为空依据：无子节点｜无包名｜无viewIdResourceName
+  */
+fun AccessibilityNodeInfo.isEmpty(): Boolean {
+    return this.packageName == null || this.viewIdResourceName == null
 }

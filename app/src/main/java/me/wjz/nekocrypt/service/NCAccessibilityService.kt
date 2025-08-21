@@ -131,19 +131,16 @@ class NCAccessibilityService : AccessibilityService() {
     }
 
 
-    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event == null || event.packageName == null) return
+    override fun onAccessibilityEvent(event: AccessibilityEvent) {
 
         // debug逻辑，会变卡
 //        if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED
-//            || event.eventType == AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED
-//            || event.eventType == AccessibilityEvent.TYPE_TOUCH_INTERACTION_START
 //        ) {//点击了屏幕
 //            Log.d(tag, "检测到点击事件，开始调试节点...")
 //            debugNodeTree(event.source)
 //        }
 
-        val eventPackage = event.packageName.toString() // 事件来自的包名
+        val eventPackage = event.packageName?.toString() ?: "unknown" // 事件来自的包名
 
         // 情况一：事件来自我们支持的应用
         if (handlerFactory.containsKey(eventPackage)) {
@@ -277,25 +274,6 @@ class NCAccessibilityService : AccessibilityService() {
         Log.d(tag, "$indent[父节点] -> ${node.parent?.className}")
         Log.d(tag, "$indent[属性] -> [可点击:${node.isClickable}, 可滚动:${node.isScrollable}, 可编辑:${node.isEditable}]")
     }
-
-    private fun startPeriodicScreenScan() {
-        serviceScope.launch {
-            // 使用 while(isActive) 来创建一个可以在协程取消时安全退出的循环
-            while (isActive) {
-                Log.d(tag, "================ 周期性屏幕扫描 START ================")
-                // 切换到后台线程执行耗时的节点遍历，避免阻塞主线程
-                withContext(Dispatchers.Default) {
-                    // 复用你已经写好的强大的debug方法
-                    debugNodeTree(rootInActiveWindow)
-                }
-                Log.d(tag, "================ 周期性屏幕扫描 END =================")
-                // 等待1秒，然后进行下一次扫描
-                delay(1000)
-            }
-        }
-        Log.d(tag, "✅ 周期性屏幕扫描任务已启动。")
-    }
-
 
     private fun createKeepAliveOverlay() {
         if (keepAliveOverlay != null) return

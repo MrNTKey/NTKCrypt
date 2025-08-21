@@ -48,7 +48,6 @@ fun PermissionGuard(content: @Composable () -> Unit) {
                     )
                     activeDialog = null
                 }
-
             )
         }
     }

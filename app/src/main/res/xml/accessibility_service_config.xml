@@ -9,7 +9,6 @@
     android:canRequestTouchExplorationMode="true"
     android:canRetrieveWindowContent="true"
     android:isAccessibilityTool="true"
-    android:canTakeScreenshot="true"
     android:settingsActivity="me.wjz.nekocrypt.MainActivity"
     android:description="@string/accessibility_service_description"
     android:notificationTimeout="100"
