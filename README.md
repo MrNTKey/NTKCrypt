@@ -175,7 +175,7 @@ NekoCrypt 就此诞生。
 
 ## 下载链接
 
-#### ![点击高速下载v1.0.0](https://beisudianxueuser.oss-cn-beijing.aliyuncs.com/storage/user_avatar/ciallo/2025/08/21/e7bc0b3aeaac10b443111d85cb34fa96/NekoCrypt-v1.0.0-release.apk)
+#### [点击高速下载v1.0.0](https://beisudianxueuser.oss-cn-beijing.aliyuncs.com/storage/user_avatar/ciallo/2025/08/21/e7bc0b3aeaac10b443111d85cb34fa96/NekoCrypt-v1.0.0-release.apk)
 
 #### 右侧release内也可下载
 
