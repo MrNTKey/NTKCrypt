@@ -64,7 +64,9 @@
     - [目录](#目录)
         - [NekoCrypt 的传说](#nekocrypt-的传说)
         - [**使用教程**](#使用教程)
+        - [**下载链接**](#下载链接)
         - [支持软件](#支持软件)
+        - [交流群](#交流群)
         - [版权说明](#版权说明)
         - [鸣谢](#鸣谢)
         - [重要声明](#重要声明)
@@ -171,6 +173,12 @@ NekoCrypt 就此诞生。
 条件限制，目前只支持10M以内的图片、文件发送，将来会扩展。
 
 
+## 下载链接
+
+#### ![点击高速下载v1.0.0](https://beisudianxueuser.oss-cn-beijing.aliyuncs.com/storage/user_avatar/ciallo/2025/08/21/e7bc0b3aeaac10b443111d85cb34fa96/NekoCrypt-v1.0.0-release.apk)
+
+#### 右侧release内也可下载
+
 ## 支持软件
 <br>
 
@@ -180,6 +188,13 @@ NekoCrypt 就此诞生。
 | 微信   |     🚧    | 部分设备无效/未知原因      |
 | 更多   |         | 敬请期待     |
 
+<br>
+
+## 交流群
+
+<p align="center">
+    <img src="markdown/QQ群.jpg" alt="QQ群" style="width: 400px;">
+</p>
 <br>
 
 ## 版权说明
