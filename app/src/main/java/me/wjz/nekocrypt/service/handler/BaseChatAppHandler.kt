@@ -358,46 +358,49 @@ abstract class BaseChatAppHandler : ChatAppHandler {
      * 先检查缓存，再搜索
      */
     protected fun handleOverlayManagement() {
-        var sendBtnNode: AccessibilityNodeInfo?
+        runCatching {
+            var sendBtnNode: AccessibilityNodeInfo?
 
-        // 1. 优先信任缓存
-        if (isNodeValid(cachedSendBtnNode)) {
-            sendBtnNode = cachedSendBtnNode
-        }
-        // 2. 缓存无效，则进行查找
-        else {
-            val currentService = service ?: return
+            // 1. 优先信任缓存
+            if (isNodeValid(cachedSendBtnNode)) {
+                sendBtnNode = cachedSendBtnNode
+            }
+            // 2. 缓存无效，则进行查找
+            else {
+                val currentService = service ?: return
 
-            val rootNode = if(currentService.rootInActiveWindow.isEmpty())getActiveWindowRoot()
-                else currentService.rootInActiveWindow
+                val rootNode =
+                    if (currentService.rootInActiveWindow.isEmpty()) getActiveWindowRoot()
+                    else currentService.rootInActiveWindow
 
-            // ✨ 关键修复 2: 在使用前，进行严格的null检查
-            if (rootNode == null) {
-                Log.w(tag, "无法获取任何根节点，跳过本次悬浮窗更新。")
-                // 如果找不到根节点，一个安全的做法是移除可能残留的悬浮窗
-                removeOverlayView()
-                return // 直接退出函数，避免后续操作导致崩溃
+                // ✨ 关键修复 2: 在使用前，进行严格的null检查
+                if (rootNode == null) {
+                    Log.w(tag, "无法获取任何根节点，跳过本次悬浮窗更新。")
+                    // 如果找不到根节点，一个安全的做法是移除可能残留的悬浮窗
+                    removeOverlayView()
+                    return // 直接退出函数，避免后续操作导致崩溃
+                }
+
+                Log.d(tag, "尝试在根节点 ${rootNode.className} 中查找发送按钮...")
+                sendBtnNode = findNodeById(rootNode, sendBtnId)
+                cachedSendBtnNode = sendBtnNode
             }
 
-            Log.d(tag, "尝试在根节点 ${rootNode.className} 中查找发送按钮...")
-            sendBtnNode = findNodeById(rootNode, sendBtnId)
-            cachedSendBtnNode = sendBtnNode
-        }
-
-        // 3. 根据最终的节点状态来决定如何操作
-        if (sendBtnNode != null) {
-            val rect = Rect()
-            sendBtnNode.getBoundsInScreen(rect)
-            if (!rect.isEmpty) {
-                createOrUpdateOverlayView(rect)
+            // 3. 根据最终的节点状态来决定如何操作
+            if (sendBtnNode != null) {
+                val rect = Rect()
+                sendBtnNode.getBoundsInScreen(rect)
+                if (!rect.isEmpty) {
+                    createOrUpdateOverlayView(rect)
+                } else {
+                    Log.d(tag, "按钮虽存在但没有实际尺寸！")
+                    removeOverlayView()
+                }
             } else {
-                Log.d(tag, "按钮虽存在但没有实际尺寸！")
+                Log.d(tag, "未找到有效发送按钮节点！")
                 removeOverlayView()
             }
-        } else {
-            Log.d(tag, "未找到有效发送按钮节点！")
-            removeOverlayView()
-        }
+        }.onFailure { exception ->  Log.e(tag,"handleOverlayManagement错误。${exception.message}") }
     }
 
     /**
