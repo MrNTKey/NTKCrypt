@@ -117,14 +117,6 @@ NekoCrypt 就此诞生。
 开启后，返回主界面，看到猫爪变为深色就大功告成啦！
 
 <p align="center">
-    <img src="markdown/无障碍开关.png" alt="无障碍开关" style="width: 400px;">
-</p>
-
-<p align="center">
-    <img src="markdown/无障碍开关.png" alt="无障碍开关" style="width: 400px;">
-</p>
-
-<p align="center">
     <img src="markdown/成功开启.png" alt="成功开启" style="width: 400px;">
 </p>
 
