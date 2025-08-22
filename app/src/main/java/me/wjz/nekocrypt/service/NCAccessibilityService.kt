@@ -1,10 +1,7 @@
 package me.wjz.nekocrypt.service
 
 import android.accessibilityservice.AccessibilityService
-import android.graphics.PixelFormat
-import android.os.Build
 import android.util.Log
-import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
@@ -13,10 +10,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import me.wjz.nekocrypt.Constant
 import me.wjz.nekocrypt.Constant.PACKAGE_NAME_QQ
 import me.wjz.nekocrypt.CryptoMode
@@ -38,10 +31,6 @@ class NCAccessibilityService : AccessibilityService() {
     private val dataStoreManager by lazy {
         (application as NekoCryptApp).dataStoreManager
     }
-
-    // 保活窗口
-    private var keepAliveOverlay: View? = null
-    private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
 
     // ——————————————————————————设置选项——————————————————————————
 
@@ -112,7 +101,6 @@ class NCAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         Log.d(tag, "无障碍服务已连接！")
-        createKeepAliveOverlay()
         // startPeriodicScreenScan()// 做debug扫描
     }
 
@@ -273,38 +261,6 @@ class NCAccessibilityService : AccessibilityService() {
         Log.d(tag, "$indent[子节点数] -> ${node.childCount}")
         Log.d(tag, "$indent[父节点] -> ${node.parent?.className}")
         Log.d(tag, "$indent[属性] -> [可点击:${node.isClickable}, 可滚动:${node.isScrollable}, 可编辑:${node.isEditable}]")
-    }
-
-    private fun createKeepAliveOverlay() {
-        if (keepAliveOverlay != null) return
-        keepAliveOverlay = View(this)
-        val layoutFlag = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        val params = WindowManager.LayoutParams(
-            0, 0, 0, 0, layoutFlag,
-            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSPARENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-        }
-        try {
-            windowManager.addView(keepAliveOverlay, params)
-            Log.d(tag, "“保活”悬浮窗创建成功！")
-        } catch (e: Exception) {
-            Log.e(tag, "创建“保活”悬浮窗失败", e)
-        }
-    }
-
-    private fun removeKeepAliveOverlay() {
-        keepAliveOverlay?.let {
-            try {
-                windowManager.removeView(it)
-                Log.d(tag, "“保活”悬浮窗已移除。")
-            } catch (e: Exception) {
-                // 忽略窗口已经不存在等异常
-            } finally {
-                keepAliveOverlay = null
-            }
-        }
     }
 
 }

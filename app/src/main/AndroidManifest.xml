@@ -3,10 +3,12 @@
     xmlns:tools="http://schemas.android.com/tools">
     <!-- 申请“在其他应用上层显示”的权限 -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <!-- 安卓9.0 (API 28) 及以上版本需要此权限 -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <!-- 安卓13.0 (API 33) 及以上版本，前台服务要显示通知，还需要这个权限 -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- ✨ 1. 申请前台服务权限 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!--    申请特殊无障碍服务-->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <application
         android:name=".NekoCryptApp"
@@ -50,6 +52,12 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
         </service>
+        <!--        保活服务-->
+        <service
+            android:name=".service.KeepAliveService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"/>
         <!--配置File Provider-->
         <provider
             android:name="androidx.core.content.FileProvider"
