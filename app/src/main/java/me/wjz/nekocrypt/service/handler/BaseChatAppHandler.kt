@@ -358,21 +358,29 @@ abstract class BaseChatAppHandler : ChatAppHandler {
      * 先检查缓存，再搜索
      */
     protected fun handleOverlayManagement() {
-        // delay(50)
         var sendBtnNode: AccessibilityNodeInfo?
 
-        // 1. 优先信任缓存：用廉价的 refresh() 给缓存“体检”
+        // 1. 优先信任缓存
         if (isNodeValid(cachedSendBtnNode)) {
             sendBtnNode = cachedSendBtnNode
         }
-        // 2. 缓存无效，才启动昂贵的“全楼大搜查”
+        // 2. 缓存无效，则进行查找
         else {
-            val rootNode =if(service!!.rootInActiveWindow.isEmpty()) getActiveWindowRoot()
-            else service!!.rootInActiveWindow
-            Log.d(tag,"尝试添加or更新悬浮窗位置，当前根节点是否为空：${service!!.rootInActiveWindow.isEmpty()}")
+            val currentService = service ?: return
 
-            sendBtnNode = findNodeById(rootNode!!, sendBtnId)
-            // 搜索到了就更新缓存，为下一次做准备
+            val rootNode = if(currentService.rootInActiveWindow.isEmpty())getActiveWindowRoot()
+                else currentService.rootInActiveWindow
+
+            // ✨ 关键修复 2: 在使用前，进行严格的null检查
+            if (rootNode == null) {
+                Log.w(tag, "无法获取任何根节点，跳过本次悬浮窗更新。")
+                // 如果找不到根节点，一个安全的做法是移除可能残留的悬浮窗
+                removeOverlayView()
+                return // 直接退出函数，避免后续操作导致崩溃
+            }
+
+            Log.d(tag, "尝试在根节点 ${rootNode.className} 中查找发送按钮...")
+            sendBtnNode = findNodeById(rootNode, sendBtnId)
             cachedSendBtnNode = sendBtnNode
         }
 
@@ -383,13 +391,11 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             if (!rect.isEmpty) {
                 createOrUpdateOverlayView(rect)
             } else {
-                // 节点虽然存在，但没有实际尺寸，也视为无效
-                Log.d(tag,"按钮虽存在但没有实际尺寸！")
+                Log.d(tag, "按钮虽存在但没有实际尺寸！")
                 removeOverlayView()
             }
         } else {
-            // 如果最终还是没有有效节点，就清理
-            Log.d(tag,"未找到有效发送按钮节点！")
+            Log.d(tag, "未找到有效发送按钮节点！")
             removeOverlayView()
         }
     }
