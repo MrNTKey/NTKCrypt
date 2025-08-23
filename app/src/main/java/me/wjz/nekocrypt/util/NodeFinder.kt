@@ -4,326 +4,178 @@ import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import me.wjz.nekocrypt.NekoCryptApp
 
+private const val TAG = NekoCryptApp.TAG
+
 /**
- * ✨ 优雅的无障碍节点查找工具类
- * 提供多种灵活的节点查找策略，支持条件组合查找
- * 
- * @author 猫娘老师 🐱
+ * 检查节点是否仍然有效，这是操作缓存节点前的“金标准”。
+ * @param node 要检查的节点。
+ * @return 如果节点有效则返回 true，否则返回 false。
  */
-object NodeFinder {
-    private const val TAG = NekoCryptApp.TAG
+fun isNodeValid(node: AccessibilityNodeInfo?): Boolean {
+    return node?.refresh() ?: false
+}
 
-    /**
-     * ✨ 优雅的节点查找方法 - 支持多种查找条件的组合
-     * @param rootNode 根节点，查找的起点
-     * @param viewId 视图ID，可为null
-     * @param className 类名（支持部分匹配），可为null  
-     * @param text 节点文本内容，可为null
-     * @param contentDescription 内容描述，可为null
-     * @param predicate 自定义谓词条件，可为null
-     * @param findAll 是否查找所有匹配的节点，默认false（只返回第一个）
-     * @return 如果findAll=false，返回第一个匹配节点；如果findAll=true，返回所有匹配节点的列表
-     */
-    fun findNodeByConditions(
-        rootNode: AccessibilityNodeInfo,
-        viewId: String? = null,
-        className: String? = null,
-        text: String? = null,
-        contentDescription: String? = null,
-        predicate: ((AccessibilityNodeInfo) -> Boolean)? = null,
-        findAll: Boolean = false
-    ): Any? {
-        
-        return if (findAll) {
-            // 查找所有匹配的节点
-            findAllNodesByConditions(rootNode, viewId, className, text, contentDescription, predicate)
-        } else {
-            // 查找第一个匹配的节点
-            findSingleNodeByConditions(rootNode, viewId, className, text, contentDescription, predicate)
+/**
+ * ✨ [核心] 查找符合所有指定条件的第一个节点。
+ *
+ * @param rootNode 查找的起始节点。
+ * @param viewId 节点的资源ID (e.g., "com.tencent.mobileqq:id/input")。
+ * @param className 节点的类名 (e.g., "android.widget.EditText")，支持部分匹配。
+ * @param text 节点显示的文本，支持部分匹配。
+ * @param contentDescription 节点的内容描述，支持部分匹配。
+ * @param predicate 一个自定义的检查函数，返回 true 表示匹配。
+ * @return 返回第一个匹配的 AccessibilityNodeInfo，如果找不到则返回 null。
+ */
+fun findSingleNode(
+    rootNode: AccessibilityNodeInfo,
+    viewId: String? = null,
+    className: String? = null,
+    text: String? = null,
+    contentDescription: String? = null,
+    predicate: ((AccessibilityNodeInfo) -> Boolean)? = null
+): AccessibilityNodeInfo? {
+    // 策略1: 如果提供了viewId，以此为主要查找方式，因为最高效。
+    if (!viewId.isNullOrEmpty()) {
+        val candidates = rootNode.findAccessibilityNodeInfosByViewId(viewId)
+        // 在通过ID找到的候选中，进一步筛选出符合所有其他条件的第一个
+        return candidates.firstOrNull { node ->
+            matchesAllConditions(node, className, text, contentDescription, predicate)
         }
     }
 
-    /**
-     * 🎯 查找第一个匹配条件的节点
-     */
-    private fun findSingleNodeByConditions(
-        rootNode: AccessibilityNodeInfo,
-        viewId: String?,
-        className: String?,
-        text: String?,
-        contentDescription: String?,
-        predicate: ((AccessibilityNodeInfo) -> Boolean)?
-    ): AccessibilityNodeInfo? {
-        
-        // 🎯 策略1: 如果提供了viewId，优先精确查找
-        viewId?.takeIf { it.isNotEmpty() }?.let { id ->
-            val candidates = rootNode.findAccessibilityNodeInfosByViewId(id)
-            if (!candidates.isNullOrEmpty()) {
-                // 在ID匹配的候选者中进一步筛选
-                return candidates.firstOrNull { node ->
-                    matchesAllConditions(node, className, text, contentDescription, predicate)
-                }?.also {
-                    Log.d(TAG, "✅ 通过viewId找到节点: $id")
-                }
-            }
+    // 策略2: 如果没有提供 viewId，则进行递归查找。
+    // 递归查找时，必须提供至少一个其他条件，以防止错误地匹配到根节点。
+    if (className != null || text != null || contentDescription != null || predicate != null) {
+        return findNodeRecursively(rootNode) { node ->
+            matchesAllConditions(node, className, text, contentDescription, predicate)
         }
-        
-        // 🎯 策略2: 递归遍历查找（当没有viewId或ID查找失败时）
-        return findNodeRecursively(rootNode, className, text, contentDescription, predicate)
-            ?.also { Log.d(TAG, "✅ 通过递归查找找到节点") }
-            ?: run {
-                Log.d(TAG, "❌ 未找到匹配条件的节点 [viewId=$viewId, className=$className]")
-                null
-            }
     }
 
-    /**
-     * 🔍 查找所有匹配条件的节点
-     * @return 匹配的节点列表，可能为空
-     */
-    fun findAllNodesByConditions(
-        rootNode: AccessibilityNodeInfo,
-        viewId: String? = null,
-        className: String? = null,
-        text: String? = null,
-        contentDescription: String? = null,
-        predicate: ((AccessibilityNodeInfo) -> Boolean)? = null
-    ): List<AccessibilityNodeInfo> {
-        val results = mutableListOf<AccessibilityNodeInfo>()
-        
-        // 策略1: 如果提供了viewId，优先精确查找
-        viewId?.takeIf { it.isNotEmpty() }?.let { id ->
-            val candidates = rootNode.findAccessibilityNodeInfosByViewId(id)
-            if (!candidates.isNullOrEmpty()) {
-                candidates.filter { node ->
-                    matchesAllConditions(node, className, text, contentDescription, predicate)
-                }.let { results.addAll(it) }
-            }
+    // 如果只提供了rootNode而没有其他任何条件，直接返回null，防止出错。
+    Log.w(TAG, "NodeFinder: 查找条件不足，已跳过搜索。")
+    return null
+}
+
+/**
+ * ✨ [核心] 查找符合所有指定条件的全部节点。
+ *
+ * @return 返回所有匹配的 AccessibilityNodeInfo 列表，可能为空。
+ */
+fun findMultipleNodes(
+    rootNode: AccessibilityNodeInfo,
+    viewId: String? = null,
+    className: String? = null,
+    text: String? = null,
+    contentDescription: String? = null,
+    predicate: ((AccessibilityNodeInfo) -> Boolean)? = null
+): List<AccessibilityNodeInfo> {
+    val results = mutableListOf<AccessibilityNodeInfo>()
+
+    // 策略1: 如果提供了viewId，以此为主要查找方式。
+    if (!viewId.isNullOrEmpty()) {
+        val candidates = rootNode.findAccessibilityNodeInfosByViewId(viewId)
+        // 筛选出所有符合其他条件的节点
+        candidates.filterTo(results) { node ->
+            matchesAllConditions(node, className, text, contentDescription, predicate)
         }
-        
-        // 策略2: 递归查找（如果没有通过ID找到或者没有提供ID）
-        if (results.isEmpty() || viewId.isNullOrEmpty()) {
-            findAllNodesRecursively(rootNode, className, text, contentDescription, predicate, results)
-        }
-        
-        Log.d(TAG, "找到 ${results.size} 个匹配的节点")
+        // 找到后直接返回，不再进行递归。
         return results
     }
 
-    /**
-     * 🎯 查找最大的可滚动容器（通常是消息列表）
-     */
-    fun findLargestScrollableContainer(rootNode: AccessibilityNodeInfo): AccessibilityNodeInfo? {
-        var largestScrollable: AccessibilityNodeInfo? = null
-        var maxChildCount = 0
-        
-        fun searchScrollable(node: AccessibilityNodeInfo) {
-            if (node.isScrollable && node.childCount > maxChildCount) {
-                largestScrollable = node
-                maxChildCount = node.childCount
-            }
-            
-            repeat(node.childCount) { i ->
-                node.getChild(i)?.let { child ->
-                    searchScrollable(child)
-                }
-            }
-        }
-        
-        searchScrollable(rootNode)
-        return largestScrollable?.also {
-            Log.d(TAG, "✅ 找到最大可滚动容器，子节点数: $maxChildCount")
+    // 策略2: 如果没有提供 viewId，则进行递归查找。
+    if (className != null || text != null || contentDescription != null || predicate != null) {
+        findAllNodesRecursively(rootNode, results) { node ->
+            matchesAllConditions(node, className, text, contentDescription, predicate)
         }
     }
 
-    /**
-     * 🔍 查找所有包含指定文本的节点
-     */
-    fun findNodesByText(
-        rootNode: AccessibilityNodeInfo,
-        targetText: String,
-        exactMatch: Boolean = false
-    ): List<AccessibilityNodeInfo> {
-        return findAllNodesByConditions(
-            rootNode = rootNode,
-            predicate = { node ->
-                val nodeText = node.text?.toString()
-                when {
-                    nodeText.isNullOrEmpty() -> false
-                    exactMatch -> nodeText == targetText
-                    else -> nodeText.contains(targetText, ignoreCase = true)
-                }
-            }
-        )
-    }
+    return results
+}
 
-    /**
-     * 🎯 查找可点击的按钮节点
-     */
-    fun findClickableButtons(
-        rootNode: AccessibilityNodeInfo,
-        buttonText: String? = null
-    ): List<AccessibilityNodeInfo> {
-        return findAllNodesByConditions(
-            rootNode = rootNode,
-            className = "Button",
-            text = buttonText,
-            predicate = { it.isClickable && it.isEnabled }
-        )
-    }
 
-    /**
-     * 🔍 查找输入框节点
-     */
-    fun findEditTextNodes(rootNode: AccessibilityNodeInfo): List<AccessibilityNodeInfo> {
-        return findAllNodesByConditions(
-            rootNode = rootNode,
-            className = "EditText",
-            predicate = { it.isEditable }
-        )
-    }
+/**
+ * 🎯 核心匹配逻辑：检查一个节点是否满足所有非null的条件。
+ * @return 如果所有提供的条件都满足，则返回 true。
+ */
+private fun matchesAllConditions(
+    node: AccessibilityNodeInfo,
+    className: String?,
+    text: String?,
+    contentDescription: String?,
+    predicate: ((AccessibilityNodeInfo) -> Boolean)?
+): Boolean {
+    // 这种写法保证了只有所有非null的条件都为true时，最终结果才为true。
+    return (className == null || node.className?.toString()?.contains(className, ignoreCase = true) == true) &&
+            (text == null || node.text?.toString()?.contains(text, ignoreCase = true) == true) &&
+            (contentDescription == null || node.contentDescription?.toString()?.contains(contentDescription, ignoreCase = true) == true) &&
+            (predicate == null || predicate(node))
+}
 
-    /**
-     * 🎯 验证节点是否仍然有效
-     */
-    fun isNodeValid(node: AccessibilityNodeInfo?): Boolean {
-        return node?.refresh() ?: false
+/**
+ * 🔍 递归查找第一个满足条件的节点。
+ * @param node 当前遍历的节点。
+ * @param condition 匹配条件的函数。
+ * @return 找到的节点或null。
+ */
+private fun findNodeRecursively(
+    node: AccessibilityNodeInfo,
+    condition: (AccessibilityNodeInfo) -> Boolean
+): AccessibilityNodeInfo? {
+    // 检查当前节点
+    if (condition(node)) {
+        return node
     }
-
-    /**
-     * 🔍 递归查找节点的核心逻辑
-     */
-    private fun findNodeRecursively(
-        node: AccessibilityNodeInfo,
-        className: String?,
-        text: String?,
-        contentDescription: String?,
-        predicate: ((AccessibilityNodeInfo) -> Boolean)?
-    ): AccessibilityNodeInfo? {
-        
-        // 检查当前节点是否匹配所有条件
-        if (matchesAllConditions(node, className, text, contentDescription, predicate)) {
-            return node
-        }
-        
-        // 递归检查子节点
-        repeat(node.childCount) { i ->
-            node.getChild(i)?.let { child ->
-                findNodeRecursively(child, className, text, contentDescription, predicate)
-                    ?.let { return it }
-            }
-        }
-        
-        return null
-    }
-
-    /**
-     * 🔍 递归查找所有匹配的节点
-     */
-    private fun findAllNodesRecursively(
-        node: AccessibilityNodeInfo,
-        className: String?,
-        text: String?,
-        contentDescription: String?,
-        predicate: ((AccessibilityNodeInfo) -> Boolean)?,
-        results: MutableList<AccessibilityNodeInfo>
-    ) {
-        // 检查当前节点是否匹配所有条件
-        if (matchesAllConditions(node, className, text, contentDescription, predicate)) {
-            results.add(node)
-        }
-        
-        // 递归检查子节点
-        repeat(node.childCount) { i ->
-            node.getChild(i)?.let { child ->
-                findAllNodesRecursively(child, className, text, contentDescription, predicate, results)
-            }
+    // 递归检查子节点
+    for (i in 0 until node.childCount) {
+        val child = node.getChild(i) ?: continue
+        val found = findNodeRecursively(child, condition)
+        if (found != null) {
+            // 一旦找到，立刻层层返回，停止搜索
+            return found
         }
     }
+    return null
+}
 
-    /**
-     * 🎯 检查节点是否匹配所有给定条件
-     */
-    private fun matchesAllConditions(
-        node: AccessibilityNodeInfo,
-        className: String?,
-        text: String?,
-        contentDescription: String?,
-        predicate: ((AccessibilityNodeInfo) -> Boolean)?
-    ): Boolean {
-        return listOfNotNull(
-            // className 条件检查
-            className?.let { 
-                node.className?.toString()?.contains(it, ignoreCase = true) == true 
-            },
-            // text 条件检查  
-            text?.let {
-                node.text?.toString()?.contains(it, ignoreCase = true) == true
-            },
-            // contentDescription 条件检查
-            contentDescription?.let {
-                node.contentDescription?.toString()?.contains(it, ignoreCase = true) == true
-            },
-            // 自定义谓词条件检查
-            predicate?.let { it(node) }
-        ).all { it } // 所有非null条件都必须为true
+/**
+ * 🔍 递归查找所有满足条件的节点。
+ * @param node 当前遍历的节点。
+ * @param results 用于存储结果的列表。
+ * @param condition 匹配条件的函数。
+ */
+private fun findAllNodesRecursively(
+    node: AccessibilityNodeInfo,
+    results: MutableList<AccessibilityNodeInfo>,
+    condition: (AccessibilityNodeInfo) -> Boolean
+) {
+    // 检查当前节点
+    if (condition(node)) {
+        results.add(node)
     }
+    // 递归检查子节点
+    for (i in 0 until node.childCount) {
+        val child = node.getChild(i) ?: continue
+        findAllNodesRecursively(child, results, condition)
+    }
+}
 
-    /**
-     * 🐾 调试用：打印节点树结构
-     */
-    fun debugNodeTree(
-        node: AccessibilityNodeInfo?,
-        maxDepth: Int = 5,
-        currentDepth: Int = 0
-    ) {
-        if (node == null || currentDepth > maxDepth) return
-        
-        val indent = "  ".repeat(currentDepth)
-        val className = node.className?.toString() ?: "null"
-        val text = node.text?.toString()?.take(20) ?: ""
-        val desc = node.contentDescription?.toString()?.take(20) ?: ""
-        
-        Log.d(TAG, "$indent[$currentDepth] $className")
-        Log.d(TAG, "$indent    文本: '$text'")
-        Log.d(TAG, "$indent    描述: '$desc'")
-        Log.d(TAG, "$indent    ID: ${node.viewIdResourceName}")
-        Log.d(TAG, "$indent    属性: [可点击:${node.isClickable}, 可滚动:${node.isScrollable}, 可编辑:${node.isEditable}]")
-        
-        repeat(node.childCount) { i ->
-            node.getChild(i)?.let { child ->
-                debugNodeTree(child, maxDepth, currentDepth + 1)
-            }
-        }
-    }
 
-    // ✨ 便捷扩展方法，让使用更加优雅
-    
-    /**
-     * 🎯 查找单个节点的便捷方法
-     */
-    fun findSingleNode(
-        rootNode: AccessibilityNodeInfo,
-        viewId: String? = null,
-        className: String? = null,
-        text: String? = null,
-        contentDescription: String? = null,
-        predicate: ((AccessibilityNodeInfo) -> Boolean)? = null
-    ): AccessibilityNodeInfo? {
-        return findNodeByConditions(rootNode, viewId, className, text, contentDescription, predicate, false) as? AccessibilityNodeInfo
-    }
+/**
+ * 🐾 调试用：打印节点树结构
+ */
+fun debugNodeTree(
+    node: AccessibilityNodeInfo?,
+    maxDepth: Int = 5,
+    currentDepth: Int = 0,
+) {
+    if (node == null || currentDepth > maxDepth) return
 
-    /**
-     * 🎯 查找多个节点的便捷方法
-     */
-    fun findMultipleNodes(
-        rootNode: AccessibilityNodeInfo,
-        viewId: String? = null,
-        className: String? = null,
-        text: String? = null,
-        contentDescription: String? = null,
-        predicate: ((AccessibilityNodeInfo) -> Boolean)? = null
-    ): List<AccessibilityNodeInfo> {
-        return findNodeByConditions(rootNode, viewId, className, text, contentDescription, predicate, true) as? List<AccessibilityNodeInfo> ?: emptyList()
-    }
+    val indent = "  ".repeat(currentDepth)
+    val className = node.className?.toString() ?: "null"
+    val text = node.text?.toString()?.take(20) ?: ""
+    val desc = node.contentDescription?.toString()?.take(20) ?: ""
+
+    Log.d(TAG, "$indent[$currentDepth] $className | ID: ${node.viewIdResourceName}")
+    if (text.isNotEmpty()) Log.d(TAG, "$indent    文本: '$text'")
+    if (desc.isNotEmpty()) Log.d(TAG, "$indent    描述: '$desc'")
 }

@@ -44,12 +44,14 @@ import me.wjz.nekocrypt.util.CryptoUploader
 import me.wjz.nekocrypt.util.NCFileProtocol
 import me.wjz.nekocrypt.util.NCWindowManager
 import me.wjz.nekocrypt.util.ResultRelay
+import me.wjz.nekocrypt.util.findSingleNode
 import me.wjz.nekocrypt.util.formatFileSize
 import me.wjz.nekocrypt.util.getFileName
 import me.wjz.nekocrypt.util.getFileSize
 import me.wjz.nekocrypt.util.getImageAspectRatio
 import me.wjz.nekocrypt.util.isEmpty
 import me.wjz.nekocrypt.util.isFileImage
+import me.wjz.nekocrypt.util.isNodeValid
 import java.io.File
 
 
@@ -125,13 +127,14 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 }
                 // 沉浸模式：当窗口内容变化时，主动扫描并解密
                 CryptoMode.IMMERSIVE.key -> {
-                    if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED ||
-                        event.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
+                    if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+//                        || event.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED
+                        ) {
                         //带防抖处理
                         immersiveDecryptionJob?.cancel()
                         // 启动一个新的扫描任务
                         immersiveDecryptionJob = service.serviceScope.launch(Dispatchers.Default) {
-                            // ✨ 等待300毫秒，如果在这期间又有新的事件进来，这个任务就会被取消
+                            // ✨ 等待n 毫秒，如果在这期间又有新的事件进来，这个任务就会被取消
                             delay(service.decryptionWindowUpdateInterval)
                             Log.d(tag, "UI稳定，开始执行沉浸式解密...")
                             handlerImmersiveDecryption()
@@ -209,108 +212,113 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     private fun handlerImmersiveDecryption() {
         runCatching {
             val currentService = service ?: return
+            val root = if (currentService.rootInActiveWindow.isEmpty()) getActiveWindowRoot()
+            else currentService.rootInActiveWindow
             // 更新缓存节点
             if (!isNodeValid(cachedMessageListNode)) {
-                // ✨ 2. 缓存无效，则在整个窗口中查找一次列表容器，并存入缓存
-
-                // 先拿合法根节点
-                val root = if (currentService.rootInActiveWindow.isEmpty()) getActiveWindowRoot()
-                else currentService.rootInActiveWindow
-
+                if (root == null) {
+                    Log.e(tag, "root节点为空，handlerImmersiveDecryption失败")
+                    return
+                }
                 // 拿recycleView
-                cachedMessageListNode = findNodeById(root!!, messageListClassName)
+                cachedMessageListNode = findSingleNode(
+                    rootNode = root,
+                    className = messageListClassName
+                )
             }
 
-            // 3. 如果最终我们拥有了一个有效的列表容器...
-            if (cachedMessageListNode != null) {
-                val messageNodes =
-                    cachedMessageListNode!!.findAccessibilityNodeInfosByViewId(messageTextId)
-                if (messageNodes.isNullOrEmpty()) {
-                    Log.d(tag, "消息列表中无消息或已离开聊天界面，开始清理所有弹窗...")
-                    // 如果找不到任何消息内容，清空缓存
-                    if (immersiveDecryptionCache.isNotEmpty()) {
-                        currentService.serviceScope.launch(Dispatchers.Main) {
-                            val managersToDismiss = immersiveDecryptionCache.values.toList()
-                            Log.d(tag, "清理 ${managersToDismiss.size} 个残留弹窗。")
-                            managersToDismiss.forEach { it.dismiss() }
-                        }
-                    }
-                    return // 这里直接退出整个函数，也不会执行计时了
-                }
-                // 分成三类
-                val visibleCacheKeys = mutableSetOf<String>()   // 此轮可见的缓存key。
-                val creationTasks = mutableListOf<Triple<String, AccessibilityNodeInfo, String>>()
-                val updateTasks = mutableListOf<Pair<NCWindowManager, Rect>>()
+            val messageNodes = if(cachedMessageListNode == null) root?.findAccessibilityNodeInfosByViewId(messageTextId) else
+                cachedMessageListNode!!.findAccessibilityNodeInfosByViewId(messageTextId)
 
-                for (node in messageNodes) {
-                    // 解密出内容，再做处理，否则直接跳过
-                    tryDecryptingText(node.text?.toString())?.let { decryptedText ->
-                        val nodeBounds = Rect()
-                        node.getBoundsInScreen(nodeBounds)
-                        val cacheKey = decryptedText.hashCode().toString()   // key就直接哈希
-                        visibleCacheKeys.add(cacheKey)
-
-                        // 如果弹窗已经存在，就加入更新位置的任务队列里
-                        immersiveDecryptionCache[cacheKey]?.let { manager ->
-                            updateTasks.add(manager to nodeBounds)
-                        } ?: run {
-                            // 如果弹窗不存在，则加入“创建弹窗”任务列表
-                            creationTasks.add(Triple(decryptedText, node, cacheKey))
-                        }
-                    }
-                }
-                // 找到需要被清除的弹窗。比如用户滑动了窗口，有的弹窗对应的气泡不再可见，就需要消失。
-                val cachedKeys = immersiveDecryptionCache.keys.toSet()
-                val keysToDismiss = cachedKeys - visibleCacheKeys
-
-                if (keysToDismiss.isNotEmpty() || updateTasks.isNotEmpty() || creationTasks.isNotEmpty()) {
-                    Log.d(tag, "--- 沉浸式解密任务分配 ---")
-                    Log.d(tag, "需要销毁的弹窗 (${keysToDismiss.size}个): $keysToDismiss")
-                    Log.d(tag, "需要更新位置的弹窗 (${updateTasks.size}个)")
-                    Log.d(
-                        tag,
-                        "需要新创建的弹窗 (${creationTasks.size}个): ${creationTasks.map { it.third }}"
-                    )
-                    Log.d(tag, "--------------------------")
-                }
-
-
-                // 整理完毕，在主线程执行操作
-                if (keysToDismiss.isNotEmpty() || updateTasks.isNotEmpty() || creationTasks.isNotEmpty()) {
+            if (messageNodes.isNullOrEmpty()) {
+                Log.d(tag, "消息列表中无消息或已离开聊天界面，开始清理所有弹窗...")
+                // 如果找不到任何消息内容，清空缓存
+                if (immersiveDecryptionCache.isNotEmpty()) {
                     currentService.serviceScope.launch(Dispatchers.Main) {
-                        keysToDismiss.forEach {
-                            immersiveDecryptionCache[it]?.dismiss() // dismiss里面会自动让对象本身为null
-                        }
-                        updateTasks.forEach { (manager, rect) ->
-                            if (!isActive) return@forEach
-                            manager.updatePosition(rect)
-                        }
-                        creationTasks.forEach { (decryptedText, node, cacheKey) ->
-                            if (!isActive) return@forEach
-
-                            // ✨ [正确逻辑] 1. 调用通用函数，并传入“从缓存移除自己”的正确回调
-                            val popupManager = showDecryptionPopup(
-                                decryptedText = decryptedText,
-                                anchorNode = node,
-                                showTime = 30000, // 配置项为 currentService.decryptionWindowShowTime
-                                onDismiss = {
-                                    // 这个回调在弹窗关闭时执行，完美地维护了缓存
-                                    immersiveDecryptionCache.remove(cacheKey)
-                                    Log.d(tag, "弹窗关闭，从缓存中移除: $cacheKey")
-                                }
-                            )
-                            // ✨ [正确逻辑] 2. 将返回的管理器实例存入缓存
-                            immersiveDecryptionCache[cacheKey] = popupManager
-                            Log.d(tag, "新弹窗已创建并加入缓存: $cacheKey")
-
-                            delay(32L)
-                        }
+                         val managersToDismiss = immersiveDecryptionCache.values.toList()
+                        Log.d(tag, "清理 ${managersToDismiss.size} 个残留弹窗。")
+                        managersToDismiss.forEach { it.dismiss() }
                     }
                 }
-            } else {
-                Log.w(tag, "未找到消息列表容器，无法执行沉浸式解密。")
+                return
             }
-        }.onFailure { exception -> Log.e(tag,"handlerImmersiveDecryption error:${exception.message}") }
+
+            // 分成三类
+            val visibleCacheKeys = mutableSetOf<String>()   // 此轮可见的缓存key。
+            val creationTasks = mutableListOf<Triple<String, AccessibilityNodeInfo, String>>()
+            val updateTasks = mutableListOf<Pair<NCWindowManager, Rect>>()
+
+            for (node in messageNodes) {
+                // 解密出内容，再做处理，否则直接跳过
+                tryDecryptingText(node.text?.toString())?.let { decryptedText ->
+                    val nodeBounds = Rect()
+                    node.getBoundsInScreen(nodeBounds)
+                    val cacheKey = decryptedText.hashCode().toString()   // key就直接哈希
+                    visibleCacheKeys.add(cacheKey)
+
+                    // 如果弹窗已经存在，就加入更新位置的任务队列里
+                    immersiveDecryptionCache[cacheKey]?.let { manager ->
+                        updateTasks.add(manager to nodeBounds)
+                    } ?: run {
+                        // 如果弹窗不存在，则加入“创建弹窗”任务列表
+                        creationTasks.add(Triple(decryptedText, node, cacheKey))
+                    }
+                }
+            }
+            // 找到需要被清除的弹窗。比如用户滑动了窗口，有的弹窗对应的气泡不再可见，就需要消失。
+            val cachedKeys = immersiveDecryptionCache.keys.toSet()
+            val keysToDismiss = cachedKeys - visibleCacheKeys
+
+            if (keysToDismiss.isNotEmpty() || updateTasks.isNotEmpty() || creationTasks.isNotEmpty()) {
+                Log.d(tag, "--- 沉浸式解密任务分配 ---")
+                Log.d(tag, "需要销毁的弹窗 (${keysToDismiss.size}个): $keysToDismiss")
+                Log.d(tag, "需要更新位置的弹窗 (${updateTasks.size}个)")
+                Log.d(
+                    tag,
+                    "需要新创建的弹窗 (${creationTasks.size}个): ${creationTasks.map { it.third }}"
+                )
+                Log.d(tag, "--------------------------")
+            }
+
+
+            // 整理完毕，在主线程执行操作
+            if (keysToDismiss.isNotEmpty() || updateTasks.isNotEmpty() || creationTasks.isNotEmpty()) {
+                currentService.serviceScope.launch(Dispatchers.Main) {
+                    keysToDismiss.forEach {
+                        immersiveDecryptionCache[it]?.dismiss() // dismiss里面会自动让对象本身为null
+                    }
+                    updateTasks.forEach { (manager, rect) ->
+                        if (!isActive) return@forEach
+                        manager.updatePosition(rect)
+                    }
+                    creationTasks.forEach { (decryptedText, node, cacheKey) ->
+                        if (!isActive) return@forEach
+
+                        // ✨ [正确逻辑] 1. 调用通用函数，并传入“从缓存移除自己”的正确回调
+                        val popupManager = showDecryptionPopup(
+                            decryptedText = decryptedText,
+                            anchorNode = node,
+                            showTime = 30000, // 配置项为 currentService.decryptionWindowShowTime
+                            onDismiss = {
+                                // 这个回调在弹窗关闭时执行，完美地维护了缓存
+                                immersiveDecryptionCache.remove(cacheKey)
+                                Log.d(tag, "弹窗关闭，从缓存中移除: $cacheKey")
+                            }
+                        )
+                        // ✨ [正确逻辑] 2. 将返回的管理器实例存入缓存
+                        immersiveDecryptionCache[cacheKey] = popupManager
+                        Log.d(tag, "新弹窗已创建并加入缓存: $cacheKey")
+
+                        delay(32L)
+                    }
+                }
+            }
+        }.onFailure { exception ->
+            Log.e(
+                tag,
+                "handlerImmersiveDecryption error:${exception.message}"
+            )
+        }
     }
 
     /**
@@ -370,11 +378,17 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
                 val rootNode =
                     if (currentService.rootInActiveWindow.isEmpty()) getActiveWindowRoot()
-                    else currentService.rootInActiveWindow
+                    else currentService.rootInActiveWindow ?: run {
+                        Log.e(tag, "根节点为空，handleOverlayManagement失败")
+                        return
+                    }
 
                 Log.d(tag, "尝试在根节点 ${rootNode?.className} 中查找发送按钮...")
-                sendBtnNode = findNodeById(rootNode!!, sendBtnId)
+
+                sendBtnNode = findSingleNode(rootNode!!,sendBtnId)
+                //sendBtnNode = findNodeById(rootNode!!,sendBtnId)
                 cachedSendBtnNode = sendBtnNode
+
             }
 
             // 3. 根据最终的节点状态来决定如何操作
@@ -494,13 +508,11 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             val root = if (service!!.rootInActiveWindow.isEmpty()) getActiveWindowRoot()
             else currentService.rootInActiveWindow
 
-            val inputNode = findNodeById(root!!, inputId, Constant.VIEW_ID_INPUT)
+            val inputNode = findSingleNode(root!!,inputId,Constant.EDIT_TEXT)
             val originalText = inputNode?.text?.toString()
 
             // 2. 加密文本
-            val encryptedText =
-                CryptoManager.encrypt(originalText ?: "喵~", currentService.currentKey)
-                    .appendNekoTalk()
+            val encryptedText = CryptoManager.encrypt(originalText!!, currentService.currentKey).appendNekoTalk()
 
             // 3. 调用核心发送函数
             setTextAndSend(encryptedText)
@@ -510,7 +522,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     protected fun doNormalClick() {
         if (!isNodeValid(cachedSendBtnNode)) {
             val root = service?.rootInActiveWindow ?: return
-            cachedSendBtnNode = findNodeById(root, sendBtnId)
+            cachedSendBtnNode = findSingleNode(root,sendBtnId)
         }
         cachedSendBtnNode?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
     }
@@ -585,7 +597,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             // 优先寻找既活跃又获得焦点的窗口
             val activeFocusedWindow = windows.find { it.isActive && it.isFocused }
             if (activeFocusedWindow?.root != null) {
-                Log.d(tag, "✅ 成功定位到活跃且获得焦点的窗口 (ID: ${activeFocusedWindow.id})")
+                //Log.d(tag, "✅ 成功定位到活跃且获得焦点的窗口 (ID: ${activeFocusedWindow.id})")
                 return activeFocusedWindow.root
             }
 
@@ -600,14 +612,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             return service!!.rootInActiveWindow
         }.onFailure { exception ->  Log.e(tag,"getActiveWindowRoot Error:${exception.message}") }
         return null
-    }
-
-
-    /**
-     * ✨ 验证缓存节点有效性的“金标准”方法 ✨
-     */
-    private fun isNodeValid(node: AccessibilityNodeInfo?): Boolean {
-        return node?.refresh() ?: false
     }
 
     /**
@@ -696,7 +700,8 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         }
         currentService.serviceScope.launch {
             // --- 更新缓存的输入框节点 ---
-            cachedInputNode = if (isNodeValid(cachedInputNode)) cachedInputNode else findNodeById(root, inputId, Constant.VIEW_ID_INPUT)
+            cachedInputNode = if (isNodeValid(cachedInputNode)) cachedInputNode
+            else findSingleNode(root, inputId, Constant.EDIT_TEXT)
 
             if (cachedInputNode == null) {
                 Log.e(tag, "发送失败：未能精确找到EditText输入框！")
@@ -714,7 +719,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
 
             // --- 更新缓存的发送按钮 ---
             repeat(5) { attempt ->
-                cachedSendBtnNode = findNodeById(root, sendBtnId, Constant.VIEW_ID_BTN)
+                cachedSendBtnNode = findSingleNode(root, sendBtnId, Constant.VIEW_ID_BTN)
                 if (cachedSendBtnNode != null) {
                     return@repeat
                 }

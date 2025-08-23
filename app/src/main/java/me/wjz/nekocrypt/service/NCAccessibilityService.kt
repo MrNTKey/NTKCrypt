@@ -9,7 +9,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import me.wjz.nekocrypt.Constant
-import me.wjz.nekocrypt.Constant.PACKAGE_NAME_QQ
 import me.wjz.nekocrypt.CryptoMode
 import me.wjz.nekocrypt.NekoCryptApp
 import me.wjz.nekocrypt.SettingKeys
@@ -94,7 +93,7 @@ class NCAccessibilityService : AccessibilityService() {
 
     // handler工厂方法
     private val handlerFactory: Map<String, () -> ChatAppHandler> = mapOf(
-        PACKAGE_NAME_QQ to { QQHandler() },
+        QQHandler.PACKAGE_NAME to { QQHandler() },
         WeChatHandler.PACKAGE_NAME to { WeChatHandler()}
     )
     private var currentHandler: ChatAppHandler? = null

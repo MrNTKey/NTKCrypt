@@ -1,22 +1,22 @@
 package me.wjz.nekocrypt.service.handler
 
-import me.wjz.nekocrypt.Constant
-
 /**
  * 针对 QQ 的具体处理器实现。
  */
 class QQHandler : BaseChatAppHandler() {
-    override val packageName: String
-        get() = Constant.PACKAGE_NAME_QQ
+    companion object{
+        const val ID_SEND_BTN="com.tencent.mobileqq:id/send_btn"
+        const val ID_INPUT="com.tencent.mobileqq:id/input"
+        const val ID_MESSAGE_TEXT="com.tencent.mobileqq:id/sbl"
+        const val PACKAGE_NAME ="com.tencent.mobileqq"
+        const val CLASS_NAME_RECYCLER_VIEW="RecyclerView"
+    }
 
-    override val inputId: String
-        get() = Constant.ID_QQ_INPUT
+    override val packageName: String get() = PACKAGE_NAME
+    override val inputId: String get() = ID_INPUT
 
-    override val sendBtnId: String
-        get() = Constant.ID_QQ_SEND_BTN
+    override val sendBtnId: String get() = ID_SEND_BTN
 
-    override val messageTextId: String
-        get() = Constant.ID_QQ_MESSAGE_TEXT
-    override val messageListClassName: String
-        get() = Constant.CLASS_NAME_QQ_RECYCLER_VIEW
+    override val messageTextId: String get() = ID_MESSAGE_TEXT
+    override val messageListClassName: String get() = CLASS_NAME_RECYCLER_VIEW
 }
