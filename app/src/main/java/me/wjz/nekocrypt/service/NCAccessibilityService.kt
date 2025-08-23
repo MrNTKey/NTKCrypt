@@ -2,8 +2,6 @@ package me.wjz.nekocrypt.service
 
 import android.accessibilityservice.AccessibilityService
 import android.util.Log
-import android.view.View
-import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.CoroutineScope
@@ -26,6 +24,9 @@ class NCAccessibilityService : AccessibilityService() {
 
     // 1. 创建一个 Service 自己的协程作用域，它的生命周期和 Service 绑定
     val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
+    // 添加保活服务状态标记
+    private var isKeepAliveServiceStarted = false
 
     // 获取App里注册的dataManager实例
     private val dataStoreManager by lazy {
@@ -102,16 +103,18 @@ class NCAccessibilityService : AccessibilityService() {
         super.onServiceConnected()
         Log.d(tag, "无障碍服务已连接！")
         // startPeriodicScreenScan()// 做debug扫描
+        // 🎯 关键：启动保活服务
+        startKeepAliveService()
     }
 
     // ✨ 新增：重写 onDestroy 方法，这是服务生命周期结束时最后的清理机会
     override fun onDestroy() {
         super.onDestroy()
         Log.d(tag, "无障碍服务正在销毁...")
-        // 清理保活悬浮窗
-        removeKeepAliveOverlay()
         // ✨ 非常重要：取消协程作用域，释放所有运行中的协程，防止内存泄漏
         serviceScope.cancel()
+        // 🎯 关键：停止保活服务
+        stopKeepAliveService()
     }
 
     override fun onInterrupt() {
@@ -168,6 +171,35 @@ class NCAccessibilityService : AccessibilityService() {
 //        }
     }
 
+    /**
+     * 启动保活服务
+     */
+    private fun startKeepAliveService() {
+        if (!isKeepAliveServiceStarted) {
+            try {
+                KeepAliveService.start(this)
+                isKeepAliveServiceStarted = true
+                Log.d(tag, "✅ 保活服务已启动")
+            } catch (e: Exception) {
+                Log.e(tag, "❌ 启动保活服务失败", e)
+            }
+        }
+    }
+
+    /**
+     * 停止保活服务
+     */
+    private fun stopKeepAliveService() {
+        if (isKeepAliveServiceStarted) {
+            try {
+                KeepAliveService.stop(this)
+                isKeepAliveServiceStarted = false
+                Log.d(tag, "🛑 保活服务已停止")
+            } catch (e: Exception) {
+                Log.e(tag, "❌ 停止保活服务失败", e)
+            }
+        }
+    }
 
     // —————————————————————————— helper ——————————————————————————
 

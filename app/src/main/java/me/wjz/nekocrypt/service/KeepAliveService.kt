@@ -79,7 +79,8 @@ class KeepAliveService : Service() {
         // 3. ✨ 最关键的一步：将服务推到前台！
         //    第一个参数是一个唯一的通知ID，第二个参数是我们创建的通知。
         startForeground(NekoNotification.NEKO_NOTIFICATION_ID, notification)
-
+        // 我们同时创一个保活悬浮窗
+        createKeepAliveOverlay()
         // START_STICKY 表示如果服务被系统意外杀死，系统会尝试重新启动它
         return START_STICKY
     }
