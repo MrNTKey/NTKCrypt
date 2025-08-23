@@ -137,7 +137,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                             // ✨ 等待n 毫秒，如果在这期间又有新的事件进来，这个任务就会被取消
                             delay(service.decryptionWindowUpdateInterval)
                             Log.d(tag, "UI稳定，开始执行沉浸式解密...")
-                            handlerImmersiveDecryption()
+                            handleImmersiveDecryption()
                         }
                     }
                 }
@@ -209,7 +209,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
     /**
      * 执行沉浸式解密相关逻辑。
      */
-    private fun handlerImmersiveDecryption() {
+    private fun handleImmersiveDecryption() {
         runCatching {
             val currentService = service ?: return
             val root = if (currentService.rootInActiveWindow.isEmpty()) getActiveWindowRoot()
@@ -227,7 +227,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                 )
             }
 
-            val messageNodes = if(cachedMessageListNode == null) root?.findAccessibilityNodeInfosByViewId(messageTextId) else
+            val messageNodes = if(cachedMessageListNode == null) findAllTextNodes(root!!) else
                 cachedMessageListNode!!.findAccessibilityNodeInfosByViewId(messageTextId)
 
             if (messageNodes.isNullOrEmpty()) {
@@ -308,8 +308,6 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                         // ✨ [正确逻辑] 2. 将返回的管理器实例存入缓存
                         immersiveDecryptionCache[cacheKey] = popupManager
                         Log.d(tag, "新弹窗已创建并加入缓存: $cacheKey")
-
-                        delay(32L)
                     }
                 }
             }
@@ -527,24 +525,30 @@ abstract class BaseChatAppHandler : ChatAppHandler {
         cachedSendBtnNode?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
     }
 
-    protected fun findNodeById(
-        rootNode: AccessibilityNodeInfo,
-        viewId: String,
-        className:String? = null
-    ): AccessibilityNodeInfo? {
+    private fun findAllTextNodes(rootNode: AccessibilityNodeInfo): List<AccessibilityNodeInfo> {
+        val results = mutableListOf<AccessibilityNodeInfo>()
 
-        // 1. 先根据ID找到所有候选者
-        val candidateNodes = rootNode.findAccessibilityNodeInfosByViewId(viewId)
-        if (candidateNodes.isNullOrEmpty()) return null
+        fun searchRecursively(node: AccessibilityNodeInfo) {
+            // 1. 检查当前节点本身是否有可见的、非空白的文本
+            if (!node.text.isNullOrBlank()) {
+                // 为了避免把整个列表容器（它也可能有text）加进去，我们可以加一个额外的判断
+                // 比如，它的子节点不能再有包含文本的TextView了。
+                // 但为了简单和通用，我们先直接添加。
+                results.add(node)
+            }
 
-        // 2. 如果调用者没有提供className，就直接返回第一个结果（旧的行为）
-        if (className == null) {
-            return candidateNodes.firstOrNull()
+            // 2. 遍历所有子节点，并对每个子节点递归调用自己
+            for (i in 0 until node.childCount) {
+                node.getChild(i)?.let { child ->
+                    searchRecursively(child)
+                    // 回收节点，防止内存泄漏
+                    child.recycle()
+                }
+            }
         }
-        // 3. 如果提供了className，就在候选者中进一步筛选
-        return candidateNodes.find {
-            it.className?.toString()?.contains(className) == true
-        }
+
+        searchRecursively(rootNode)
+        return results
     }
 
     /**

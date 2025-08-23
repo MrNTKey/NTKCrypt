@@ -7,6 +7,7 @@ class QQHandler : BaseChatAppHandler() {
     companion object{
         const val ID_SEND_BTN="com.tencent.mobileqq:id/send_btn"
         const val ID_INPUT="com.tencent.mobileqq:id/input"
+        // 某些版本ID_MESSAGE_TEXT是SQB
         const val ID_MESSAGE_TEXT="com.tencent.mobileqq:id/sbl"
         const val PACKAGE_NAME ="com.tencent.mobileqq"
         const val CLASS_NAME_RECYCLER_VIEW="RecyclerView"
