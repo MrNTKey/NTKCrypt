@@ -122,4 +122,22 @@
     <string name="key_screen_confirm_delete_title">Confirmar Eliminación</string>
     <string name="key_screen_confirm_delete_message">¿Estás seguro de que quieres eliminar la clave \"%1$s\"? Esta acción no se puede deshacer.</string>
     <string name="key_screen_delete_confirm_button">Eliminar</string>
+
+    <string name="key_selection_dialog_title">Seleccionar o Establecer Clave</string>
+    <string name="key_selection_dialog_input_label">Introducir nueva clave</string>
+    <string name="key_selection_dialog_set_button">Establecer como Clave Actual</string>
+    <string name="key_selection_dialog_restore_default_button">Restaurar Clave Predeterminada</string>
+    <string name="key_selection_dialog_history_title">Claves del Historial</string>
+    <string name="key_selection_dialog_empty_input_error">¡La clave no puede estar vacía!</string>
+    <string name="key_selection_dialog_key_updated">Clave actual actualizada a: %1$s</string>
+
+    <string name="key_selection_dialog_search_label">Buscar claves del historial</string>
+    <string name="key_selection_dialog_search_icon_desc">Buscar claves</string>
+    <string name="key_selection_dialog_clear_search_desc">Limpiar búsqueda</string>
+    <string name="key_selection_dialog_no_search_results">No se encontraron claves coincidentes.</string>
+    <string name="key_screen_search_history_label">Buscar en historial</string>
+    <string name="key_screen_search_icon_desc">Buscar claves del historial</string>
+    <string name="key_screen_clear_search_desc">Limpiar búsqueda</string>
+    <string name="key_screen_no_search_results">No se encontraron claves coincidentes en el historial.</string>
+
 </resources>

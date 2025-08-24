@@ -123,4 +123,21 @@
     <string name="key_screen_confirm_delete_title">削除の確認</string>
     <string name="key_screen_confirm_delete_message">キー「%1$s」を削除してもよろしいですか？この操作は元に戻せません。</string>
     <string name="key_screen_delete_confirm_button">削除</string>
+
+    <string name="key_selection_dialog_title">キーの選択または設定</string>
+    <string name="key_selection_dialog_input_label">新しいキーを入力</string>
+    <string name="key_selection_dialog_set_button">現在のキーに設定</string>
+    <string name="key_selection_dialog_restore_default_button">デフォルトキーに戻す</string>
+    <string name="key_selection_dialog_history_title">履歴キー</string>
+    <string name="key_selection_dialog_empty_input_error">キーを空にすることはできません！</string>
+    <string name="key_selection_dialog_key_updated">現在のキーが %1$s に更新されました</string>
+    <string name="key_selection_dialog_search_label">履歴キーを検索</string>
+    <string name="key_selection_dialog_search_icon_desc">キーを検索</string>
+    <string name="key_selection_dialog_clear_search_desc">検索をクリア</string>
+    <string name="key_selection_dialog_no_search_results">一致するキーは見つかりませんでした。</string>
+    <string name="key_screen_search_history_label">履歴を検索</string>
+    <string name="key_screen_search_icon_desc">履歴キーを検索</string>
+    <string name="key_screen_clear_search_desc">検索をクリア</string>
+    <string name="key_screen_no_search_results">履歴に一致するキーは見つかりませんでした。</string>
+
 </resources>

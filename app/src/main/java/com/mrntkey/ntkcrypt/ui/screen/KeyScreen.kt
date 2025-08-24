@@ -6,17 +6,19 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close // 新增：导入 Close 图标
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Search // 新增：导入 Search 图标
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource // 导入 stringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.edit
 import com.mrntkey.ntkcrypt.Constant.DEFAULT_SECRET_KEY
-import com.mrntkey.ntkcrypt.R // 假设你的 R 文件在这里
+import com.mrntkey.ntkcrypt.R
 import com.mrntkey.ntkcrypt.SettingKeys
 import com.mrntkey.ntkcrypt.data.dataStore
 import kotlinx.coroutines.flow.map
@@ -27,13 +29,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.style.TextAlign
 
 @Composable
-fun KeyScreen(modifier: Modifier = Modifier /*, navController: NavController? = null*/) {
+fun KeyScreen(modifier: Modifier = Modifier) {
     var newKeyInput by remember { mutableStateOf("") }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     var showConfirmDeleteDialog by remember { mutableStateOf(false) }
     var keyToDeleteState by remember { mutableStateOf<String?>(null) }
+
+    // --- 新增：搜索文本状态 ---
+    var searchQuery by remember { mutableStateOf("") }
 
     val currentKeyFlow = remember(context) {
         context.dataStore.data.map { preferences ->
@@ -49,6 +54,17 @@ fun KeyScreen(modifier: Modifier = Modifier /*, navController: NavController? = 
     }
     val keyHistory by keyHistoryFlow.collectAsState(initial = emptySet())
 
+    // --- 新增：根据搜索查询过滤历史密钥 ---
+    val filteredHistory = remember(keyHistory, searchQuery) {
+        if (searchQuery.isBlank()) {
+            keyHistory.toList().sortedDescending()
+        } else {
+            keyHistory.filter { it.contains(searchQuery, ignoreCase = true) }
+                .sortedDescending()
+        }
+    }
+
+    // ... (saveAndSetCurrentKey 和 removeKeyFromHistory 函数保持不变) ...
     fun saveAndSetCurrentKey(keyToSave: String, isRestoringDefault: Boolean = false) {
         if (keyToSave.isNotBlank() || isRestoringDefault) {
             scope.launch {
@@ -61,13 +77,13 @@ fun KeyScreen(modifier: Modifier = Modifier /*, navController: NavController? = 
                         preferences[SettingKeys.KEY_HISTORY_LIST] = newHistory
                         Toast.makeText(
                             context,
-                            context.getString(R.string.key_screen_toast_key_saved_and_set, keyToSave), // 使用资源
+                            context.getString(R.string.key_screen_toast_key_saved_and_set, keyToSave),
                             Toast.LENGTH_SHORT
                         ).show()
                     } else if (isRestoringDefault) {
                         Toast.makeText(
                             context,
-                            context.getString(R.string.key_screen_toast_key_restored_default), // 使用资源
+                            context.getString(R.string.key_screen_toast_key_restored_default),
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -76,7 +92,7 @@ fun KeyScreen(modifier: Modifier = Modifier /*, navController: NavController? = 
         } else if (!isRestoringDefault) {
             Toast.makeText(
                 context,
-                context.getString(R.string.key_screen_toast_key_empty), // 使用资源
+                context.getString(R.string.key_screen_toast_key_empty),
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -93,13 +109,13 @@ fun KeyScreen(modifier: Modifier = Modifier /*, navController: NavController? = 
                         preferences[SettingKeys.CURRENT_KEY] = DEFAULT_SECRET_KEY
                         Toast.makeText(
                             context,
-                            context.getString(R.string.key_screen_toast_key_removed_and_current_reset, keyToRemove), // 使用资源
+                            context.getString(R.string.key_screen_toast_key_removed_and_current_reset, keyToRemove),
                             Toast.LENGTH_LONG
                         ).show()
                     } else {
                         Toast.makeText(
                             context,
-                            context.getString(R.string.key_screen_toast_key_removed, keyToRemove), // 使用资源
+                            context.getString(R.string.key_screen_toast_key_removed, keyToRemove),
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -108,6 +124,7 @@ fun KeyScreen(modifier: Modifier = Modifier /*, navController: NavController? = 
         }
     }
 
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -115,12 +132,12 @@ fun KeyScreen(modifier: Modifier = Modifier /*, navController: NavController? = 
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            stringResource(R.string.key_screen_title), // 使用资源
+            stringResource(R.string.key_screen_title),
             style = MaterialTheme.typography.headlineLarge
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            stringResource(R.string.key_screen_current_key_label, currentKey), // 使用资源
+            stringResource(R.string.key_screen_current_key_label, currentKey),
             style = MaterialTheme.typography.titleMedium
         )
         Spacer(Modifier.height(16.dp))
@@ -128,7 +145,7 @@ fun KeyScreen(modifier: Modifier = Modifier /*, navController: NavController? = 
         OutlinedTextField(
             value = newKeyInput,
             onValueChange = { newKeyInput = it },
-            label = { Text(stringResource(R.string.key_screen_input_new_key_label)) }, // 使用资源
+            label = { Text(stringResource(R.string.key_screen_input_new_key_label)) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             shape = RoundedCornerShape(16.dp)
@@ -143,7 +160,7 @@ fun KeyScreen(modifier: Modifier = Modifier /*, navController: NavController? = 
                 } else {
                     Toast.makeText(
                         context,
-                        context.getString(R.string.key_screen_toast_key_empty), // 使用资源
+                        context.getString(R.string.key_screen_toast_key_empty),
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -151,7 +168,7 @@ fun KeyScreen(modifier: Modifier = Modifier /*, navController: NavController? = 
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Text(stringResource(R.string.key_screen_set_and_save_button)) // 使用资源
+            Text(stringResource(R.string.key_screen_set_and_save_button))
         }
         Spacer(Modifier.height(8.dp))
 
@@ -164,7 +181,7 @@ fun KeyScreen(modifier: Modifier = Modifier /*, navController: NavController? = 
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Text(stringResource(R.string.key_screen_restore_default_button)) // 使用资源
+            Text(stringResource(R.string.key_screen_restore_default_button))
         }
 
         Spacer(Modifier.height(16.dp))
@@ -172,29 +189,64 @@ fun KeyScreen(modifier: Modifier = Modifier /*, navController: NavController? = 
         Spacer(Modifier.height(8.dp))
 
         Text(
-            stringResource(R.string.key_screen_history_keys_title), // 使用资源
+            stringResource(R.string.key_screen_history_keys_title),
             style = MaterialTheme.typography.headlineSmall
         )
+        Spacer(Modifier.height(8.dp)) //  <-- 新增 Spacer
 
-        if (keyHistory.isEmpty()) {
+        // --- 新增：历史密钥搜索栏 ---
+        if (keyHistory.isNotEmpty()) { // 只有在有历史密钥时才显示搜索栏
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = { Text(stringResource(R.string.key_screen_search_history_label)) }, // 新增字符串资源
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                leadingIcon = {
+                    Icon(
+                        Icons.Filled.Search,
+                        contentDescription = stringResource(R.string.key_screen_search_icon_desc) // 新增字符串资源
+                    )
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(
+                                Icons.Filled.Close,
+                                contentDescription = stringResource(R.string.key_screen_clear_search_desc) // 新增字符串资源
+                            )
+                        }
+                    }
+                },
+                shape = RoundedCornerShape(16.dp) // 与其他输入框样式一致
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+
+        // --- 修改：历史密钥列表 ---
+        if (filteredHistory.isEmpty()) { //  <-- 使用 filteredHistory
             Spacer(Modifier.height(16.dp))
             Text(
-                stringResource(R.string.key_screen_no_history_keys), // 使用资源
+                // 根据是否有搜索词来决定显示 "无历史" 还是 "无搜索结果"
+                text = if (searchQuery.isBlank() && keyHistory.isEmpty()) stringResource(R.string.key_screen_no_history_keys)
+                else if (searchQuery.isNotBlank()) stringResource(R.string.key_screen_no_search_results) // 新增字符串资源
+                else stringResource(R.string.key_screen_no_history_keys), // 备用，理论上不会到这里如果keyHistory不为空
                 style = MaterialTheme.typography.bodyMedium
             )
         } else {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
+                    .weight(1f) // 确保列表能正确填充剩余空间
             ) {
-                items(keyHistory.toList().sortedDescending()) { key ->
+                items(filteredHistory) { key -> //  <-- 使用 filteredHistory
                     KeyHistoryItem(
                         keyText = key,
                         isCurrent = key == currentKey,
                         onSelect = { selectedKey ->
                             saveAndSetCurrentKey(selectedKey)
                             newKeyInput = ""
+                            searchQuery = "" // 选择后清空搜索，可选
                         },
                         onDeleteRequest = { keyToDelete ->
                             keyToDeleteState = keyToDelete
@@ -207,6 +259,7 @@ fun KeyScreen(modifier: Modifier = Modifier /*, navController: NavController? = 
         }
     }
 
+    // ... (AlertDialog 保持不变) ...
     if (showConfirmDeleteDialog && keyToDeleteState != null) {
         AlertDialog(
             onDismissRequest = {
@@ -216,14 +269,14 @@ fun KeyScreen(modifier: Modifier = Modifier /*, navController: NavController? = 
             shape = RoundedCornerShape(16.dp),
             title = {
                 Text(
-                    text = stringResource(R.string.key_screen_confirm_delete_title), // 已使用资源
+                    text = stringResource(R.string.key_screen_confirm_delete_title),
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
                 )
             },
             text = {
                 Text(
-                    text = stringResource(R.string.key_screen_confirm_delete_message, keyToDeleteState!!), // 已使用资源
+                    text = stringResource(R.string.key_screen_confirm_delete_message, keyToDeleteState!!),
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
                 )
@@ -239,7 +292,7 @@ fun KeyScreen(modifier: Modifier = Modifier /*, navController: NavController? = 
                     }
                 ) {
                     Text(
-                        stringResource(R.string.key_screen_delete_confirm_button), // 已使用资源
+                        stringResource(R.string.key_screen_delete_confirm_button),
                         color = MaterialTheme.colorScheme.error
                     )
                 }
@@ -252,7 +305,7 @@ fun KeyScreen(modifier: Modifier = Modifier /*, navController: NavController? = 
                     }
                 ) {
                     Text(
-                        stringResource(R.string.cancel), // 已使用资源
+                        stringResource(R.string.cancel),
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -261,6 +314,7 @@ fun KeyScreen(modifier: Modifier = Modifier /*, navController: NavController? = 
     }
 }
 
+// ... (KeyHistoryItem Composable 保持不变) ...
 @Composable
 fun KeyHistoryItem(
     keyText: String,
@@ -277,7 +331,7 @@ fun KeyHistoryItem(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = keyText, // keyText 是动态数据，不是静态字符串资源
+            text = keyText,
             style = if (isCurrent) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge,
             color = if (isCurrent) MaterialTheme.colorScheme.primary else LocalContentColor.current,
             modifier = Modifier
@@ -287,7 +341,7 @@ fun KeyHistoryItem(
         IconButton(onClick = { onDeleteRequest(keyText) }) {
             Icon(
                 imageVector = Icons.Filled.Delete,
-                contentDescription = stringResource(R.string.key_history_item_delete_content_description, keyText), // 使用资源
+                contentDescription = stringResource(R.string.key_history_item_delete_content_description, keyText),
                 tint = MaterialTheme.colorScheme.error
             )
         }

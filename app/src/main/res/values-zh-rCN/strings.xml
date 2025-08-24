@@ -128,10 +128,28 @@
     <string name="key_screen_toast_key_removed_and_current_reset">\'%1$s\' 已从历史移除，当前密钥已重置为默认。</string> <!-- %1$s 是密钥 -->
     <string name="key_screen_toast_key_removed">\'%1$s\' 已从历史移除。</string> <!-- %1$s 是密钥 -->
 
+
     <!-- KeyHistoryItem - 历史密钥列表项 -->
     <string name="key_history_item_delete_content_description">删除密钥 \'%1$s\'</string> <!-- %1$s 是密钥 -->
     <string name="key_screen_confirm_delete_title">确认删除</string>
     <string name="key_screen_confirm_delete_message">您确定要删除密钥 \"%1$s\" 吗？此操作不可恢复。</string>
     <string name="key_screen_delete_confirm_button">确认删除</string>
+
+    <string name="key_selection_dialog_title">选择或设置密钥</string>
+    <string name="key_selection_dialog_input_label">输入新密钥</string>
+    <string name="key_selection_dialog_set_button">设为当前密钥</string>
+    <string name="key_selection_dialog_restore_default_button">恢复默认密钥</string>
+    <string name="key_selection_dialog_history_title">历史密钥</string>
+    <string name="key_selection_dialog_empty_input_error">密钥不能为空！</string>
+    <string name="key_selection_dialog_key_updated">当前密钥已更新为: %1$s</string>
+
+    <string name="key_selection_dialog_search_label">搜索历史密钥</string>
+    <string name="key_selection_dialog_search_icon_desc">搜索密钥</string>
+    <string name="key_selection_dialog_clear_search_desc">清空搜索</string>
+    <string name="key_selection_dialog_no_search_results">未找到匹配的密钥。</string>
+    <string name="key_screen_search_history_label">搜索历史记录</string>
+    <string name="key_screen_search_icon_desc">搜索历史密钥</string>
+    <string name="key_screen_clear_search_desc">清空搜索</string>
+    <string name="key_screen_no_search_results">历史记录中未找到匹配的密钥。</string>
 
 </resources>

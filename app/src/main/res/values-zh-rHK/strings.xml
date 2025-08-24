@@ -124,4 +124,20 @@
     <string name="key_screen_confirm_delete_message">你係咪真係想刪咗 \"%1$s\" 呢条密匙啊？删咗就冇得返转头㗎喇。</string>
     <string name="key_screen_delete_confirm_button">係，刪咗佢</string>
 
+    <string name="key_selection_dialog_title">揀或者設定密匙</string>
+    <string name="key_selection_dialog_input_label">入新密匙</string>
+    <string name="key_selection_dialog_set_button">設為目前密匙</string>
+    <string name="key_selection_dialog_restore_default_button">還原預設密匙</string>
+    <string name="key_selection_dialog_history_title">歷史密匙</string>
+    <string name="key_selection_dialog_empty_input_error">密匙唔可以為空㗎！</string>
+    <string name="key_selection_dialog_key_updated">目前密匙已更新為：%1$s</string>
+
+    <string name="key_selection_dialog_search_label">搜尋歷史密匙</string>
+    <string name="key_selection_dialog_search_icon_desc">搜尋密匙</string>
+    <string name="key_selection_dialog_clear_search_desc">清除搜尋</string>
+    <string name="key_selection_dialog_no_search_results">搵唔到相符嘅密匙。</string>
+    <string name="key_screen_search_history_label">搜尋歷史記錄</string>
+    <string name="key_screen_search_icon_desc">搜尋歷史密匙</string>
+    <string name="key_screen_clear_search_desc">清除搜尋</string>
+    <string name="key_screen_no_search_results">喺歷史記錄搵唔到相符嘅密匙。</string>
 </resources>

@@ -6,38 +6,24 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.Notes
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.rounded.Clear
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,12 +34,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog // 确保导入 Dialog
+import androidx.datastore.preferences.core.edit
+import com.mrntkey.ntkcrypt.Constant
 import com.mrntkey.ntkcrypt.Constant.DEFAULT_SECRET_KEY
 import com.mrntkey.ntkcrypt.R
+import com.mrntkey.ntkcrypt.SettingKeys
 import com.mrntkey.ntkcrypt.SettingKeys.CURRENT_KEY
+import com.mrntkey.ntkcrypt.data.dataStore
 import com.mrntkey.ntkcrypt.hook.rememberDataStoreState
 import com.mrntkey.ntkcrypt.util.CryptoManager
 import com.mrntkey.ntkcrypt.util.CryptoManager.appendNTKCryptTalk
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 @Composable
 fun CryptoScreen(modifier: Modifier = Modifier) {
@@ -61,45 +54,44 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
     var outputText by remember { mutableStateOf("") }
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
-    var isEncryptMode by remember { mutableStateOf(true) }//当前是加密or解密
-    //获取当前密钥，没有就是默认密钥
+    var isEncryptMode by remember { mutableStateOf(true) }
     val secretKey: String by rememberDataStoreState(CURRENT_KEY, DEFAULT_SECRET_KEY)
-    val decryptFailed = stringResource(id = R.string.crypto_decrypt_fail)//解密错误的text。
+    val decryptFailed = stringResource(id = R.string.crypto_decrypt_fail)
     var isDecryptFailed by remember { mutableStateOf(false) }
-    // 新增：用于统计的状态
     var charCount by remember { mutableStateOf(0) }
     var elapsedTime by remember { mutableStateOf(0L) }
-    //自动加解密
-    LaunchedEffect(inputText) {
+
+    var showKeySelectionDialog by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(inputText, secretKey) {
         if (inputText.isEmpty()) {
             outputText = ""
-            // 输入为空时重置统计数据
             charCount = 0
             elapsedTime = 0L
             return@LaunchedEffect
         }
 
-        val startTime = System.currentTimeMillis() // 记录开始时间
-        var ciphertextCharCount = 0 // 临时变量，用于存储密文长度
+        val startTime = System.currentTimeMillis()
+        var ciphertextCharCount = 0
 
         val resultMsg = if (CryptoManager.containsCiphertext(inputText)) {
-            //走解密
             isEncryptMode = false
-            ciphertextCharCount = inputText.length // 解密时，输入框内容就是密文
+            ciphertextCharCount = inputText.length
             CryptoManager.decrypt(inputText, secretKey)
         } else {
             isEncryptMode = true
             val ciphertext = CryptoManager.encrypt(inputText, secretKey).appendNTKCryptTalk()
-            ciphertextCharCount = ciphertext.length // 加密时，输出结果是密文
+            ciphertextCharCount = ciphertext.length
             ciphertext
         }
 
-        val endTime = System.currentTimeMillis() // 记录结束时间
-        elapsedTime = endTime - startTime // 计算耗时
+        val endTime = System.currentTimeMillis()
+        elapsedTime = endTime - startTime
 
         isDecryptFailed = resultMsg == null
         outputText = resultMsg ?: decryptFailed
-        charCount = ciphertextCharCount // 更新状态
+        charCount = ciphertextCharCount
     }
 
     Column(
@@ -108,24 +100,23 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 1. 密钥选择器
         KeySelector(
             selectedKeyName = secretKey,
-            onClick = { /* TODO: 在这里处理点击事件，比如弹出一个密钥选择对话框 */ }
+            onClick = {
+                showKeySelectionDialog = true
+            }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 2. 输入文本框
         OutlinedTextField(
             value = inputText,
             onValueChange = { inputText = it },
             modifier = Modifier
                 .fillMaxWidth()
-//                .height(180.dp),这里不设置固定高度
                 .verticalScroll(rememberScrollState()),
-            minLines = 1,//控制默认的最小行数
-            maxLines = 6,//控制最大行数
+            minLines = 1,
+            maxLines = 6,
             label = { Text(stringResource(id = R.string.crypto_input_label)) },
             placeholder = { Text(stringResource(id = R.string.crypto_input_placeholder)) },
             leadingIcon = {
@@ -134,12 +125,10 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
                     contentDescription = stringResource(id = R.string.crypto_input_icon_desc)
                 )
             },
-            // 右方的辅助按钮
             trailingIcon = {
                 Row {
-                    // 粘贴按钮
                     IconButton(onClick = {
-                        clipboardManager.getText()?.text?.let { inputText += it }//这里+=
+                        clipboardManager.getText()?.text?.let { inputText += it }
                         Toast.makeText(
                             context,
                             context.getString(R.string.crypto_pasted_from_clipboard),
@@ -151,7 +140,6 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
                             contentDescription = stringResource(id = R.string.crypto_paste_icon_desc)
                         )
                     }
-                    // 清空按钮，仅在有输入时显示
                     AnimatedVisibility(visible = inputText.isNotEmpty()) {
                         IconButton(onClick = { inputText = "" }) {
                             Icon(
@@ -171,8 +159,6 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 输出结果区域
-        // 使用 AnimatedVisibility，当有输出时，这个区域会平滑地淡入
         AnimatedVisibility(
             visible = outputText.isNotEmpty(),
             enter = fadeIn(animationSpec = tween(500)),
@@ -180,16 +166,15 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
         ) {
             OutlinedTextField(
                 value = outputText,
-                onValueChange = {}, // 输出框通常是只读的
+                onValueChange = {},
                 readOnly = true,
                 modifier = Modifier
-                    .fillMaxWidth(),
-//                    .height(180.dp),
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()), // 如果输出也可能很长，添加滚动
                 minLines = 1,
                 maxLines = 6,
                 isError = isDecryptFailed,
                 label = { Text(stringResource(if (isEncryptMode) R.string.crypto_result_label_encrypted else R.string.crypto_result_label_decrypted)) },
-                // 右下角的复制按钮
                 trailingIcon = {
                     IconButton(onClick = {
                         clipboardManager.setText(AnnotatedString(outputText))
@@ -215,7 +200,6 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 统计信息区域
         AnimatedVisibility(
             visible = outputText.isNotEmpty(),
             enter = fadeIn(animationSpec = tween(300)),
@@ -225,6 +209,183 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
                 charCount = charCount,
                 elapsedTime = elapsedTime
             )
+        }
+    }
+
+    if (showKeySelectionDialog) {
+        KeySelectionDialog(
+            currentSelectedKey = secretKey,
+            onDismissRequest = { showKeySelectionDialog = false },
+            onKeySelected = { newKey ->
+                scope.launch {
+                    context.dataStore.edit { preferences ->
+                        preferences[CURRENT_KEY] = newKey
+                        val history = preferences[SettingKeys.KEY_HISTORY_LIST] ?: emptySet()
+                        if (!history.contains(newKey) && newKey.isNotBlank()) {
+                            preferences[SettingKeys.KEY_HISTORY_LIST] = history + newKey
+                        }
+                    }
+                }
+                showKeySelectionDialog = false
+                Toast.makeText(context, context.getString(R.string.key_selection_dialog_key_updated, newKey), Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+}
+
+/**
+ * 密钥选择对话框 Composable
+ */
+@Composable
+private fun KeySelectionDialog(
+    currentSelectedKey: String,
+    onDismissRequest: () -> Unit,
+    onKeySelected: (String) -> Unit
+) {
+    val context = LocalContext.current
+    var newKeyInput by remember { mutableStateOf("") }
+    // --- 新增：搜索文本状态 ---
+    var searchQuery by remember { mutableStateOf("") }
+
+    val keyHistoryFlow = remember(context) {
+        context.dataStore.data.map { preferences ->
+            preferences[SettingKeys.KEY_HISTORY_LIST] ?: emptySet()
+        }
+    }
+    val keyHistory by keyHistoryFlow.collectAsState(initial = emptySet())
+
+    // --- 新增：根据搜索查询过滤历史密钥 ---
+    val filteredHistory = remember(keyHistory, searchQuery) {
+        if (searchQuery.isBlank()) {
+            keyHistory.toList().sortedDescending()
+        } else {
+            keyHistory.filter { it.contains(searchQuery, ignoreCase = true) }
+                .sortedDescending()
+        }
+    }
+
+    Dialog(onDismissRequest = onDismissRequest) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = stringResource(R.string.key_selection_dialog_title),
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Spacer(Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = newKeyInput,
+                    onValueChange = { newKeyInput = it },
+                    label = { Text(stringResource(R.string.key_selection_dialog_input_label)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                Spacer(Modifier.height(8.dp))
+
+                Button(
+                    onClick = {
+                        if (newKeyInput.isNotBlank()) {
+                            onKeySelected(newKeyInput)
+                            newKeyInput = ""
+                        } else {
+                            Toast.makeText(context, context.getString(R.string.key_selection_dialog_empty_input_error), Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(stringResource(R.string.key_selection_dialog_set_button))
+                }
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = {
+                        onKeySelected(Constant.DEFAULT_SECRET_KEY)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                ) {
+                    Text(stringResource(R.string.key_selection_dialog_restore_default_button))
+                }
+
+                // --- 历史密钥部分 ---
+                if (keyHistory.isNotEmpty()) { // 即使过滤后为空，只要原始历史不为空，就显示标题和搜索框
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        stringResource(R.string.key_selection_dialog_history_title),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(Modifier.height(8.dp))
+
+                    // --- 新增：搜索栏 ---
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        label = { Text(stringResource(R.string.key_selection_dialog_search_label)) }, // 新增字符串资源
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = stringResource(R.string.key_selection_dialog_search_icon_desc) // 新增字符串资源
+                            )
+                        },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { searchQuery = "" }) {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = stringResource(R.string.key_selection_dialog_clear_search_desc) // 新增字符串资源
+                                    )
+                                }
+                            }
+                        },
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    Spacer(Modifier.height(8.dp))
+
+                    // --- 使用过滤后的历史密钥 ---
+                    if (filteredHistory.isNotEmpty()) {
+                        filteredHistory.forEach { key ->
+                            TextButton(
+                                onClick = { onKeySelected(key) },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = key,
+                                    color = if (key == currentSelectedKey) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                                )
+                            }
+                            Divider()
+                        }
+                    } else if (searchQuery.isNotEmpty()) { // 如果搜索后列表为空
+                        Text(
+                            stringResource(R.string.key_selection_dialog_no_search_results), // 新增字符串资源
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+                    // 如果原始历史为空，则不显示任何内容 (由外层的 if (keyHistory.isNotEmpty()) 控制)
+                }
+
+                Spacer(Modifier.height(16.dp))
+                TextButton(
+                    onClick = onDismissRequest,
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
         }
     }
 }
@@ -243,7 +404,7 @@ private fun CryptoStats(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) // 无阴影，更轻量
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -252,7 +413,6 @@ private fun CryptoStats(
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 字符总数统计
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = stringResource(id = R.string.crypto_stats_char_count),
@@ -267,7 +427,6 @@ private fun CryptoStats(
                     color = MaterialTheme.colorScheme.primary
                 )
             }
-            // 处理耗时统计
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = stringResource(id = R.string.crypto_stats_time_elapsed),
@@ -294,7 +453,6 @@ private fun KeySelector(
     selectedKeyName: String,
     onClick: () -> Unit
 ) {
-    // 将形状定义为一个变量，方便复用
     val cardShape = RoundedCornerShape(16.dp)
 
     Card(
@@ -302,8 +460,8 @@ private fun KeySelector(
             .fillMaxWidth()
             .clip(cardShape)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 16.dp),
+        shape = cardShape, // 使用上面定义的变量
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp), // 可以稍微降低一点阴影，使其更融入
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Row(

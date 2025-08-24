@@ -132,5 +132,23 @@
     <string name="key_screen_confirm_delete_message">Are you sure you want to delete the key \"%1$s\"? This action cannot be undone.</string>
     <string name="key_screen_delete_confirm_button">Delete</string>
 
+    <!-- ... other strings ... -->
+    <string name="key_selection_dialog_title">Select or Set Key</string>
+    <string name="key_selection_dialog_input_label">Enter new key</string>
+    <string name="key_selection_dialog_set_button">Set as Current Key</string>
+    <string name="key_selection_dialog_restore_default_button">Restore Default Key</string>
+    <string name="key_selection_dialog_history_title">History Keys</string>
+    <string name="key_selection_dialog_empty_input_error">Key cannot be empty!</string>
+    <string name="key_selection_dialog_key_updated">Current key updated to: %1$s</string>
+    <!-- ... other strings ... -->
+    <string name="key_selection_dialog_search_label">Search history keys</string>
+    <string name="key_selection_dialog_search_icon_desc">Search keys</string>
+    <string name="key_selection_dialog_clear_search_desc">Clear search</string>
+    <string name="key_selection_dialog_no_search_results">No matching keys found.</string>
+    <string name="key_screen_search_history_label">Search history</string>
+    <string name="key_screen_search_icon_desc">Search history keys</string>
+    <string name="key_screen_clear_search_desc">Clear search</string>
+    <string name="key_screen_no_search_results">No matching keys found in history.</string>
+
     <!-- <string name="cancel">取消</string> -->
 </resources>

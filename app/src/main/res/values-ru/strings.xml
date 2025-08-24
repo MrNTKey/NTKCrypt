@@ -123,4 +123,17 @@
     <string name="key_screen_confirm_delete_title">Подтвердите удаление</string>
     <string name="key_screen_confirm_delete_message">Вы уверены, что хотите удалить ключ \"%1$s\"? Это действие нельзя будет отменить.</string>
     <string name="key_screen_delete_confirm_button">Удалить</string>
+
+    <string name="key_selection_dialog_title">Выбрать или установить ключ</string>
+    <string name="key_selection_dialog_input_label">Введите новый ключ</string>
+    <string name="key_selection_dialog_set_button">Установить как текущий ключ</string>
+    <string name="key_selection_dialog_restore_default_button">Восстановить ключ по умолчанию</string>
+    <string name="key_selection_dialog_history_title">История ключей</string>
+    <string name="key_selection_dialog_empty_input_error">Ключ не может быть пустым!</string>
+    <string name="key_selection_dialog_key_updated">Текущий ключ обновлен на: %1$s</string>
+
+    <string name="key_selection_dialog_search_label">Поиск по истории ключей</string>
+    <string name="key_selection_dialog_search_icon_desc">Поиск ключей</string>
+    <string name="key_selection_dialog_clear_search_desc">Очистить поиск</string>
+    <string name="key_selection_dialog_no_search_results">Совпадающих ключей не найдено.</string>
 </resources>

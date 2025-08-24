@@ -860,26 +860,32 @@ abstract class BaseChatAppHandler : ChatAppHandler {
      * @return 如果解密成功，返回明文字符串；否则返回null。
      */
     private fun tryDecryptingText(textToDecrypt: String?): String? {
-        if(textToDecrypt == null)return null
+        if (textToDecrypt == null) return null
         val currentService = service ?: return null
+
         // 1. 先判断是否真的包含“猫语”，避免不必要的计算
         if (!CryptoManager.containsCiphertext(textToDecrypt)) {
             return null
         }
         Log.d(tag, "检测到密文: $textToDecrypt")
-        // 2. 尝试用所有密钥进行解密
-        Log.d(tag, "目前的全部密钥${currentService.cryptoKeys.joinToString()}")
-        // 2. 遍历所有密钥进行尝试
-        for (key in currentService.cryptoKeys) {
-            val decryptedText = CryptoManager.decrypt(textToDecrypt, key)
-            if (decryptedText != null) {
-                // 3. 只要有一个成功，就立刻返回结果
-                Log.d(tag, "解密成功 -> $decryptedText")
-                return decryptedText
-            }
+
+        // ✨ 修改点：直接使用当前服务中缓存的 currentKey (这个 key 应该从 DataStore 同步过来)
+        val keyToTry = currentService.currentKey
+        Log.d(tag, "尝试使用当前密钥进行解密: $keyToTry")
+
+        val decryptedText = CryptoManager.decrypt(textToDecrypt, keyToTry)
+
+        if (decryptedText != null) {
+            // 3. 如果成功，就立刻返回结果
+            Log.d(tag, "使用当前密钥解密成功 -> $decryptedText")
+            return decryptedText
+        } else {
+            // 4. 如果当前密钥解密失败，记录并返回null
+            //    你之前的日志 "目前的全部密钥..." 和遍历逻辑可以移除了
+            //    或者，如果你确实有特殊需求要在当前密钥失败后再尝试其他，可以保留，但通常不推荐。
+            Log.d(tag, "使用当前密钥 $keyToTry 解密失败。")
+            return null
         }
-        // 4. 如果所有密钥都失败了，返回null
-        return null
     }
 
     // 重置附件的状态
