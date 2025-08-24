@@ -103,4 +103,24 @@
 
     <string name="dialog_download_file_download_failed">ファイルのダウンロードに失敗しました：%s</string>
     <string name="dialog_download_file_file_info">ファイル詳細</string>
+
+    <!-- KeyScreen - キー管理画面 -->
+    <string name="key_screen_title">キー管理</string>
+    <string name="key_screen_current_key_label">現在のキー: %1$s</string> <!-- %1$s はキー自体 -->
+    <string name="key_screen_input_new_key_label">新しいキーを入力するか下記から選択</string>
+    <string name="key_screen_set_and_save_button">現在のキーに設定して履歴に保存</string>
+    <string name="key_screen_restore_default_button">デフォルトキーに戻す</string>
+    <string name="key_screen_history_keys_title">履歴キー</string>
+    <string name="key_screen_no_history_keys">履歴キーはまだありません</string>
+    <string name="key_screen_toast_key_saved_and_set">キー「%1$s」を現在のキーに設定し、履歴に保存しました！</string> <!-- %1$s はキー -->
+    <string name="key_screen_toast_key_restored_default">キーをデフォルトに戻しました！</string>
+    <string name="key_screen_toast_key_empty">キーを空にすることはできません！</string>
+    <string name="key_screen_toast_key_removed_and_current_reset">「%1$s」を履歴から削除しました。現在のキーはデフォルトにリセットされました。</string> <!-- %1$s はキー -->
+    <string name="key_screen_toast_key_removed">「%1$s」を履歴から削除しました。</string> <!-- %1$s はキー -->
+
+    <!-- KeyHistoryItem - 履歴キーリスト項目 -->
+    <string name="key_history_item_delete_content_description">キー「%1$s」を削除</string> <!-- %1$s はキー -->
+    <string name="key_screen_confirm_delete_title">削除の確認</string>
+    <string name="key_screen_confirm_delete_message">キー「%1$s」を削除してもよろしいですか？この操作は元に戻せません。</string>
+    <string name="key_screen_delete_confirm_button">削除</string>
 </resources>

@@ -112,5 +112,26 @@
     <!--    图片文件下载、展示页面-->
     <string name="dialog_download_file_download_failed">文件下载失败：%s</string>
     <string name="dialog_download_file_file_info">文件详情</string>
+    <!-- ... 其他已有的字符串 ... -->
+
+    <!-- KeyScreen - 密钥管理页面 -->
+    <string name="key_screen_title">密钥管理</string>
+    <string name="key_screen_current_key_label">当前密钥: %1$s</string> <!-- %1$s 是密钥本身 -->
+    <string name="key_screen_input_new_key_label">输入新密钥或从下方选择</string>
+    <string name="key_screen_set_and_save_button">设为当前密钥并保存到历史</string>
+    <string name="key_screen_restore_default_button">恢复为默认密钥</string>
+    <string name="key_screen_history_keys_title">历史密钥</string>
+    <string name="key_screen_no_history_keys">暂无历史密钥</string>
+    <string name="key_screen_toast_key_saved_and_set">密钥 \'%1$s\' 已设为当前并保存到历史!</string> <!-- %1$s 是密钥 -->
+    <string name="key_screen_toast_key_restored_default">密钥已恢复为默认!</string>
+    <string name="key_screen_toast_key_empty">输入的密钥不能为空!</string>
+    <string name="key_screen_toast_key_removed_and_current_reset">\'%1$s\' 已从历史移除，当前密钥已重置为默认。</string> <!-- %1$s 是密钥 -->
+    <string name="key_screen_toast_key_removed">\'%1$s\' 已从历史移除。</string> <!-- %1$s 是密钥 -->
+
+    <!-- KeyHistoryItem - 历史密钥列表项 -->
+    <string name="key_history_item_delete_content_description">删除密钥 \'%1$s\'</string> <!-- %1$s 是密钥 -->
+    <string name="key_screen_confirm_delete_title">确认删除</string>
+    <string name="key_screen_confirm_delete_message">您确定要删除密钥 \"%1$s\" 吗？此操作不可恢复。</string>
+    <string name="key_screen_delete_confirm_button">确认删除</string>
 
 </resources>

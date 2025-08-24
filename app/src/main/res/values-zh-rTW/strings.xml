@@ -62,45 +62,64 @@
     <string name="setting_decryption_mode_info_desc">標準模式：\n點擊密文彈出懸浮視窗顯示解密結果。\n\n沉浸模式：\n無須點擊，直接以懸浮視窗顯示解密後的密文，但會增加一定耗電量。</string>
 
     <string name="notification_title">NTKCrypt 尅密服務執行中</string>
-<string name="set_text_failed">密文設定失敗尅！可能是字數過多尅… (｡◕ˇ‸ˇ◕｡)：%d 字</string>
+    <string name="set_text_failed">密文設定失敗尅！可能是字數過多尅… (｡◕ˇ‸ˇ◕｡)：%d 字</string>
 
-<string name="permission_go_to_settings">前往設定</string>
-<string name="permission_overlay_title">需要懸浮視窗權限</string>
-<string name="permission_overlay_text">為了功能正常使用，請您手動授予權限。\n\n在設定頁面，請尋找並開啟「顯示在其他應用程式上層」選項。\n\n在部分手機(如小米、華為)上，還可能額外有「懸浮視窗權限」，請一同在應用程式的權限管理中尋找並開啟它。</string>
-<string name="permission_still_missing_title">仍未偵測到懸浮視窗權限</string>
-<string name="permission_still_missing_text">尅密偵測到懸浮視窗權限仍未開啟。別擔心，這是因為各大手機廠商有更高的懸浮視窗權限控制。\n\n請在接下來開啟的應用程式設定頁面中，手動找到並開啟「懸浮視窗」或「顯示在其他應用程式上層」的相關權限。</string>
+    <string name="permission_go_to_settings">前往設定</string>
+    <string name="permission_overlay_title">需要懸浮視窗權限</string>
+    <string name="permission_overlay_text">為了功能正常使用，請您手動授予權限。\n\n在設定頁面，請尋找並開啟「顯示在其他應用程式上層」選項。\n\n在部分手機(如小米、華為)上，還可能額外有「懸浮視窗權限」，請一同在應用程式的權限管理中尋找並開啟它。</string>
+    <string name="permission_still_missing_title">仍未偵測到懸浮視窗權限</string>
+    <string name="permission_still_missing_text">尅密偵測到懸浮視窗權限仍未開啟。別擔心，這是因為各大手機廠商有更高的懸浮視窗權限控制。\n\n請在接下來開啟的應用程式設定頁面中，手動找到並開啟「懸浮視窗」或「顯示在其他應用程式上層」的相關權限。</string>
 
-<string name="permission_accessibility_title">需要無障礙服務</string>
-<string name="permission_accessibility_text">為了實現自動加解密和讀取聊天內容，請在設定列表中找到「NTKCrypt」並開啟它的無障礙服務。</string>
+    <string name="permission_accessibility_title">需要無障礙服務</string>
+    <string name="permission_accessibility_text">為了實現自動加解密和讀取聊天內容，請在設定列表中找到「NTKCrypt」並開啟它的無障礙服務。</string>
 
-<string name="crypto_settings">加解密設定</string>
-<string name="decryption_long_press_delay">長按解密延時</string>
-<string name="decryption_long_press_delay_desc">設定觸發長按加密所需的時間</string>
-<string name="decryption_window_show_time">解密密文展示時長</string>
-<string name="decryption_window_show_time_desc">設定解密密文懸浮視窗的顯示時間</string>
-<string name="about">關於</string>
+    <string name="crypto_settings">加解密設定</string>
+    <string name="decryption_long_press_delay">長按解密延時</string>
+    <string name="decryption_long_press_delay_desc">設定觸發長按加密所需的時間</string>
+    <string name="decryption_window_show_time">解密密文展示時長</string>
+    <string name="decryption_window_show_time_desc">設定解密密文懸浮視窗的顯示時間</string>
+    <string name="about">關於</string>
 
-<string name="crypto_ui_settings">功能介面設定</string>
-<string name="decryption_window_position_update_delay">彈窗位置更新延時</string>
-<string name="decryption_window_position_update_delay_desc">在沉浸式解密下，密文彈窗位置更新的時間間隔，越短越即時，但可能導致卡頓</string>
-<string name="pick_color">選擇顏色</string>
-<string name="send_btn_overlay_color">按鈕遮罩顏色</string>
-<string name="send_btn_overlay_color_desc">支援 ARGB 和 RGB 格式，用於設定蓋在傳送按鈕上遮罩的顏色。最後一個是純透明</string>
-<string name="double_click_threshold">拉起多媒體彈窗的雙擊間隔</string>
-<string name="double_click_threshold_desc">在間隔時間內雙擊輸入框，會拉起傳送多媒體訊息的彈窗</string>
+    <string name="crypto_ui_settings">功能介面設定</string>
+    <string name="decryption_window_position_update_delay">彈窗位置更新延時</string>
+    <string name="decryption_window_position_update_delay_desc">在沉浸式解密下，密文彈窗位置更新的時間間隔，越短越即時，但可能導致卡頓</string>
+    <string name="pick_color">選擇顏色</string>
+    <string name="send_btn_overlay_color">按鈕遮罩顏色</string>
+    <string name="send_btn_overlay_color_desc">支援 ARGB 和 RGB 格式，用於設定蓋在傳送按鈕上遮罩的顏色。最後一個是純透明</string>
+    <string name="double_click_threshold">拉起多媒體彈窗的雙擊間隔</string>
+    <string name="double_click_threshold_desc">在間隔時間內雙擊輸入框，會拉起傳送多媒體訊息的彈窗</string>
 
-<string name="crypto_attachment_title">傳送加密附件</string>
-<string name="crypto_attachment_media">相簿</string>
-<string name="crypto_attachment_file">檔案</string>
-<string name="crypto_attachment_upload_failed">檔案上傳失敗：%s</string>
-<string name="crypto_attachment_file_not_found">檔案不存在！</string>
-<string name="crypto_attachment_file_not_accessible">檔案無法存取！</string>
-<string name="crypto_attachment_file_too_large">檔案過大！目前最大支援：%d MB</string>
-<string name="crypto_attachment_send_failed_node_not_found">輸入框或傳送按鈕節點未找到！</string>
-<string name="crypto_attachment_chosen_path">已選擇: %s</string>
-<string name="crypto_attachment_uploading">"正在加密上傳..."</string>
+    <string name="crypto_attachment_title">傳送加密附件</string>
+    <string name="crypto_attachment_media">相簿</string>
+    <string name="crypto_attachment_file">檔案</string>
+    <string name="crypto_attachment_upload_failed">檔案上傳失敗：%s</string>
+    <string name="crypto_attachment_file_not_found">檔案不存在！</string>
+    <string name="crypto_attachment_file_not_accessible">檔案無法存取！</string>
+    <string name="crypto_attachment_file_too_large">檔案過大！目前最大支援：%d MB</string>
+    <string name="crypto_attachment_send_failed_node_not_found">輸入框或傳送按鈕節點未找到！</string>
+    <string name="crypto_attachment_chosen_path">已選擇: %s</string>
+    <string name="crypto_attachment_uploading">"正在加密上傳..."</string>
 
-<string name="dialog_download_file_download_failed">檔案下載失敗：%s</string>
-<string name="dialog_download_file_file_info">檔案詳情</string>
+    <string name="dialog_download_file_download_failed">檔案下載失敗：%s</string>
+    <string name="dialog_download_file_file_info">檔案詳情</string>
 
+    <!-- KeyScreen - 金鑰管理頁面 -->
+    <string name="key_screen_title">金鑰管理</string>
+    <string name="key_screen_current_key_label">目前金鑰: %1$s</string> <!-- %1$s 是金鑰本身 -->
+    <string name="key_screen_input_new_key_label">輸入新金鑰或從下方選取</string>
+    <string name="key_screen_set_and_save_button">設為目前金鑰並儲存至歷史記錄</string>
+    <string name="key_screen_restore_default_button">還原預設金鑰</string>
+    <string name="key_screen_history_keys_title">歷史金鑰</string>
+    <string name="key_screen_no_history_keys">尚無歷史金鑰</string>
+    <string name="key_screen_toast_key_saved_and_set">金鑰「%1$s」已設為目前並儲存至歷史記錄！</string> <!-- %1$s 是金鑰 -->
+    <string name="key_screen_toast_key_restored_default">金鑰已還原為預設！</string>
+    <string name="key_screen_toast_key_empty">金鑰不能為空！</string>
+    <string name="key_screen_toast_key_removed_and_current_reset">「%1$s」已從歷史記錄移除，目前金鑰已重設為預設。</string> <!-- %1$s 是金鑰 -->
+    <string name="key_screen_toast_key_removed">「%1$s」已從歷史記錄移除。</string> <!-- %1$s 是金鑰 -->
+
+    <!-- KeyHistoryItem - 歷史金鑰列表項目 -->
+    <string name="key_history_item_delete_content_description">刪除金鑰「%1$s」</string> <!-- %1$s 是金鑰 -->
+    <string name="key_screen_confirm_delete_title">確認刪除</string>
+    <string name="key_screen_confirm_delete_message">您確定要刪除金鑰 \"%1$s\" 嗎？此操作無法復原。</string>
+    <string name="key_screen_delete_confirm_button">刪除</string>
 </resources>

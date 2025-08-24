@@ -452,7 +452,7 @@ abstract class BaseChatAppHandler : ChatAppHandler {
                                     // 如果手指抬起时，长按任务还在“准备中”...
                                     if (longPressJob?.isActive == true) {
                                         // ...说明这是一个短按，取消长按任务...
-                                        longPressJob.cancel()
+                                        longPressJob!!.cancel()
                                         // ✨ ...然后“按响”那个标准的门铃！
                                         v.performClick()
                                     }

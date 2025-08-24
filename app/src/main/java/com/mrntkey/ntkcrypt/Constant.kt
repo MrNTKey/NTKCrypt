@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 
 object Constant {
     const val APP_NAME = "NTKCrypt"
@@ -17,6 +18,7 @@ object Constant {
 object SettingKeys {
     val IS_GLOBAL_ENCRYPTION_MODE = booleanPreferencesKey("global_encryption_enabled")
     val CURRENT_KEY = stringPreferencesKey("current_key")
+    val KEY_HISTORY_LIST = stringSetPreferencesKey("key_history_list") // 新增，用于存储密钥列表
     // 用 String 类型的 Key 来存储序列化后的密钥数组
     val ALL_THE_KEYS = stringPreferencesKey("all_the_keys")
     val USE_AUTO_ENCRYPTION = booleanPreferencesKey("use_auto_encryption")

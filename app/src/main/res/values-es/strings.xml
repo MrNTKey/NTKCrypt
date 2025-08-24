@@ -103,4 +103,23 @@
 
     <string name="dialog_download_file_download_failed">Error al descargar el archivo: %s</string>
     <string name="dialog_download_file_file_info">Detalles del archivo</string>
+
+    <!-- KeyScreen - Pantalla de Gestión de Claves -->
+    <string name="key_screen_title">Gestión de Claves</string>
+    <string name="key_screen_current_key_label">Clave Actual: %1$s</string> <!-- %1$s es la clave misma -->
+    <string name="key_screen_input_new_key_label">Introduce nueva clave o selecciona de abajo</string>
+    <string name="key_screen_set_and_save_button">Establecer como Clave Actual y Guardar en Historial</string>
+    <string name="key_screen_restore_default_button">Restaurar Clave Predeterminada</string>
+    <string name="key_screen_history_keys_title">Claves del Historial</string>
+    <string name="key_screen_no_history_keys">Aún no hay claves en el historial</string>
+    <string name="key_screen_toast_key_saved_and_set">¡Clave \'%1$s\' establecida como actual y guardada en el historial!</string> <!-- %1$s es la clave -->
+    <string name="key_screen_toast_key_restored_default">¡Clave restaurada a predeterminada!</string>
+    <string name="key_screen_toast_key_empty">¡La clave no puede estar vacía!</string>
+    <string name="key_screen_toast_key_removed_and_current_reset">\'%1$s\' eliminada del historial. La clave actual ha sido restablecida a predeterminada.</string> <!-- %1$s es la clave -->
+    <string name="key_screen_toast_key_removed">\'%1$s\' eliminada del historial.</string> <!-- %1$s es la clave -->
+    <!-- KeyHistoryItem - Elemento de la Lista de Claves del Historial -->
+    <string name="key_history_item_delete_content_description">Eliminar clave \'%1$s\'</string> <!-- %1$s es la clave -->
+    <string name="key_screen_confirm_delete_title">Confirmar Eliminación</string>
+    <string name="key_screen_confirm_delete_message">¿Estás seguro de que quieres eliminar la clave \"%1$s\"? Esta acción no se puede deshacer.</string>
+    <string name="key_screen_delete_confirm_button">Eliminar</string>
 </resources>

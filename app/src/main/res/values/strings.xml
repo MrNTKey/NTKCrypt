@@ -111,4 +111,26 @@
     <!--    图片文件下载、展示页面-->
     <string name="dialog_download_file_download_failed">File download failed: %s</string>
     <string name="dialog_download_file_file_info">File Details</string>
+    <!-- KeyScreen - Key Management Page -->
+    <string name="key_screen_title">Key Management</string>
+    <string name="key_screen_current_key_label">Current Key: %1$s</string> <!-- %1$s is the key itself -->
+    <string name="key_screen_input_new_key_label">Enter new key or select from below</string>
+    <string name="key_screen_set_and_save_button">Set as Current Key &amp; Save to History</string>
+    <string name="key_screen_restore_default_button">Restore Default Key</string>
+    <string name="key_screen_history_keys_title">History Keys</string>
+    <string name="key_screen_no_history_keys">No history keys yet</string>
+    <string name="key_screen_toast_key_saved_and_set">Key \'%1$s\' set as current and saved to history!</string> <!-- %1$s is the key -->
+    <string name="key_screen_toast_key_restored_default">Key restored to default!</string>
+    <string name="key_screen_toast_key_empty">Key cannot be empty!</string>
+    <string name="key_screen_toast_key_removed_and_current_reset">\'%1$s\' removed from history. Current key has been reset to default.</string> <!-- %1$s is the key -->
+    <string name="key_screen_toast_key_removed">\'%1$s\' removed from history.</string> <!-- %1$s is the key -->
+
+    <!-- KeyHistoryItem - History Key List Item -->
+    <string name="key_history_item_delete_content_description">Delete key \'%1$s\'</string> <!-- %1$s is the key -->
+
+    <string name="key_screen_confirm_delete_title">Confirm Deletion</string>
+    <string name="key_screen_confirm_delete_message">Are you sure you want to delete the key \"%1$s\"? This action cannot be undone.</string>
+    <string name="key_screen_delete_confirm_button">Delete</string>
+
+    <!-- <string name="cancel">取消</string> -->
 </resources>

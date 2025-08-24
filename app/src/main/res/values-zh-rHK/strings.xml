@@ -103,4 +103,25 @@
     <string name="dialog_download_file_download_failed">檔案下載失敗：%s</string>
     <string name="dialog_download_file_file_info">檔案詳情</string>
 
+        <!-- KeyScreen - 密匙管理頁面 -->
+    <string name="key_screen_title">密匙管理</string>
+    <string name="key_screen_current_key_label">目前密匙: %1$s</string> <!-- %1$s 係密匙本身 -->
+    <string name="key_screen_input_new_key_label">入新密匙或者喺下面揀</string>
+    <string name="key_screen_set_and_save_button">設為目前密匙並儲存到記錄</string>
+    <string name="key_screen_restore_default_button">還原預設密匙</string>
+    <string name="key_screen_history_keys_title">歷史密匙</string>
+    <string name="key_screen_no_history_keys">暫時冇歷史密匙</string>
+    <string name="key_screen_toast_key_saved_and_set">密匙「%1$s」已經設為目前並儲存到記錄喇！</string> <!-- %1$s 係密匙 -->
+    <string name="key_screen_toast_key_restored_default">密匙已還原為預設！</string>
+    <string name="key_screen_toast_key_empty">密匙唔可以為空㗎！</string>
+    <string name="key_screen_toast_key_removed_and_current_reset">「%1$s」已經由記錄移除，目前密匙已重設為預設。</string> <!-- %1$s 係密匙 -->
+    <string name="key_screen_toast_key_removed">「%1$s」已經由記錄移除咗。</string> <!-- %1$s 係密匙 -->
+
+        <!-- KeyHistoryItem - 歷史密匙列表項目 -->
+    <string name="key_history_item_delete_content_description">刪除密匙「%1$s」</string> <!-- %1$s 係密匙 -->
+
+    <string name="key_screen_confirm_delete_title">確認刪除</string>
+    <string name="key_screen_confirm_delete_message">你係咪真係想刪咗 \"%1$s\" 呢条密匙啊？删咗就冇得返转头㗎喇。</string>
+    <string name="key_screen_delete_confirm_button">係，刪咗佢</string>
+
 </resources>

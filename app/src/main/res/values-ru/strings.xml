@@ -103,4 +103,24 @@
 
     <string name="dialog_download_file_download_failed">Не удалось скачать файл: %s</string>
     <string name="dialog_download_file_file_info">Информация о файле</string>
+
+    <!-- KeyScreen - Экран управления ключами -->
+    <string name="key_screen_title">Управление ключами</string>
+    <string name="key_screen_current_key_label">Текущий ключ: %1$s</string> <!-- %1$s - это сам ключ -->
+    <string name="key_screen_input_new_key_label">Введите новый ключ или выберите из списка ниже</string>
+    <string name="key_screen_set_and_save_button">Установить как текущий и сохранить в историю</string>
+    <string name="key_screen_restore_default_button">Восстановить ключ по умолчанию</string>
+    <string name="key_screen_history_keys_title">История ключей</string>
+    <string name="key_screen_no_history_keys">Ключей в истории пока нет</string>
+    <string name="key_screen_toast_key_saved_and_set">Ключ \'%1$s\' установлен как текущий и сохранен в историю!</string> <!-- %1$s - это ключ -->
+    <string name="key_screen_toast_key_restored_default">Ключ восстановлен по умолчанию!</string>
+    <string name="key_screen_toast_key_empty">Ключ не может быть пустым!</string>
+    <string name="key_screen_toast_key_removed_and_current_reset">Ключ \'%1$s\' удален из истории. Текущий ключ сброшен на значение по умолчанию.</string> <!-- %1$s - это ключ -->
+    <string name="key_screen_toast_key_removed">Ключ \'%1$s\' удален из истории.</string> <!-- %1$s - это ключ -->
+
+    <!-- KeyHistoryItem - Элемент списка истории ключей -->
+    <string name="key_history_item_delete_content_description">Удалить ключ \'%1$s\'</string>
+    <string name="key_screen_confirm_delete_title">Подтвердите удаление</string>
+    <string name="key_screen_confirm_delete_message">Вы уверены, что хотите удалить ключ \"%1$s\"? Это действие нельзя будет отменить.</string>
+    <string name="key_screen_delete_confirm_button">Удалить</string>
 </resources>
