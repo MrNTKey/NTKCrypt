@@ -139,4 +139,8 @@
     <string name="key_screen_search_icon_desc">搜尋歷史金鑰</string>
     <string name="key_screen_clear_search_desc">清除搜尋</string>
     <string name="key_screen_no_search_results">歷史記錄中未找到相符的金鑰。</string>
+
+    <string name="crypto_neko_talk_label">附加貓語 (可選)</string>
+    <string name="crypto_neko_talk_placeholder">例如: 喵~, (^_^)</string>
+    <string name="crypto_neko_talk_icon_desc">附加貓語圖示</string>
 </resources>

@@ -16,6 +16,7 @@ object Constant {
 }
 
 object SettingKeys {
+    val USER_NEKO_TALK = stringPreferencesKey("user_neko_talk")
     val IS_GLOBAL_ENCRYPTION_MODE = booleanPreferencesKey("global_encryption_enabled")
     val CURRENT_KEY = stringPreferencesKey("current_key")
     val KEY_HISTORY_LIST = stringSetPreferencesKey("key_history_list") // 新增，用于存储密钥列表

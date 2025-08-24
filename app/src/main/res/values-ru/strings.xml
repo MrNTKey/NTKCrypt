@@ -136,4 +136,13 @@
     <string name="key_selection_dialog_search_icon_desc">Поиск ключей</string>
     <string name="key_selection_dialog_clear_search_desc">Очистить поиск</string>
     <string name="key_selection_dialog_no_search_results">Совпадающих ключей не найдено.</string>
+
+    <string name="key_screen_search_history_label">История поиска</string>
+    <string name="key_screen_search_icon_desc">Поиск ключей в истории</string>
+    <string name="key_screen_clear_search_desc">Очистить поиск</string>
+    <string name="key_screen_no_search_results">В истории не найдено подходящих ключей.</string>
+
+    <string name="crypto_neko_talk_label">Добавить «Нэко-речь» (необязательно)</string>
+    <string name="crypto_neko_talk_placeholder">например, Мяу~, (^_^)</string>
+    <string name="crypto_neko_talk_icon_desc">Значок добавления «Нэко-речи»</string>
 </resources>

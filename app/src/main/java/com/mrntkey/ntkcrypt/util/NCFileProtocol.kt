@@ -53,6 +53,8 @@ data class NCFileProtocol(
         Log.d("NTKCryptAccessibility", "protocol本身结果结果：$this")
         val payloadJson = Json.encodeToString(this)
         Log.d("NTKCryptAccessibility", "protocol转json结果：$payloadJson")
-        return CryptoManager.encrypt(NC_FILE_PROTOCOL_PREFIX + payloadJson, encryptionKey).appendNTKCryptTalk()
+        return CryptoManager.encrypt(NC_FILE_PROTOCOL_PREFIX + payloadJson, encryptionKey).appendNTKCryptTalk(
+            nekoTalk = TODO()
+        )
     }
 }

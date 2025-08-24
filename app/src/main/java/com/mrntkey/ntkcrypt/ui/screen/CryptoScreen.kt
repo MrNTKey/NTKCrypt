@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.Pets
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -34,65 +35,100 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog // 确保导入 Dialog
+import androidx.compose.ui.window.Dialog
 import androidx.datastore.preferences.core.edit
 import com.mrntkey.ntkcrypt.Constant
 import com.mrntkey.ntkcrypt.Constant.DEFAULT_SECRET_KEY
 import com.mrntkey.ntkcrypt.R
 import com.mrntkey.ntkcrypt.SettingKeys
 import com.mrntkey.ntkcrypt.SettingKeys.CURRENT_KEY
+import com.mrntkey.ntkcrypt.SettingKeys.KEY_HISTORY_LIST
+import com.mrntkey.ntkcrypt.SettingKeys.USER_NEKO_TALK
 import com.mrntkey.ntkcrypt.data.dataStore
 import com.mrntkey.ntkcrypt.hook.rememberDataStoreState
 import com.mrntkey.ntkcrypt.util.CryptoManager
 import com.mrntkey.ntkcrypt.util.CryptoManager.appendNTKCryptTalk
+// kotlinx.coroutines.FlowPreview 和 kotlinx.coroutines.flow.debounce 不再需要
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @Composable
 fun CryptoScreen(modifier: Modifier = Modifier) {
     var inputText by remember { mutableStateOf("") }
-    var outputText by remember { mutableStateOf("") }
+    // intermediateOutputText 存储不含猫语的原始加/解密结果
+    var intermediateOutputText by remember { mutableStateOf("") }
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
     var isEncryptMode by remember { mutableStateOf(true) }
+
     val secretKey: String by rememberDataStoreState(CURRENT_KEY, DEFAULT_SECRET_KEY)
+    var userNekoTalk: String by rememberDataStoreState(USER_NEKO_TALK, "喵~")
+
     val decryptFailed = stringResource(id = R.string.crypto_decrypt_fail)
     var isDecryptFailed by remember { mutableStateOf(false) }
-    var charCount by remember { mutableStateOf(0) }
+    var charCount by remember { mutableStateOf(0) } // 将由 finalOutputToDisplay 更新
     var elapsedTime by remember { mutableStateOf(0L) }
 
     var showKeySelectionDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
+    // ✨ 主要的 LaunchedEffect，现在只依赖 inputText 和 secretKey ✨
     LaunchedEffect(inputText, secretKey) {
         if (inputText.isEmpty()) {
-            outputText = ""
-            charCount = 0
-            elapsedTime = 0L
+            intermediateOutputText = ""
+            // outputText (最终显示) 也会在下面被清空
+            // charCount 和 elapsedTime 也会在 finalOutputToDisplay 中重置
+            isDecryptFailed = false // 重置解密失败状态
             return@LaunchedEffect
         }
 
         val startTime = System.currentTimeMillis()
-        var ciphertextCharCount = 0
+        val resultMsg: String? // 可以为 null
 
-        val resultMsg = if (CryptoManager.containsCiphertext(inputText)) {
+        if (CryptoManager.containsCiphertext(inputText)) {
             isEncryptMode = false
-            ciphertextCharCount = inputText.length
-            CryptoManager.decrypt(inputText, secretKey)
+            // intermediateOutputText 将是解密结果或 null
+            resultMsg = CryptoManager.decrypt(inputText, secretKey)
+            intermediateOutputText = resultMsg ?: "" // 如果解密失败，intermediateOutputText 为空串
         } else {
             isEncryptMode = true
-            val ciphertext = CryptoManager.encrypt(inputText, secretKey).appendNTKCryptTalk()
-            ciphertextCharCount = ciphertext.length
-            ciphertext
+            // intermediateOutputText 将是纯加密结果 (不含猫语)
+            resultMsg = CryptoManager.encrypt(inputText, secretKey)
+            intermediateOutputText = resultMsg // encrypt 不会返回 null (假设)
         }
 
         val endTime = System.currentTimeMillis()
         elapsedTime = endTime - startTime
 
-        isDecryptFailed = resultMsg == null
-        outputText = resultMsg ?: decryptFailed
-        charCount = ciphertextCharCount
+        isDecryptFailed = resultMsg == null && !isEncryptMode // 只有在解密模式且结果为 null 时才算失败
+        // charCount 会在 finalOutputToDisplay 中更新
     }
+
+    // ✨ 使用 remember 计算最终要显示的 outputText ✨
+    // 这个 remember 块会在 intermediateOutputText, userNekoTalk, isEncryptMode, isDecryptFailed 变化时重新计算
+    val finalOutputToDisplay = remember(intermediateOutputText, userNekoTalk, isEncryptMode, isDecryptFailed, decryptFailed) {
+        if (intermediateOutputText.isEmpty() && inputText.isEmpty()) { // 同时检查 inputText，确保初始状态为空
+            charCount = 0
+            elapsedTime = 0L // 重置时间
+            ""
+        } else if (isDecryptFailed) { // 解密失败 (由 LaunchedEffect 设置)
+            charCount = decryptFailed.length
+            decryptFailed
+        } else if (isEncryptMode) {
+            if (intermediateOutputText.isNotEmpty()) { // 确保有基础加密文本
+                val finalText = intermediateOutputText.appendNTKCryptTalk(userNekoTalk)
+                charCount = finalText.length
+                finalText
+            } else {
+                charCount = 0 // 如果基础加密文本为空（不应该发生如果inputText非空）
+                ""
+            }
+        } else { // 解密成功
+            charCount = intermediateOutputText.length
+            intermediateOutputText
+        }
+    }
+
 
     Column(
         modifier = modifier
@@ -107,11 +143,12 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
             }
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
             value = inputText,
             onValueChange = { inputText = it },
+            // ... (其他 inputText OutlinedTextField 属性)
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState()),
@@ -157,27 +194,65 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
             )
         )
 
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // 猫语输入框
+        OutlinedTextField(
+            value = userNekoTalk,
+            onValueChange = { newUserNekoTalk ->
+                userNekoTalk = newUserNekoTalk // 这会触发 finalOutputToDisplay 的重新计算
+            },
+            // ... (其他 userNekoTalk OutlinedTextField 属性)
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.crypto_neko_talk_label)) },
+            placeholder = { Text(stringResource(R.string.crypto_neko_talk_placeholder)) },
+            leadingIcon = {
+                Icon(
+                    Icons.Rounded.Pets,
+                    contentDescription = stringResource(R.string.crypto_neko_talk_icon_desc)
+                )
+            },
+            trailingIcon = {
+                AnimatedVisibility(visible = userNekoTalk.isNotEmpty()) {
+                    IconButton(onClick = { userNekoTalk = "" }) {
+                        Icon(
+                            Icons.Rounded.Clear,
+                            contentDescription = stringResource(id = R.string.crypto_clear_input_icon_desc)
+                        )
+                    }
+                }
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+            )
+        )
+
         Spacer(modifier = Modifier.height(16.dp))
 
+        // 输出框现在使用 finalOutputToDisplay
         AnimatedVisibility(
-            visible = outputText.isNotEmpty(),
+            visible = finalOutputToDisplay.isNotEmpty(),
             enter = fadeIn(animationSpec = tween(500)),
             exit = fadeOut(animationSpec = tween(500))
         ) {
             OutlinedTextField(
-                value = outputText,
+                value = finalOutputToDisplay, // <-- 使用计算后的最终文本
                 onValueChange = {},
                 readOnly = true,
+                // ... (其他输出框 OutlinedTextField 属性)
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()), // 如果输出也可能很长，添加滚动
+                    .verticalScroll(rememberScrollState()),
                 minLines = 1,
                 maxLines = 6,
-                isError = isDecryptFailed,
+                isError = isDecryptFailed, // isDecryptFailed 仍然由 LaunchedEffect 更新
                 label = { Text(stringResource(if (isEncryptMode) R.string.crypto_result_label_encrypted else R.string.crypto_result_label_decrypted)) },
                 trailingIcon = {
                     IconButton(onClick = {
-                        clipboardManager.setText(AnnotatedString(outputText))
+                        clipboardManager.setText(AnnotatedString(finalOutputToDisplay))
                         Toast.makeText(
                             context,
                             context.getString(R.string.crypto_copied_to_clipboard),
@@ -201,12 +276,12 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
         Spacer(modifier = Modifier.height(16.dp))
 
         AnimatedVisibility(
-            visible = outputText.isNotEmpty(),
+            visible = finalOutputToDisplay.isNotEmpty(),
             enter = fadeIn(animationSpec = tween(300)),
             exit = fadeOut(animationSpec = tween(300))
         ) {
             CryptoStats(
-                charCount = charCount,
+                charCount = charCount, // charCount 由 finalOutputToDisplay 更新
                 elapsedTime = elapsedTime
             )
         }
@@ -220,9 +295,9 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
                 scope.launch {
                     context.dataStore.edit { preferences ->
                         preferences[CURRENT_KEY] = newKey
-                        val history = preferences[SettingKeys.KEY_HISTORY_LIST] ?: emptySet()
+                        val history = preferences[KEY_HISTORY_LIST] ?: emptySet()
                         if (!history.contains(newKey) && newKey.isNotBlank()) {
-                            preferences[SettingKeys.KEY_HISTORY_LIST] = history + newKey
+                            preferences[KEY_HISTORY_LIST] = history + newKey
                         }
                     }
                 }
@@ -233,9 +308,65 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
     }
 }
 
-/**
- * 密钥选择对话框 Composable
- */
+// ----------------------------------------------------
+// Helper Composable Functions (KeySelector, KeySelectionDialog, CryptoStats)
+// 这些函数的定义与前一个版本相同，这里省略以保持简洁
+// 确保它们在此文件或已正确导入
+// ----------------------------------------------------
+
+@Composable
+private fun KeySelector(
+    selectedKeyName: String,
+    onClick: () -> Unit
+) {
+    val cardShape = RoundedCornerShape(16.dp)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(cardShape)
+            .clickable(onClick = onClick),
+        shape = cardShape,
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Key,
+                    contentDescription = stringResource(id = R.string.crypto_key_icon_desc),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = stringResource(id = R.string.crypto_current_key_label),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f)
+                    )
+                    Text(
+                        text = selectedKeyName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = stringResource(id = R.string.crypto_select_key_icon_desc),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
 @Composable
 private fun KeySelectionDialog(
     currentSelectedKey: String,
@@ -244,17 +375,15 @@ private fun KeySelectionDialog(
 ) {
     val context = LocalContext.current
     var newKeyInput by remember { mutableStateOf("") }
-    // --- 新增：搜索文本状态 ---
     var searchQuery by remember { mutableStateOf("") }
 
     val keyHistoryFlow = remember(context) {
         context.dataStore.data.map { preferences ->
-            preferences[SettingKeys.KEY_HISTORY_LIST] ?: emptySet()
+            preferences[KEY_HISTORY_LIST] ?: emptySet()
         }
     }
     val keyHistory by keyHistoryFlow.collectAsState(initial = emptySet())
 
-    // --- 新增：根据搜索查询过滤历史密钥 ---
     val filteredHistory = remember(keyHistory, searchQuery) {
         if (searchQuery.isBlank()) {
             keyHistory.toList().sortedDescending()
@@ -319,8 +448,7 @@ private fun KeySelectionDialog(
                     Text(stringResource(R.string.key_selection_dialog_restore_default_button))
                 }
 
-                // --- 历史密钥部分 ---
-                if (keyHistory.isNotEmpty()) { // 即使过滤后为空，只要原始历史不为空，就显示标题和搜索框
+                if (keyHistory.isNotEmpty()) {
                     Spacer(Modifier.height(16.dp))
                     Text(
                         stringResource(R.string.key_selection_dialog_history_title),
@@ -328,17 +456,16 @@ private fun KeySelectionDialog(
                     )
                     Spacer(Modifier.height(8.dp))
 
-                    // --- 新增：搜索栏 ---
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        label = { Text(stringResource(R.string.key_selection_dialog_search_label)) }, // 新增字符串资源
+                        label = { Text(stringResource(R.string.key_selection_dialog_search_label)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         leadingIcon = {
                             Icon(
                                 Icons.Default.Search,
-                                contentDescription = stringResource(R.string.key_selection_dialog_search_icon_desc) // 新增字符串资源
+                                contentDescription = stringResource(R.string.key_selection_dialog_search_icon_desc)
                             )
                         },
                         trailingIcon = {
@@ -346,7 +473,7 @@ private fun KeySelectionDialog(
                                 IconButton(onClick = { searchQuery = "" }) {
                                     Icon(
                                         Icons.Default.Close,
-                                        contentDescription = stringResource(R.string.key_selection_dialog_clear_search_desc) // 新增字符串资源
+                                        contentDescription = stringResource(R.string.key_selection_dialog_clear_search_desc)
                                     )
                                 }
                             }
@@ -355,7 +482,6 @@ private fun KeySelectionDialog(
                     )
                     Spacer(Modifier.height(8.dp))
 
-                    // --- 使用过滤后的历史密钥 ---
                     if (filteredHistory.isNotEmpty()) {
                         filteredHistory.forEach { key ->
                             TextButton(
@@ -369,13 +495,12 @@ private fun KeySelectionDialog(
                             }
                             Divider()
                         }
-                    } else if (searchQuery.isNotEmpty()) { // 如果搜索后列表为空
+                    } else if (searchQuery.isNotEmpty()) {
                         Text(
-                            stringResource(R.string.key_selection_dialog_no_search_results), // 新增字符串资源
+                            stringResource(R.string.key_selection_dialog_no_search_results),
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
                     }
-                    // 如果原始历史为空，则不显示任何内容 (由外层的 if (keyHistory.isNotEmpty()) 控制)
                 }
 
                 Spacer(Modifier.height(16.dp))
@@ -390,10 +515,6 @@ private fun KeySelectionDialog(
     }
 }
 
-
-/**
- * 一个用于展示统计信息（字符数和耗时）的组件。
- */
 @Composable
 private fun CryptoStats(
     charCount: Int,
@@ -445,58 +566,3 @@ private fun CryptoStats(
     }
 }
 
-/**
- * 一个用于展示和选择密钥的自定义组件。
- */
-@Composable
-private fun KeySelector(
-    selectedKeyName: String,
-    onClick: () -> Unit
-) {
-    val cardShape = RoundedCornerShape(16.dp)
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(cardShape)
-            .clickable(onClick = onClick),
-        shape = cardShape, // 使用上面定义的变量
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp), // 可以稍微降低一点阴影，使其更融入
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.Key,
-                    contentDescription = stringResource(id = R.string.crypto_key_icon_desc),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = stringResource(id = R.string.crypto_current_key_label),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f)
-                    )
-                    Text(
-                        text = selectedKeyName,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = stringResource(id = R.string.crypto_select_key_icon_desc),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}

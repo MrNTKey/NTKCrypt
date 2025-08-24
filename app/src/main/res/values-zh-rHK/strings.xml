@@ -140,4 +140,8 @@
     <string name="key_screen_search_icon_desc">搜尋歷史密匙</string>
     <string name="key_screen_clear_search_desc">清除搜尋</string>
     <string name="key_screen_no_search_results">喺歷史記錄搵唔到相符嘅密匙。</string>
+
+    <string name="crypto_neko_talk_label">附加貓語 (可以唔填)</string>
+    <string name="crypto_neko_talk_placeholder">例如: 喵~, (^_^)</string>
+    <string name="crypto_neko_talk_icon_desc">附加貓語圖示</string>
 </resources>

@@ -510,7 +510,9 @@ abstract class BaseChatAppHandler : ChatAppHandler {
             val originalText = inputNode?.text?.toString()
 
             // 2. 加密文本
-            val encryptedText = CryptoManager.encrypt(originalText!!, currentService.currentKey).appendNTKCryptTalk()
+            val encryptedText = CryptoManager.encrypt(originalText!!, currentService.currentKey).appendNTKCryptTalk(
+                nekoTalk = TODO()
+            )
 
             // 3. 调用核心发送函数
             setTextAndSend(encryptedText)

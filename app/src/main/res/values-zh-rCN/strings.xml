@@ -152,4 +152,7 @@
     <string name="key_screen_clear_search_desc">清空搜索</string>
     <string name="key_screen_no_search_results">历史记录中未找到匹配的密钥。</string>
 
+    <string name="crypto_neko_talk_label">附加猫语 (可选)</string>
+    <string name="crypto_neko_talk_placeholder">例如: 喵~, (^_^)</string>
+    <string name="crypto_neko_talk_icon_desc">附加猫语图标</string>
 </resources>

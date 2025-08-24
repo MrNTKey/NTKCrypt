@@ -140,4 +140,8 @@
     <string name="key_screen_clear_search_desc">Limpiar búsqueda</string>
     <string name="key_screen_no_search_results">No se encontraron claves coincidentes en el historial.</string>
 
+    <string name="crypto_neko_talk_label">Añadir Neko-talk (Opcional)</string>
+    <string name="crypto_neko_talk_placeholder">ej., Miau~, (^_^)</string>
+    <string name="crypto_neko_talk_icon_desc">Icono para añadir Neko-talk</string>
+
 </resources>

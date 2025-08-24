@@ -150,5 +150,7 @@
     <string name="key_screen_clear_search_desc">Clear search</string>
     <string name="key_screen_no_search_results">No matching keys found in history.</string>
 
-    <!-- <string name="cancel">取消</string> -->
+    <string name="crypto_neko_talk_label">Append Neko-talk (Optional)</string>
+    <string name="crypto_neko_talk_placeholder">e.g., Meow~, (^_^)</string>
+    <string name="crypto_neko_talk_icon_desc">Append Neko-talk Icon</string>
 </resources>
