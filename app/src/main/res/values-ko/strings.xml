@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ok">아, 그렇군요. 이제 완전히 이해했어요.</string>
+    <string name="cancel">닫기</string>
+    <string name="send">보내기</string>
+    <string name="accept">확인</string>
+    <string name="file_size">파일 크기</string>
+    <string name="url">URL</string>
+    <string name="download">다운로드</string>
+    <string name="downloading">다운로드 중</string>
+    <string name="open_file">파일 열기</string>
+    <string name="cannot_open_file">파일을 열 수 없습니다</string>
+    <string name="save_to_gallery">갤러리에 저장</string>
+    <string name="image_saved_to_gallery_success">갤러리에 성공적으로 저장되었습니다</string>
+    <string name="image_saved_to_gallery_failed">갤러리에 저장 실패</string>
+    <string name="image_saved_to_gallery_saved">갤러리에 저장되었습니다</string>
+
+    <string name="home">홈</string>
+    <string name="crypto">암호화</string>
+    <string name="key">키</string>
+    <string name="settings">설정</string>
+
+    <string name="mode_standard">표준 모드</string>
+    <string name="mode_immersive">몰입 모드</string>
+
+    <string name="crypto_input_label">평문 또는 암호문 입력</string>
+    <string name="crypto_input_placeholder">여기에 텍스트를 입력하거나 붙여넣기…</string>
+    <string name="crypto_decrypt_fail">복호화 실패! 암호문이 변조되었거나 키가 잘못되었습니다.\n ｡ﾟ(ﾟ´Д｀ﾟ)ﾟ｡</string>
+    <string name="crypto_input_icon_desc">입력 아이콘</string>
+    <string name="crypto_pasted_from_clipboard">클립보드에서 붙여넣음</string>
+    <string name="crypto_paste_icon_desc">붙여넣기</string>
+    <string name="crypto_clear_input_icon_desc">입력 지우기</string>
+    <string name="crypto_encrypt_icon_desc">암호화 아이콘</string>
+    <string name="crypto_swap_icon_desc">입력과 출력 전환</string>
+    <string name="crypto_decrypt_button">복호화</string>
+    <string name="crypto_decrypt_icon_desc">복호화 아이콘</string>
+    <string name="crypto_result_label_encrypted">암호화 결과</string>
+    <string name="crypto_result_label_decrypted">복호화 결과</string>
+    <string name="crypto_copied_to_clipboard">클립보드에 복사되었습니다</string>
+    <string name="crypto_copy_result_icon_desc">결과 복사</string>
+    <string name="crypto_key_icon_desc">키 아이콘</string>
+    <string name="crypto_current_key_label">현재 키</string>
+    <string name="crypto_select_key_icon_desc">키 선택</string>
+
+    <string name="crypto_stats_char_count">암호문 문자 수</string>
+    <string name="crypto_stats_time_elapsed">총 처리 시간</string>
+    <string name="crypto_stats_time_ms">%1$d ms</string>
+
+    <string name="accessibility_service_about">NTKCrypt 서비스, 메시지 스마트 암호화/복호화에 사용됩니다</string>
+    <string name="accessibility_service_description">기능의 정상적인 사용을 위해 접근성 권한을 신청해야 합니다 (๑•̀ㅂ•́)و✧</string>
+
+    <string name="accessibility_service_enabled">접근성 권한을 얻었습니다</string>
+    <string name="accessibility_service_disabled">탭하여 접근성 권한 켜기</string>
+    <string name="setting_encrypt_on_send_title">암호화 스위치</string>
+    <string name="setting_encrypt_on_send_subtitle">NTKCrypt 세계의 문을 엽니다.</string>
+    <string name="setting_decrypt_immersive_mod_title">복호화 스위치</string>
+    <string name="setting_decrypt_immersive_mod_subtitle">NTK 언어를 이해하는 필수 옵션입니다!</string>
+    <string name="setting_encryption_mode_info_title">암호화 모드 설정</string>
+    <string name="setting_encryption_mode_info_text">암호화 모드 설명</string>
+    <string name="setting_encryption_mode_info_desc">표준 모드:\n보내기 버튼을 길게 눌러야만 암호문을 보냅니다.\n\n몰입 모드:\n탭하면 바로 암호문을 보냅니다.</string>
+    <string name="setting_decryption_mode_info_title">복호화 모드 설정</string>
+    <string name="setting_decryption_mode_info_text">복호화 모드 설명</string>
+    <string name="setting_decryption_mode_info_desc">표준 모드:\n암호문을 탭하면 복호화 결과가 플로팅 창으로 나타납니다.\n\n몰입 모드:\n탭할 필요 없이 복호화된 암호문이 플로팅 창으로 바로 표시되지만, 배터리 소모가 증가합니다.</string>
+
+    <string name="notification_title">NTKCrypt 서비스 실행 중</string>
+    <string name="set_text_failed">암호문 설정 실패! 아마도 글자 수가 너무 많아서일 거예요… (｡◕ˇ‸ˇ◕｡): %d 자</string>
+
+    <string name="permission_go_to_settings">설정으로 이동</string>
+    <string name="permission_overlay_title">오버레이 권한이 필요합니다</string>
+    <string name="permission_overlay_text">기능의 정상적인 사용을 위해 직접 권한을 부여해 주세요.\n\n설정 페이지에서 "다른 앱 위에 표시" 옵션을 찾아 켜주세요.\n\n일부 휴대폰(예: 샤오미, 화웨이)에서는 "오버레이 권한"이 추가로 필요할 수 있으니, 앱의 권한 관리에서 함께 찾아 켜주세요.</string>
+    <string name="permission_still_missing_title">오버레이 권한이 아직 감지되지 않았습니다</string>
+    <string name="permission_still_missing_text">NTKCrypt가 오버레이 권한이 아직 켜지지 않은 것을 감지했습니다. 걱정하지 마세요. 이는 각 휴대폰 제조사들이 오버레이 권한을 더 엄격하게 관리하기 때문입니다.\n\n다음에 열리는 앱 설정 페이지에서 "오버레이" 또는 "다른 앱 위에 표시" 관련 권한을 직접 찾아 켜주세요.</string>
+
+    <string name="permission_accessibility_title">접근성 서비스가 필요합니다</string>
+    <string name="permission_accessibility_text">자동 암호화/복호화 및 채팅 내용 읽기 기능을 위해, 설정 목록에서 "NTKCrypt"를 찾아 접근성 서비스를 켜주세요.</string>
+
+    <string name="crypto_settings">암호화/복호화 설정</string>
+    <string name="decryption_long_press_delay">길게 누르기 복호화 지연</string>
+    <string name="decryption_long_press_delay_desc">암호화를 길게 눌러 실행하는 데 필요한 시간을 설정합니다</string>
+    <string name="decryption_window_show_time">복호화된 암호문 표시 시간</string>
+    <string name="decryption_window_show_time_desc">복호화된 암호문 플로팅 창의 표시 시간을 설정합니다</string>
+    <string name="about">정보</string>
+
+    <string name="crypto_ui_settings">기능 화면 설정</string>
+    <string name="decryption_window_position_update_delay">팝업 위치 업데이트 지연</string>
+    <string name="decryption_window_position_update_delay_desc">몰입형 복호화 시 암호문 팝업 위치가 업데이트되는 시간 간격입니다. 짧을수록 실시간이지만 끊김이 발생할 수 있습니다</string>
+    <string name="pick_color">색상 선택</string>
+    <string name="send_btn_overlay_color">버튼 오버레이 색상</string>
+    <string name="send_btn_overlay_color_desc">ARGB 및 RGB 형식을 지원하며, 보내기 버튼 위에 덮는 오버레이 색상을 설정합니다. 마지막은 완전 투명입니다</string>
+    <string name="double_click_threshold">멀티미디어 팝업을 여는 더블 클릭 간격</string>
+    <string name="double_click_threshold_desc">설정된 시간 간격 내에 입력란을 더블 클릭하면 멀티미디어 메시지 보내기 팝업이 나타납니다</string>
+
+    <string name="crypto_attachment_title">암호화된 첨부 파일 보내기</string>
+    <string name="crypto_attachment_media">갤러리</string>
+    <string name="crypto_attachment_file">파일</string>
+    <string name="crypto_attachment_upload_failed">파일 업로드 실패: %s</string>
+    <string name="crypto_attachment_file_not_found">파일이 존재하지 않습니다!</string>
+    <string name="crypto_attachment_file_not_accessible">파일에 접근할 수 없습니다!</string>
+    <string name="crypto_attachment_file_too_large">파일이 너무 큽니다! 현재 최대 지원: %d MB</string>
+    <string name="crypto_attachment_send_failed_node_not_found">입력란 또는 보내기 버튼 노드를 찾을 수 없습니다!</string>
+    <string name="crypto_attachment_chosen_path">선택됨: %s</string>
+    <string name="crypto_attachment_uploading">"암호화 및 업로드 중..."</string>
+
+    <string name="dialog_download_file_download_failed">파일 다운로드 실패: %s</string>
+    <string name="dialog_download_file_file_info">파일 정보</string>
+</resources>

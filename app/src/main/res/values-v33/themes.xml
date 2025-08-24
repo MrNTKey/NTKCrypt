@@ -3,5 +3,5 @@
 
     <style name="Theme.NTKCrypt" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:enableOnBackInvokedCallback">true</item>
-    </style>>
+    </style>
 </resources>

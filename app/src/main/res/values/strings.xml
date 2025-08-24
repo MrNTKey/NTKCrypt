@@ -1,116 +1,114 @@
 <resources>
-    <string name="app_name">NekoCrypt</string>
+    <string name="app_name" translatable="false">NTKCrypt</string>
 
     <!--    闲杂信息-->
-    <string name="ok">原来是这样，现在我完全搞懂了</string>
-    <string name="cancel">关闭</string>
-    <string name="send">发送</string>
-    <string name="accept">确认</string>
-    <string name="file_size">文件大小</string>
+    <string name="ok">Oh, I see. I completely get it now.</string>
+    <string name="cancel">Close</string>
+    <string name="send">Send</string>
+    <string name="accept">Confirm</string>
+    <string name="file_size">File Size</string>
     <string name="url">URL</string>
-    <string name="download">下载</string>
-    <string name="downloading">下载中</string>
-    <string name="open_file">打开文件</string>
-    <string name="cannot_open_file">打开文件失败</string>
-    <string name="save_to_gallery">保存到相册</string>
-    <string name="image_saved_to_gallery_success">成功保存到相册</string>
-    <string name="image_saved_to_gallery_failed">保存到相册失败</string>
-    <string name="image_saved_to_gallery_saved">已保存到相册</string>
+    <string name="download">Download</string>
+    <string name="downloading">Downloading</string>
+    <string name="open_file">Open File</string>
+    <string name="cannot_open_file">Failed to open file</string>
+    <string name="save_to_gallery">Save to Gallery</string>
+    <string name="image_saved_to_gallery_success">Image successfully saved to gallery</string>
+    <string name="image_saved_to_gallery_failed">Failed to save image to gallery</string>
+    <string name="image_saved_to_gallery_saved">Saved to gallery</string>
 
     <!--    bottomBar的label-->
-    <string name="home">主页</string>
-    <string name="crypto">加密</string>
-    <string name="key">密钥</string>
-    <string name="settings">设置</string>
+    <string name="home">Home</string>
+    <string name="crypto">Crypto</string>
+    <string name="key">Key</string>
+    <string name="settings">Settings</string>
 
 
 
     <!--    加解密模式-->
-    <string name="mode_standard">标准模式</string>
-    <string name="mode_immersive">沉浸模式</string>
+    <string name="mode_standard">Standard Mode</string>
+    <string name="mode_immersive">Immersive Mode</string>
     <!--    CryptoScreen -->
-    <string name="crypto_input_label">输入原文或密文</string>
-    <string name="crypto_input_placeholder">在此处输入或粘贴文本…</string>
-    <string name="crypto_decrypt_fail">解密失败！密文被篡改或密钥错误.\n ｡ﾟ(ﾟ´Д｀ﾟ)ﾟ｡</string>
-    <string name="crypto_input_icon_desc">输入图标</string>
-    <string name="crypto_pasted_from_clipboard">已从剪贴板粘贴</string>
-    <string name="crypto_paste_icon_desc">粘贴</string>
-    <string name="crypto_clear_input_icon_desc">清空输入</string>
-    <string name="crypto_encrypt_icon_desc">加密图标</string>
-    <string name="crypto_swap_icon_desc">交换输入与输出</string>
-    <string name="crypto_decrypt_button">解密</string>
-    <string name="crypto_decrypt_icon_desc">解密图标</string>
-    <string name="crypto_result_label_encrypted">加密结果</string>
-    <string name="crypto_result_label_decrypted">解密结果</string>
-    <string name="crypto_copied_to_clipboard">已复制到剪贴板</string>
-    <string name="crypto_copy_result_icon_desc">复制结果</string>
-    <string name="crypto_key_icon_desc">密钥图标</string>
-    <string name="crypto_current_key_label">当前密钥</string>
-    <string name="crypto_select_key_icon_desc">选择密钥</string>
+    <string name="crypto_input_label">Input plaintext or ciphertext</string>
+    <string name="crypto_input_placeholder">Type or paste text here…</string>
+    <string name="crypto_decrypt_fail">Decryption failed! Ciphertext may have been tampered with or the key is incorrect.\n ｡ﾟ(ﾟ´Д｀ﾟ)ﾟ｡</string>
+    <string name="crypto_input_icon_desc">Input icon</string>
+    <string name="crypto_pasted_from_clipboard">Pasted from clipboard</string>
+    <string name="crypto_paste_icon_desc">Paste</string>
+    <string name="crypto_clear_input_icon_desc">Clear input</string>
+    <string name="crypto_encrypt_icon_desc">Encrypt icon</string>
+    <string name="crypto_swap_icon_desc">Swap input and output</string>
+    <string name="crypto_decrypt_button">Decrypt</string>
+    <string name="crypto_decrypt_icon_desc">Decrypt icon</string>
+    <string name="crypto_result_label_encrypted">Encryption Result</string>
+    <string name="crypto_result_label_decrypted">Decryption Result</string>
+    <string name="crypto_copied_to_clipboard">Copied to clipboard</string>
+    <string name="crypto_copy_result_icon_desc">Copy result</string>
+    <string name="crypto_key_icon_desc">Key icon</string>
+    <string name="crypto_current_key_label">Current Key</string>
+    <string name="crypto_select_key_icon_desc">Select key</string>
     <!-- CryptoScreen 统计信息 -->
-    <string name="crypto_stats_char_count">密文字符数</string>
-    <string name="crypto_stats_time_elapsed">总处理耗时</string>
+    <string name="crypto_stats_char_count">Ciphertext Character Count</string>
+    <string name="crypto_stats_time_elapsed">Total Processing Time</string>
     <string name="crypto_stats_time_ms">%1$d ms</string>
     <!--    无障碍页面信息-->
-    <string name="accessibility_service_about">喵密服务，用于智能加解密消息</string>
-    <string name="accessibility_service_description">为保证功能正常使用，需要申请无障碍权限哦 (๑•̀ㅂ•́)و✧</string>
+    <string name="accessibility_service_about">NTKCrypt service, used for smart message encryption and decryption</string>
+    <string name="accessibility_service_description">To ensure normal functionality, you need to grant accessibility permissions (๑•̀ㅂ•́)و✧</string>
     <!--    Home界面的一些文本-->
-    <string name="accessibility_service_enabled">已获取无障碍权限</string>
-    <string name="accessibility_service_disabled">点击开启无障碍权限</string>
-    <string name="setting_encrypt_on_send_title">加密开关</string>
-    <string name="setting_encrypt_on_send_subtitle">开启喵密世界的大门。</string>
-    <string name="setting_decrypt_immersive_mod_title">解密开关</string>
-    <string name="setting_decrypt_immersive_mod_subtitle">读懂猫咪语言的必选项！</string>
-    <string name="setting_encryption_mode_info_title">设置加密模式</string>
-    <string name="setting_encryption_mode_info_text">加密模式说明</string>
-    <string name="setting_encryption_mode_info_desc">标准模式：\n长按发送按钮才会发送密文。\n\n沉浸模式：\n点按直接发送密文。</string>
-    <string name="setting_decryption_mode_info_title">设置解密模式</string>
-    <string name="setting_decryption_mode_info_text">解密模式说明</string>
-    <string name="setting_decryption_mode_info_desc">标准模式：\n点击密文弹出悬浮窗显示解密结果。\n\n沉浸模式：\n无需点击，直接以悬浮窗显示解密后的密文，但会增加一定耗电量。</string>
+    <string name="accessibility_service_enabled">Accessibility permission obtained</string>
+    <string name="accessibility_service_disabled">Tap to enable accessibility permission</string>
+    <string name="setting_encrypt_on_send_title">Encryption Switch</string>
+    <string name="setting_encrypt_on_send_subtitle">Open the door to the NTKCrypt world.</string>
+    <string name="setting_decrypt_immersive_mod_title">Decryption Switch</string>
+    <string name="setting_decrypt_immersive_mod_subtitle">A must-have to understand crypto language!</string>
+    <string name="setting_encryption_mode_info_title">Set Encryption Mode</string>
+    <string name="setting_encryption_mode_info_text">Encryption Mode Info</string>
+    <string name="setting_encryption_mode_info_desc">Standard Mode:\nCiphertext will only be sent when you long-press the send button.\n\nImmersive Mode:\nCiphertext will be sent directly with a single tap.</string>
+    <string name="setting_decryption_mode_info_title">Set Decryption Mode</string>
+    <string name="setting_decryption_mode_info_text">Decryption Mode Info</string>
+    <string name="setting_decryption_mode_info_desc">Standard Mode:\nTap on ciphertext to show the decrypted result in a floating window.\n\nImmersive Mode:\nDisplays the decrypted ciphertext in a floating window automatically, without tapping. This may increase power consumption.</string>
 
     <!--    通知栏显示文本-->
-    <string name="notification_title">NekoCrypt 喵密服务运行中</string>
-    <string name="set_text_failed">密文设置失败喵！可能是字数过多喵… (｡◕ˇ‸ˇ◕｡)：%d 字</string>
+    <string name="notification_title">NTKCrypt Service is Running</string>
+    <string name="set_text_failed">Failed to set ciphertext! It might be too long… (｡◕ˇ‸ˇ◕｡): %d characters</string>
 
     <!--    权限检查相关-->
-    <string name="permission_go_to_settings">前往设置</string>
-    <string name="permission_overlay_title">需要悬浮窗权限</string>
-    <string name="permission_overlay_text">为了功能正常使用，请您手动授予权限。\n\n在设置页面，请寻找并开启“显示在其他应用上层”选项。\n\n在部分手机(如小米、华为)上，还可能额外有“悬浮窗权限”，请一同在应用的权限管理中寻找并开启它。</string>
-    <string name="permission_still_missing_title">仍未检测到悬浮窗权限</string>
-    <string name="permission_still_missing_text">喵密检测到悬浮窗权限仍未开启。别担心，这是因为各大手机厂商有更高的悬浮窗权限控制。\n\n请在接下来打开的应用设置页面中，手动找到并开启“悬浮窗”或“显示在其他应用上层”的相关权限。</string>
+    <string name="permission_go_to_settings">Go to Settings</string>
+    <string name="permission_overlay_title">Overlay Permission Required</string>
+    <string name="permission_overlay_text">To function properly, please manually grant this permission.\n\nIn the settings page, please find and enable "Display over other apps".\n\nOn some phones (e.g., Xiaomi, Huawei), there might be an additional "Overlay permission." Please find and enable it in the app\'s permission management.</string>
+    <string name="permission_still_missing_title">Overlay Permission Still Missing</string>
+    <string name="permission_still_missing_text">NTKCrypt still detects that overlay permission is not enabled. Don\'t worry, this is because some phone manufacturers have stricter overlay permission controls.\n\nPlease manually find and enable "Overlay" or "Display over other apps" in the app settings page that will open next.</string>
     <!--    下面这两条暂时用不着-->
-    <string name="permission_accessibility_title">需要无障碍服务</string>
-    <string name="permission_accessibility_text">为了实现自动加解密和读取聊天内容，请在设置列表中找到“NekoCrypt”并开启它的无障碍服务。</string>
+    <string name="permission_accessibility_title">Accessibility Service Required</string>
+    <string name="permission_accessibility_text">To enable automatic encryption/decryption and read chat content, please find "NTKCrypt" in the settings list and enable its accessibility service.</string>
     <!--    设置-->
-    <string name="crypto_settings">加解密设置</string>
-    <string name="decryption_long_press_delay">长按解密延时</string>
-    <string name="decryption_long_press_delay_desc">设置触发长按加密所需的时间</string>
-    <string name="decryption_window_show_time">解密密文展示时长</string>
-    <string name="decryption_window_show_time_desc">设置解密密文悬浮窗的显示时间</string>
-    <string name="about">关于</string>
+    <string name="crypto_settings">Crypto Settings</string>
+    <string name="decryption_long_press_delay">Long-Press Decryption Delay</string>
+    <string name="decryption_long_press_delay_desc">Set the required time to trigger long-press encryption</string>
+    <string name="decryption_window_show_time">Decrypted Ciphertext Display Time</string>
+    <string name="decryption_window_show_time_desc">Set the display duration for the decrypted ciphertext floating window</string>
+    <string name="about">About</string>
     <!--    设置：界面相关-->
-    <string name="crypto_ui_settings">功能界面设置</string>
-    <string name="decryption_window_position_update_delay">弹窗位置更新延时</string>
-    <string name="decryption_window_position_update_delay_desc">在沉浸式解密下，密文弹窗位置更新的时间间隔，越短越实时，但可能导致卡顿</string>
-    <string name="pick_color">选择颜色</string>
-    <string name="send_btn_overlay_color">按钮遮罩颜色</string>
-    <string name="send_btn_overlay_color_desc">支持ARGB和RGB格式，用于设置盖在发送按钮上遮罩的颜色。最后一个是纯透明</string>
-    <string name="double_click_threshold">拉起多媒体弹窗的双击间隔</string>
-    <string name="double_click_threshold_desc">在间隔时间内双击输入框，会拉起发送多媒体消息的弹窗</string>
+    <string name="crypto_ui_settings">UI Settings</string>
+    <string name="decryption_window_position_update_delay">Popup Position Update Delay</string>
+    <string name="decryption_window_position_update_delay_desc">In immersive decryption, this is the time interval for the ciphertext popup position to update. Shorter intervals are more real-time but may cause lag.</string>
+    <string name="pick_color">Select Color</string>
+    <string name="send_btn_overlay_color">Button Overlay Color</string>
+    <string name="send_btn_overlay_color_desc">Supports ARGB and RGB formats, used to set the color of the overlay on the send button. The last one is pure transparent.</string>
+    <string name="double_click_threshold">Double-Click Interval for Media Popup</string>
+    <string name="double_click_threshold_desc">Double-clicking the input field within this interval will bring up the media attachment popup.</string>
     <!--    附件发送页面-->
-    <string name="crypto_attachment_title">发送加密附件</string>
-    <string name="crypto_attachment_media">相册</string>
-    <string name="crypto_attachment_file">文件</string>
-    <string name="crypto_attachment_upload_failed">文件上传失败：%s</string>
-    <string name="crypto_attachment_file_not_found">文件不存在！</string>
-    <string name="crypto_attachment_file_not_accessible">文件无法访问！</string>
-    <string name="crypto_attachment_file_too_large">文件过大！当前最大支持：%d MB</string>
-    <string name="crypto_attachment_send_failed_node_not_found">输入框或发送按钮节点未找到！</string>
-    <string name="crypto_attachment_chosen_path">已选择: %s</string>
-    <string name="crypto_attachment_uploading">"正在加密上传..."</string>
-
+    <string name="crypto_attachment_title">Send Encrypted Attachment</string>
+    <string name="crypto_attachment_media">Gallery</string>
+    <string name="crypto_attachment_file">File</string>
+    <string name="crypto_attachment_upload_failed">File upload failed: %s</string>
+    <string name="crypto_attachment_file_not_found">File not found!</string>
+    <string name="crypto_attachment_file_not_accessible">File not accessible!</string>
+    <string name="crypto_attachment_file_too_large">File is too large! Maximum supported size: %d MB</string>
+    <string name="crypto_attachment_send_failed_node_not_found">Input field or send button node not found!</string>
+    <string name="crypto_attachment_chosen_path">Selected: %s</string>
+    <string name="crypto_attachment_uploading">"Encrypting and uploading..."</string>
     <!--    图片文件下载、展示页面-->
-    <string name="dialog_download_file_download_failed">文件下载失败：%s</string>
-    <string name="dialog_download_file_file_info">文件详情</string>
-
+    <string name="dialog_download_file_download_failed">File download failed: %s</string>
+    <string name="dialog_download_file_file_info">File Details</string>
 </resources>

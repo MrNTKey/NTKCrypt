@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ok">Oh, ya veo. Ahora lo entiendo completamente.</string>
+    <string name="cancel">Cerrar</string>
+    <string name="send">Enviar</string>
+    <string name="accept">Aceptar</string>
+    <string name="file_size">Tamaño del archivo</string>
+    <string name="url">URL</string>
+    <string name="download">Descargar</string>
+    <string name="downloading">Descargando</string>
+    <string name="open_file">Abrir archivo</string>
+    <string name="cannot_open_file">No se pudo abrir el archivo</string>
+    <string name="save_to_gallery">Guardar en la galería</string>
+    <string name="image_saved_to_gallery_success">Imagen guardada con éxito en la galería</string>
+    <string name="image_saved_to_gallery_failed">No se pudo guardar la imagen en la galería</string>
+    <string name="image_saved_to_gallery_saved">Guardado en la galería</string>
+
+    <string name="home">Inicio</string>
+    <string name="crypto">Criptografía</string>
+    <string name="key">Clave</string>
+    <string name="settings">Ajustes</string>
+
+    <string name="mode_standard">Modo estándar</string>
+    <string name="mode_immersive">Modo inmersivo</string>
+
+    <string name="crypto_input_label">Introducir texto plano o cifrado</string>
+    <string name="crypto_input_placeholder">Escribe o pega texto aquí…</string>
+    <string name="crypto_decrypt_fail">¡Error al descifrar! El texto cifrado fue alterado o la clave es incorrecta.\n ｡ﾟ(ﾟ´Д｀ﾟ)ﾟ｡</string>
+    <string name="crypto_input_icon_desc">Icono de entrada</string>
+    <string name="crypto_pasted_from_clipboard">Pegado desde el portapapeles</string>
+    <string name="crypto_paste_icon_desc">Pegar</string>
+    <string name="crypto_clear_input_icon_desc">Borrar entrada</string>
+    <string name="crypto_encrypt_icon_desc">Icono de cifrado</string>
+    <string name="crypto_swap_icon_desc">Intercambiar entrada y salida</string>
+    <string name="crypto_decrypt_button">Descifrar</string>
+    <string name="crypto_decrypt_icon_desc">Icono de descifrado</string>
+    <string name="crypto_result_label_encrypted">Resultado del cifrado</string>
+    <string name="crypto_result_label_decrypted">Resultado del descifrado</string>
+    <string name="crypto_copied_to_clipboard">Copiado al portapapeles</string>
+    <string name="crypto_copy_result_icon_desc">Copiar resultado</string>
+    <string name="crypto_key_icon_desc">Icono de clave</string>
+    <string name="crypto_current_key_label">Clave actual</string>
+    <string name="crypto_select_key_icon_desc">Seleccionar clave</string>
+
+    <string name="crypto_stats_char_count">Número de caracteres cifrados</string>
+    <string name="crypto_stats_time_elapsed">Tiempo total de procesamiento</string>
+    <string name="crypto_stats_time_ms">%1$d ms</string>
+
+    <string name="accessibility_service_about">Servicio de NTKCrypt para el cifrado y descifrado inteligente de mensajes</string>
+    <string name="accessibility_service_description">Para garantizar el correcto funcionamiento, se requiere el permiso de accesibilidad (๑•̀ㅂ•́)و✧</string>
+
+    <string name="accessibility_service_enabled">Permiso de accesibilidad obtenido</string>
+    <string name="accessibility_service_disabled">Toca para habilitar el permiso de accesibilidad</string>
+    <string name="setting_encrypt_on_send_title">Interruptor de cifrado</string>
+    <string name="setting_encrypt_on_send_subtitle">Abre la puerta al mundo de NTKCrypt.</string>
+    <string name="setting_decrypt_immersive_mod_title">Interruptor de descifrado</string>
+    <string name="setting_decrypt_immersive_mod_subtitle">¡Una opción obligatoria para entender el idioma de NTK!</string>
+    <string name="setting_encryption_mode_info_title">Ajustar modo de cifrado</string>
+    <string name="setting_encryption_mode_info_text">Descripción del modo de cifrado</string>
+    <string name="setting_encryption_mode_info_desc">Modo estándar:\nSolo se enviará el texto cifrado al mantener presionado el botón de enviar.\n\nModo inmersivo:\nAl tocar, se enviará el texto cifrado directamente.</string>
+    <string name="setting_decryption_mode_info_title">Ajustar modo de descifrado</string>
+    <string name="setting_decryption_mode_info_text">Descripción del modo de descifrado</string>
+    <string name="setting_decryption_mode_info_desc">Modo estándar:\nToca el texto cifrado para que aparezca una ventana flotante con el resultado del descifrado.\n\nModo inmersivo:\nSin necesidad de tocar, el texto descifrado se mostrará directamente en una ventana flotante, pero podría aumentar el consumo de batería.</string>
+
+    <string name="notification_title">Servicio NTKCrypt en ejecución</string>
+    <string name="set_text_failed">¡Error al establecer el texto cifrado! Puede que sea demasiado largo… (｡◕ˇ‸ˇ◕｡)：%d caracteres</string>
+
+    <string name="permission_go_to_settings">Ir a Ajustes</string>
+    <string name="permission_overlay_title">Se requiere permiso de superposición</string>
+    <string name="permission_overlay_text">Para que la función opere correctamente, por favor, otorga el permiso manualmente.\n\nEn la página de ajustes, busca y habilita la opción "Mostrar sobre otras aplicaciones".\n\nEn algunos teléfonos (como Xiaomi, Huawei), puede haber un "permiso de superposición" adicional. Búscalo y habilítalo también en la gestión de permisos de la aplicación.</string>
+    <string name="permission_still_missing_title">Aún no se detecta el permiso de superposición</string>
+    <string name="permission_still_missing_text">NTKCrypt ha detectado que el permiso de superposición aún no está habilitado. No te preocupes, esto se debe a que los principales fabricantes de teléfonos tienen un control más estricto sobre los permisos de superposición.\n\nEn la página de ajustes de la aplicación que se abrirá a continuación, busca y habilita manualmente los permisos relacionados con "Superposición" o "Mostrar sobre otras aplicaciones".</string>
+
+    <string name="permission_accessibility_title">Se requiere servicio de accesibilidad</string>
+    <string name="permission_accessibility_text">Para el cifrado/descifrado automático y la lectura de los chats, por favor, encuentra "NTKCrypt" en la lista de ajustes y habilita su servicio de accesibilidad.</string>
+
+    <string name="crypto_settings">Ajustes de cifrado y descifrado</string>
+    <string name="decryption_long_press_delay">Retraso de descifrado por pulsación larga</string>
+    <string name="decryption_long_press_delay_desc">Ajusta el tiempo necesario para activar el cifrado por pulsación larga</string>
+    <string name="decryption_window_show_time">Duración de visualización del texto descifrado</string>
+    <string name="decryption_window_show_time_desc">Ajusta el tiempo de visualización de la ventana flotante con el texto descifrado</string>
+    <string name="about">Acerca de</string>
+
+    <string name="crypto_ui_settings">Ajustes de la interfaz de funciones</string>
+    <string name="decryption_window_position_update_delay">Retraso de actualización de la posición de la ventana emergente</string>
+    <string name="decryption_window_position_update_delay_desc">En el modo de descifrado inmersivo, es el intervalo de tiempo para actualizar la posición de la ventana emergente. Un tiempo más corto es más en tiempo real, pero podría causar retrasos</string>
+    <string name="pick_color">Seleccionar color</string>
+    <string name="send_btn_overlay_color">Color de la superposición del botón</string>
+    <string name="send_btn_overlay_color_desc">Admite formatos ARGB y RGB, se utiliza para ajustar el color de la superposición que cubre el botón de enviar. El último es completamente transparente</string>
+    <string name="double_click_threshold">Intervalo de doble clic para abrir la ventana de medios</string>
+    <string name="double_click_threshold_desc">Si se hace doble clic en el cuadro de entrada dentro de este intervalo, se abrirá la ventana emergente para enviar mensajes multimedia</string>
+
+    <string name="crypto_attachment_title">Enviar adjunto cifrado</string>
+    <string name="crypto_attachment_media">Galería</string>
+    <string name="crypto_attachment_file">Archivo</string>
+    <string name="crypto_attachment_upload_failed">Error al subir el archivo: %s</string>
+    <string name="crypto_attachment_file_not_found">¡Archivo no encontrado!</string>
+    <string name="crypto_attachment_file_not_accessible">¡No se puede acceder al archivo!</string>
+    <string name="crypto_attachment_file_too_large">¡Archivo demasiado grande! Tamaño máximo actual: %d MB</string>
+    <string name="crypto_attachment_send_failed_node_not_found">¡No se encontró el nodo del cuadro de entrada o del botón de enviar!</string>
+    <string name="crypto_attachment_chosen_path">Seleccionado: %s</string>
+    <string name="crypto_attachment_uploading">"Cifrando y subiendo…"</string>
+
+    <string name="dialog_download_file_download_failed">Error al descargar el archivo: %s</string>
+    <string name="dialog_download_file_file_info">Detalles del archivo</string>
+</resources>

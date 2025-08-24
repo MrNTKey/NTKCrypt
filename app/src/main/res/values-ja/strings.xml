@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ok">なるほど、これで完全に理解しました</string>
+    <string name="cancel">閉じる</string>
+    <string name="send">送信</string>
+    <string name="accept">確認</string>
+    <string name="file_size">ファイルサイズ</string>
+    <string name="url">URL</string>
+    <string name="download">ダウンロード</string>
+    <string name="downloading">ダウンロード中</string>
+    <string name="open_file">ファイルを開く</string>
+    <string name="cannot_open_file">ファイルを開けませんでした</string>
+    <string name="save_to_gallery">ギャラリーに保存</string>
+    <string name="image_saved_to_gallery_success">画像をギャラリーに保存しました</string>
+    <string name="image_saved_to_gallery_failed">画像をギャラリーに保存できませんでした</string>
+    <string name="image_saved_to_gallery_saved">ギャラリーに保存済みです</string>
+
+    <string name="home">ホーム</string>
+    <string name="crypto">暗号化</string>
+    <string name="key">キー</string>
+    <string name="settings">設定</string>
+
+    <string name="mode_standard">標準モード</string>
+    <string name="mode_immersive">没入モード</string>
+
+    <string name="crypto_input_label">平文または暗号文を入力</string>
+    <string name="crypto_input_placeholder">ここにテキストを入力または貼り付け…</string>
+    <string name="crypto_decrypt_fail">復号化に失敗しました！暗号文が改ざんされたか、キーが間違っています。\n ｡ﾟ(ﾟ´Д｀ﾟ)ﾟ｡</string>
+    <string name="crypto_input_icon_desc">入力アイコン</string>
+    <string name="crypto_pasted_from_clipboard">クリップボードから貼り付けました</string>
+    <string name="crypto_paste_icon_desc">貼り付け</string>
+    <string name="crypto_clear_input_icon_desc">入力をクリア</string>
+    <string name="crypto_encrypt_icon_desc">暗号化アイコン</string>
+    <string name="crypto_swap_icon_desc">入力と出力を入れ替え</string>
+    <string name="crypto_decrypt_button">復号化</string>
+    <string name="crypto_decrypt_icon_desc">復号化アイコン</string>
+    <string name="crypto_result_label_encrypted">暗号化結果</string>
+    <string name="crypto_result_label_decrypted">復号化結果</string>
+    <string name="crypto_copied_to_clipboard">クリップボードにコピーしました</string>
+    <string name="crypto_copy_result_icon_desc">結果をコピー</string>
+    <string name="crypto_key_icon_desc">キーアイコン</string>
+    <string name="crypto_current_key_label">現在のキー</string>
+    <string name="crypto_select_key_icon_desc">キーを選択</string>
+
+    <string name="crypto_stats_char_count">暗号文の文字数</string>
+    <string name="crypto_stats_time_elapsed">総処理時間</string>
+    <string name="crypto_stats_time_ms">%1$d ms</string>
+
+    <string name="accessibility_service_about">NTKCrypt サービス、メッセージのスマートな暗号化/復号化に利用</string>
+    <string name="accessibility_service_description">機能を正常に使用するには、アクセシビリティ権限が必要です (๑•̀ㅂ•́)و✧</string>
+
+    <string name="accessibility_service_enabled">アクセシビリティ権限は取得済みです</string>
+    <string name="accessibility_service_disabled">タップしてアクセシビリティ権限を有効にする</string>
+    <string name="setting_encrypt_on_send_title">暗号化スイッチ</string>
+    <string name="setting_encrypt_on_send_subtitle">NTKCrypt の世界への扉を開きます。</string>
+    <string name="setting_decrypt_immersive_mod_title">復号化スイッチ</string>
+    <string name="setting_decrypt_immersive_mod_subtitle">NTK の言語を理解するための必須項目です！</string>
+    <string name="setting_encryption_mode_info_title">暗号化モードの設定</string>
+    <string name="setting_encryption_mode_info_text">暗号化モードの説明</string>
+    <string name="setting_encryption_mode_info_desc">標準モード：\n送信ボタンを長押しした時のみ暗号文を送信します。\n\n没入モード：\nタップするとすぐに暗号文を送信します。</string>
+    <string name="setting_decryption_mode_info_title">復号化モードの設定</string>
+    <string name="setting_decryption_mode_info_text">復号化モードの説明</string>
+    <string name="setting_decryption_mode_info_desc">標準モード：\n暗号文をタップすると、復号化結果がフローティングウィンドウで表示されます。\n\n没入モード：\nタップせずに、復号化された暗号文がフローティングウィンドウで直接表示されます。ただし、バッテリー消費量が増加します。</string>
+
+    <string name="notification_title">NTKCrypt サービスが実行中です</string>
+    <string name="set_text_failed">暗号文の設定に失敗しました！文字数が多すぎる可能性があります… (｡◕ˇ‸ˇ◕｡)：%d 文字</string>
+
+    <string name="permission_go_to_settings">設定へ</string>
+    <string name="permission_overlay_title">オーバーレイ権限が必要です</string>
+    <string name="permission_overlay_text">機能を正常に使用するには、手動で権限を付与してください。\n\n設定画面で、「他のアプリの上に表示」オプションを見つけて有効にしてください。\n\n一部の携帯電話（例：Xiaomi、Huawei）では、「オーバーレイ権限」が追加で必要な場合があります。アプリの権限管理で両方を見つけて有効にしてください。</string>
+    <string name="permission_still_missing_title">オーバーレイ権限がまだ検出されていません</string>
+    <string name="permission_still_missing_text">NTKCrypt はオーバーレイ権限がまだ有効になっていないことを検出しました。ご心配なく、これは各携帯電話メーカーがオーバーレイ権限を厳しく管理しているためです。\n\n次に開くアプリの設定画面で、「オーバーレイ」または「他のアプリの上に表示」に関連する権限を手動で見つけて有効にしてください。</string>
+
+    <string name="permission_accessibility_title">アクセシビリティサービスが必要です</string>
+    <string name="permission_accessibility_text">自動的な暗号化/復号化とチャット内容の読み取りを実現するには、設定リストで「NTKCrypt」を見つけて、そのアクセシビリティサービスを有効にしてください。</string>
+
+    <string name="crypto_settings">暗号化/復号化設定</string>
+    <string name="decryption_long_press_delay">長押し復号化の遅延</string>
+    <string name="decryption_long_press_delay_desc">長押しして暗号化をトリガーするのに必要な時間を設定します</string>
+    <string name="decryption_window_show_time">復号化された暗号文の表示時間</string>
+    <string name="decryption_window_show_time_desc">復号化された暗号文のフローティングウィンドウの表示時間を設定します</string>
+    <string name="about">このアプリについて</string>
+
+    <string name="crypto_ui_settings">機能画面設定</string>
+    <string name="decryption_window_position_update_delay">ポップアップ位置更新の遅延</string>
+    <string name="decryption_window_position_update_delay_desc">没入モードでの復号化において、暗号文ポップアップの位置を更新する時間間隔です。短いほどリアルタイムですが、カクつきの原因になる場合があります</string>
+    <string name="pick_color">色を選択</string>
+    <string name="send_btn_overlay_color">ボタンオーバーレイの色</string>
+    <string name="send_btn_overlay_color_desc">ARGBおよびRGB形式をサポートしており、送信ボタンを覆うオーバーレイの色を設定します。最後は完全に透明です</string>
+    <string name="double_click_threshold">マルチメディアポップアップを起動するダブルクリック間隔</string>
+    <string name="double_click_threshold_desc">この間隔内にテキスト入力欄をダブルクリックすると、マルチメディアメッセージ送信のポップアップが表示されます</string>
+
+    <string name="crypto_attachment_title">暗号化された添付ファイルを送信</string>
+    <string name="crypto_attachment_media">ギャラリー</string>
+    <string name="crypto_attachment_file">ファイル</string>
+    <string name="crypto_attachment_upload_failed">ファイルのアップロードに失敗しました：%s</string>
+    <string name="crypto_attachment_file_not_found">ファイルが見つかりません！</string>
+    <string name="crypto_attachment_file_not_accessible">ファイルにアクセスできません！</string>
+    <string name="crypto_attachment_file_too_large">ファイルが大きすぎます！現在サポートされている最大サイズ：%d MB</string>
+    <string name="crypto_attachment_send_failed_node_not_found">入力欄または送信ボタンのノードが見つかりません！</string>
+    <string name="crypto_attachment_chosen_path">選択済み: %s</string>
+    <string name="crypto_attachment_uploading">"暗号化してアップロード中..."</string>
+
+    <string name="dialog_download_file_download_failed">ファイルのダウンロードに失敗しました：%s</string>
+    <string name="dialog_download_file_file_info">ファイル詳細</string>
+</resources>

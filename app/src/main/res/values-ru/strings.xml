@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ok">Ах, вот как. Теперь я все понял.</string>
+    <string name="cancel">Закрыть</string>
+    <string name="send">Отправить</string>
+    <string name="accept">Подтвердить</string>
+    <string name="file_size">Размер файла</string>
+    <string name="url">URL</string>
+    <string name="download">Скачать</string>
+    <string name="downloading">Скачивание</string>
+    <string name="open_file">Открыть файл</string>
+    <string name="cannot_open_file">Не удалось открыть файл</string>
+    <string name="save_to_gallery">Сохранить в галерею</string>
+    <string name="image_saved_to_gallery_success">Изображение успешно сохранено в галерею</string>
+    <string name="image_saved_to_gallery_failed">Не удалось сохранить изображение в галерею</string>
+    <string name="image_saved_to_gallery_saved">Сохранено в галерею</string>
+
+    <string name="home">Главная</string>
+    <string name="crypto">Шифрование</string>
+    <string name="key">Ключ</string>
+    <string name="settings">Настройки</string>
+
+    <string name="mode_standard">Стандартный режим</string>
+    <string name="mode_immersive">Иммерсивный режим</string>
+
+    <string name="crypto_input_label">Введите исходный или зашифрованный текст</string>
+    <string name="crypto_input_placeholder">Введите или вставьте текст сюда…</string>
+    <string name="crypto_decrypt_fail">Дешифрование не удалось! Возможно, зашифрованный текст был изменен или ключ неверен.\n ｡ﾟ(ﾟ´Д｀ﾟ)ﾟ｡</string>
+    <string name="crypto_input_icon_desc">Иконка ввода</string>
+    <string name="crypto_pasted_from_clipboard">Вставлено из буфера обмена</string>
+    <string name="crypto_paste_icon_desc">Вставить</string>
+    <string name="crypto_clear_input_icon_desc">Очистить ввод</string>
+    <string name="crypto_encrypt_icon_desc">Иконка шифрования</string>
+    <string name="crypto_swap_icon_desc">Поменять местами ввод и вывод</string>
+    <string name="crypto_decrypt_button">Дешифровать</string>
+    <string name="crypto_decrypt_icon_desc">Иконка дешифрования</string>
+    <string name="crypto_result_label_encrypted">Результат шифрования</string>
+    <string name="crypto_result_label_decrypted">Результат дешифрования</string>
+    <string name="crypto_copied_to_clipboard">Скопировано в буфер обмена</string>
+    <string name="crypto_copy_result_icon_desc">Скопировать результат</string>
+    <string name="crypto_key_icon_desc">Иконка ключа</string>
+    <string name="crypto_current_key_label">Текущий ключ</string>
+    <string name="crypto_select_key_icon_desc">Выбрать ключ</string>
+
+    <string name="crypto_stats_char_count">Количество символов в шифротексте</string>
+    <string name="crypto_stats_time_elapsed">Общее время обработки</string>
+    <string name="crypto_stats_time_ms">%1$d мс</string>
+
+    <string name="accessibility_service_about">NTKCrypt сервис для интеллектуального шифрования и дешифрования сообщений</string>
+    <string name="accessibility_service_description">Для нормальной работы необходимо предоставить разрешение на доступность (๑•̀ㅂ•́)و✧</string>
+
+    <string name="accessibility_service_enabled">Разрешение на доступность получено</string>
+    <string name="accessibility_service_disabled">Нажмите, чтобы включить разрешение на доступность</string>
+    <string name="setting_encrypt_on_send_title">Переключатель шифрования</string>
+    <string name="setting_encrypt_on_send_subtitle">Откройте дверь в мир NTKCrypt.</string>
+    <string name="setting_decrypt_immersive_mod_title">Переключатель дешифрования</string>
+    <string name="setting_decrypt_immersive_mod_subtitle">Обязательная опция для понимания языка NTK!</string>
+    <string name="setting_encryption_mode_info_title">Настройка режима шифрования</string>
+    <string name="setting_encryption_mode_info_text">Описание режима шифрования</string>
+    <string name="setting_encryption_mode_info_desc">Стандартный режим:\nШифротекст будет отправлен только при долгом нажатии кнопки «Отправить».\n\nИммерсивный режим:\nШифротекст будет отправлен сразу после нажатия.</string>
+    <string name="setting_decryption_mode_info_title">Настройка режима дешифрования</string>
+    <string name="setting_decryption_mode_info_text">Описание режима дешифрования</string>
+    <string name="setting_decryption_mode_info_desc">Стандартный режим:\nНажмите на шифротекст, чтобы увидеть результат дешифрования во всплывающем окне.\n\nИммерсивный режим:\nДешифрованный текст отображается во всплывающем окне без нажатия, но это может увеличить потребление заряда батареи.</string>
+
+    <string name="notification_title">NTKCrypt сервис запущен</string>
+    <string name="set_text_failed">Не удалось установить шифротекст! Возможно, слишком много символов… (｡◕ˇ‸ˇ◕｡)：%d символов</string>
+
+    <string name="permission_go_to_settings">Перейти в настройки</string>
+    <string name="permission_overlay_title">Требуется разрешение на оверлей</string>
+    <string name="permission_overlay_text">Для нормальной работы, пожалуйста, предоставьте разрешение вручную.\n\nНа странице настроек найдите и включите опцию «Отображать поверх других приложений».\n\nНа некоторых телефонах (например, Xiaomi, Huawei) может потребоваться дополнительное «разрешение на оверлей», пожалуйста, найдите и включите его в управлении разрешениями для приложения.</string>
+    <string name="permission_still_missing_title">Разрешение на оверлей все еще отсутствует</string>
+    <string name="permission_still_missing_text">NTKCrypt обнаружил, что разрешение на оверлей все еще не включено. Не волнуйтесь, это происходит потому, что крупные производители телефонов строже контролируют разрешения на оверлей.\n\nНа странице настроек приложения, которая откроется далее, пожалуйста, вручную найдите и включите соответствующие разрешения «Оверлей» или «Отображать поверх других приложений».</string>
+
+    <string name="permission_accessibility_title">Требуется служба доступности</string>
+    <string name="permission_accessibility_text">Для автоматического шифрования/дешифрования и чтения содержимого чатов, пожалуйста, найдите «NTKCrypt» в списке настроек и включите его службу доступности.</string>
+
+    <string name="crypto_settings">Настройки шифрования/дешифрования</string>
+    <string name="decryption_long_press_delay">Задержка дешифрования по долгому нажатию</string>
+    <string name="decryption_long_press_delay_desc">Устанавливает время, необходимое для активации шифрования по долгому нажатию</string>
+    <string name="decryption_window_show_time">Длительность отображения дешифрованного текста</string>
+    <string name="decryption_window_show_time_desc">Устанавливает время отображения всплывающего окна с дешифрованным текстом</string>
+    <string name="about">О программе</string>
+
+    <string name="crypto_ui_settings">Настройки интерфейса</string>
+    <string name="decryption_window_position_update_delay">Задержка обновления позиции всплывающего окна</string>
+    <string name="decryption_window_position_update_delay_desc">В иммерсивном режиме дешифрования это интервал времени для обновления позиции всплывающего окна. Чем он короче, тем более оперативно, но может вызывать задержки</string>
+    <string name="pick_color">Выбрать цвет</string>
+    <string name="send_btn_overlay_color">Цвет наложения кнопки</string>
+    <string name="send_btn_overlay_color_desc">Поддерживает форматы ARGB и RGB для настройки цвета наложения, которое закрывает кнопку «Отправить». Последний цвет полностью прозрачный</string>
+    <string name="double_click_threshold">Интервал двойного нажатия для вызова мультимедийного окна</string>
+    <string name="double_click_threshold_desc">Двойное нажатие на поле ввода в течение этого интервала вызовет всплывающее окно для отправки мультимедийных сообщений</string>
+
+    <string name="crypto_attachment_title">Отправить зашифрованное вложение</string>
+    <string name="crypto_attachment_media">Галерея</string>
+    <string name="crypto_attachment_file">Файл</string>
+    <string name="crypto_attachment_upload_failed">Не удалось загрузить файл: %s</string>
+    <string name="crypto_attachment_file_not_found">Файл не найден!</string>
+    <string name="crypto_attachment_file_not_accessible">Файл недоступен!</string>
+    <string name="crypto_attachment_file_too_large">Файл слишком большой! Текущий максимум: %d МБ</string>
+    <string name="crypto_attachment_send_failed_node_not_found">Не удалось найти узел поля ввода или кнопки «Отправить»!</string>
+    <string name="crypto_attachment_chosen_path">Выбрано: %s</string>
+    <string name="crypto_attachment_uploading">"Шифрование и загрузка..."</string>
+
+    <string name="dialog_download_file_download_failed">Не удалось скачать файл: %s</string>
+    <string name="dialog_download_file_file_info">Информация о файле</string>
+</resources>

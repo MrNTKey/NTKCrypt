@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "me.wjz.nekocrypt"
+    namespace = "com.mrntkey.ntkcrypt"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "me.wjz.nekocrypt"
+        applicationId = "com.mrntkey.ntkcrypt"
         minSdk = 26
         targetSdk = 35
         versionCode = 9     // 唯一版本识别码，每次打包记得+1！！
@@ -18,7 +18,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        setProperty("archivesBaseName", "NekoCrypt-v$versionName")
+        setProperty("archivesBaseName", "NTKCrypt-v$versionName")
     }
 
     buildTypes {

@@ -1,0 +1,106 @@
+<resources>
+    <string name="ok">原來係咁，而家我完全明晒喇</string>
+    <string name="cancel">關閉</string>
+    <string name="send">傳送</string>
+    <string name="accept">確認</string>
+    <string name="file_size">檔案大細</string>
+    <string name="url">網址</string>
+    <string name="download">下載</string>
+    <string name="downloading">下載緊</string>
+    <string name="open_file">打開檔案</string>
+    <string name="cannot_open_file">打開檔案失敗</string>
+    <string name="save_to_gallery">儲存到相簿</string>
+    <string name="image_saved_to_gallery_success">成功儲存到相簿</string>
+    <string name="image_saved_to_gallery_failed">儲存到相簿失敗</string>
+    <string name="image_saved_to_gallery_saved">已儲存到相簿</string>
+
+    <string name="home">主頁</string>
+    <string name="crypto">加密</string>
+    <string name="key">密匙</string>
+    <string name="settings">設定</string>
+
+    <string name="mode_standard">標準模式</string>
+    <string name="mode_immersive">沉浸模式</string>
+
+    <string name="crypto_input_label">輸入原文或密文</string>
+    <string name="crypto_input_placeholder">喺呢度輸入或者貼上文字…</string>
+    <string name="crypto_decrypt_fail">解密失敗！可能密文俾人改過或者密匙錯咗.\n ｡ﾟ(ﾟ´Д｀ﾟ)ﾟ｡</string>
+    <string name="crypto_input_icon_desc">輸入圖示</string>
+    <string name="crypto_pasted_from_clipboard">已從剪貼板貼上</string>
+    <string name="crypto_paste_icon_desc">貼上</string>
+    <string name="crypto_clear_input_icon_desc">清空輸入</string>
+    <string name="crypto_encrypt_icon_desc">加密圖示</string>
+    <string name="crypto_swap_icon_desc">交換輸入同輸出</string>
+    <string name="crypto_decrypt_button">解密</string>
+    <string name="crypto_decrypt_icon_desc">解密圖示</string>
+    <string name="crypto_result_label_encrypted">加密結果</string>
+    <string name="crypto_result_label_decrypted">解密結果</string>
+    <string name="crypto_copied_to_clipboard">已複製到剪貼板</string>
+    <string name="crypto_copy_result_icon_desc">複製結果</string>
+    <string name="crypto_key_icon_desc">密匙圖示</string>
+    <string name="crypto_current_key_label">而家嘅密匙</string>
+    <string name="crypto_select_key_icon_desc">選擇密匙</string>
+
+    <string name="crypto_stats_char_count">密文字符數</string>
+    <string name="crypto_stats_time_elapsed">總處理時間</string>
+    <string name="crypto_stats_time_ms">%1$d 毫秒</string>
+
+    <string name="accessibility_service_about">尅密服務，用嚟智能加密解密訊息</string>
+    <string name="accessibility_service_description">為咗確保功能正常，需要申請無障礙權限㗎 (๑•̀ㅂ•́)و✧</string>
+
+    <string name="accessibility_service_enabled">已拎到無障礙權限</string>
+    <string name="accessibility_service_disabled">撳掣開啟無障礙權限</string>
+    <string name="setting_encrypt_on_send_title">加密開關</string>
+    <string name="setting_encrypt_on_send_subtitle">開啟尅密世界嘅大門。</string>
+    <string name="setting_decrypt_immersive_mod_title">解密開關</string>
+    <string name="setting_decrypt_immersive_mod_subtitle">想睇得明小尅語言就一定要開！</string>
+    <string name="setting_encryption_mode_info_title">設定加密模式</string>
+    <string name="setting_encryption_mode_info_text">加密模式說明</string>
+    <string name="setting_encryption_mode_info_desc">標準模式：\n長按傳送掣先會傳送密文。\n\n沉浸模式：\n撳一下就直接傳送密文。</string>
+    <string name="setting_decryption_mode_info_title">設定解密模式</string>
+    <string name="setting_decryption_mode_info_text">解密模式說明</string>
+    <string name="setting_decryption_mode_info_desc">標準模式：\n撳密文會彈出浮動視窗顯示解密結果。\n\n沉浸模式：\n唔使撳，直接用浮動視窗顯示解密後嘅密文，但會多啲耗電量。</string>
+
+    <string name="notification_title">NTKCrypt 尅密服務運作緊</string>
+    <string name="set_text_failed">設定密文失敗呀尅！可能字數太多呀尅… (｡◕ˇ‸ˇ◕｡)：%d 字</string>
+
+    <string name="permission_go_to_settings">去設定</string>
+    <string name="permission_overlay_title">需要浮動視窗權限</string>
+    <string name="permission_overlay_text">為咗功能正常使用，請你手動畀權限。\n\n喺設定頁面，請搵並開啟「顯示喺其他應用程式上層」選項。\n\n喺部分手機(例如小米、華為)度，可能會有額外嘅「浮動視窗權限」，請喺應用程式嘅權限管理度一齊搵並開啟佢。</string>
+    <string name="permission_still_missing_title">仲未偵測到浮動視窗權限</string>
+    <string name="permission_still_missing_text">尅密偵測到浮動視窗權限仲未開啟。唔使擔心，呢個係因為各大手機廠商對浮動視窗權限有更高嘅控制。\n\n請喺之後打開嘅應用程式設定頁面度，手動搵並開啟「浮動視窗」或者「顯示喺其他應用程式上層」嘅相關權限。</string>
+
+    <string name="permission_accessibility_title">需要無障礙服務</string>
+    <string name="permission_accessibility_text">為咗實現自動加解密同讀取聊天內容，請喺設定列表度搵「NTKCrypt」並開啟佢嘅無障礙服務。</string>
+
+    <string name="crypto_settings">加解密設定</string>
+    <string name="decryption_long_press_delay">長按解密延遲</string>
+    <string name="decryption_long_press_delay_desc">設定觸發長按加密所需嘅時間</string>
+    <string name="decryption_window_show_time">解密密文展示時間</string>
+    <string name="decryption_window_show_time_desc">設定解密密文浮動視窗嘅顯示時間</string>
+    <string name="about">關於</string>
+
+    <string name="crypto_ui_settings">功能介面設定</string>
+    <string name="decryption_window_position_update_delay">彈窗位置更新延遲</string>
+    <string name="decryption_window_position_update_delay_desc">喺沉浸式解密下，密文彈窗位置更新嘅時間間隔，越短越即時，但可能會導致窒機</string>
+    <string name="pick_color">揀顏色</string>
+    <string name="send_btn_overlay_color">按鈕遮罩顏色</string>
+    <string name="send_btn_overlay_color_desc">支援ARGB同RGB格式，用嚟設定蓋喺傳送按鈕上面嘅遮罩顏色。最後一個係全透明</string>
+    <string name="double_click_threshold">彈出多媒體彈窗嘅雙擊間隔</string>
+    <string name="double_click_threshold_desc">喺指定間隔時間內雙擊輸入框，會彈出傳送多媒體訊息嘅彈窗</string>
+
+    <string name="crypto_attachment_title">傳送加密附件</string>
+    <string name="crypto_attachment_media">相簿</string>
+    <string name="crypto_attachment_file">檔案</string>
+    <string name="crypto_attachment_upload_failed">檔案上傳失敗：%s</string>
+    <string name="crypto_attachment_file_not_found">檔案唔存在！</string>
+    <string name="crypto_attachment_file_not_accessible">檔案唔可以訪問！</string>
+    <string name="crypto_attachment_file_too_large">檔案太大！而家最大支援：%d MB</string>
+    <string name="crypto_attachment_send_failed_node_not_found">搵唔到輸入框或傳送按鈕節點！</string>
+    <string name="crypto_attachment_chosen_path">已揀: %s</string>
+    <string name="crypto_attachment_uploading">"加密上傳緊..."</string>
+
+    <string name="dialog_download_file_download_failed">檔案下載失敗：%s</string>
+    <string name="dialog_download_file_file_info">檔案詳情</string>
+
+</resources>
