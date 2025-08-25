@@ -48,6 +48,9 @@ import com.mrntkey.ntkcrypt.data.dataStore
 import com.mrntkey.ntkcrypt.hook.rememberDataStoreState
 import com.mrntkey.ntkcrypt.util.CryptoManager
 import com.mrntkey.ntkcrypt.util.CryptoManager.appendNTKCryptTalk
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 // kotlinx.coroutines.FlowPreview 和 kotlinx.coroutines.flow.debounce 不再需要
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -62,7 +65,6 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
     var isEncryptMode by remember { mutableStateOf(true) }
 
     val secretKey: String by rememberDataStoreState(CURRENT_KEY, DEFAULT_SECRET_KEY)
-    var userNekoTalk: String by rememberDataStoreState(USER_NEKO_TALK, "喵~")
 
     val decryptFailed = stringResource(id = R.string.crypto_decrypt_fail)
     var isDecryptFailed by remember { mutableStateOf(false) }
@@ -71,6 +73,47 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
 
     var showKeySelectionDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    // 解决输入无法跟随的问题。
+    // 核心原因确实是 userNekoTalk 状态更新过于频繁且存在 “双向同步冲突”
+    // 删除内容时，本地 userNekoTalk 快速变化 → 触发 LaunchedEffect(userNekoTalk)
+    // 异步写入 DataStore → 同时 LaunchedEffect(Unit) 又在
+    // 监听 DataStore 变化并同步回 userNekoTalk，两者在高频操作（如连续删除）时会出现 “状态覆盖”，导致删除不彻底或光标错位。
+    // 重点是 控制 DataStore 的写入频率（避免高频操作触发多次异步写入）和 消除双向同步的冲突。
+
+    // 1. 本地状态：仅用于UI即时响应，不直接绑定DataStore
+    var userNekoTalk by remember { mutableStateOf("") }
+
+    // 2. 优化：用Flow链整合「状态收集+防抖写入」，消除双向同步冲突
+    LaunchedEffect(Unit) {
+        // ① 从DataStore读取初始值，同步到本地状态（仅启动时一次）
+        val initialValue = context.dataStore.data
+            .map { it[USER_NEKO_TALK] ?: "" }
+            .first() // 只取一次初始值，避免持续监听导致的同步冲突
+        userNekoTalk = initialValue
+
+        // ② 监听本地状态变化，通过Debounce防抖后写入DataStore
+        snapshotFlow { userNekoTalk } // 将Compose状态转为Flow
+            .debounce(300) // 关键：用户停止输入300ms后才执行写入
+            .distinctUntilChanged() // 过滤重复值（避免相同内容重复写入）
+            .collect { latestValue ->
+                // 写入DataStore（异步但延迟执行，不影响UI）
+                context.dataStore.edit { preferences ->
+                    preferences[USER_NEKO_TALK] = latestValue
+                }
+            }
+    }
+
+    // 3. 处理「清空按钮」的即时写入（避免防抖导致清空延迟）
+    val clearNekoTalk = {
+        userNekoTalk = "" // 即时更新UI
+        // 即时写入DataStore，不经过防抖
+        scope.launch {
+            context.dataStore.edit { preferences ->
+                preferences[USER_NEKO_TALK] = ""
+            }
+        }
+    }
 
     // ✨ 主要的 LaunchedEffect，现在只依赖 inputText 和 secretKey ✨
     LaunchedEffect(inputText, secretKey) {
@@ -214,7 +257,10 @@ fun CryptoScreen(modifier: Modifier = Modifier) {
             },
             trailingIcon = {
                 AnimatedVisibility(visible = userNekoTalk.isNotEmpty()) {
-                    IconButton(onClick = { userNekoTalk = "" }) {
+                    IconButton(onClick = {
+                        // 调用优化后的清空逻辑
+                        clearNekoTalk()
+                    }) {
                         Icon(
                             Icons.Rounded.Clear,
                             contentDescription = stringResource(id = R.string.crypto_clear_input_icon_desc)
@@ -565,4 +611,3 @@ private fun CryptoStats(
         }
     }
 }
-
